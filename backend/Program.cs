@@ -6,6 +6,7 @@ using Backend.Providers.Tmdb;
 using Backend.Shared.Errors;
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
+using Palette.Api.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<PaletteDbContext>(options =>
 
 // Configure OpenAPI
 builder.Services.AddOpenApi();
+builder.Services.AddLoggingFeature(builder.Configuration, builder.Environment);
 
 // Register ProblemDetails and ApiExceptionHandler (required by app.UseExceptionHandler)
 builder.Services.AddApiErrorHandling();
@@ -59,6 +61,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapShowLogs();
 
 app.MapGet("/api/test", () =>
     Results.Ok(new { message = "Connected to backend!" })
@@ -69,3 +74,5 @@ app.MapSearchEndpoints();
 app.MapLookupEndpoints();
 
 app.Run();
+
+public partial class Program { }
