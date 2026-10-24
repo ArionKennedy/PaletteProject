@@ -73,6 +73,11 @@ docker run --detach --name palette-logging-check-20261020 \
 
 In a terminal at the repository root, start the backend:
 
+The latest `develop` also registers the team's movie search provider. Configure its
+`Tmdb:ReadAccessToken` using the team's local setup instructions/user secrets before
+starting the app; provider configuration is validated at startup even on the logging
+screen. Do not put that private token in frontend environment variables or Git.
+
 ```sh
 ASPNETCORE_ENVIRONMENT=Development \
 LoggingDemo__Enabled=true \
@@ -150,6 +155,8 @@ dotnet test tests/Palette.Api.Tests/Palette.Api.Tests.csproj
 ```
 
 The suite accepts only a local database named palette_logging_tests.
+It uses a test-only TMDB placeholder and a loopback provider address; it does not
+require real TMDB credentials or make external provider requests.
 Tests create synthetic profiles/shows in that database and never clear a team database.
 They cover persistence, separate user histories, unauthorized requests, concurrent duplicate
 saves, invalid inputs, shared media records, pagination, and unknown profiles.

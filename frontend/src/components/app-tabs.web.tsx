@@ -15,11 +15,11 @@ import { MaxContentWidth, Spacing } from '@/lib/theme';
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+      <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="home" href="/home" asChild>
-            <TabButton>Home</TabButton>
+          <TabTrigger name="movies" href="/movies" asChild>
+            <TabButton>Movies</TabButton>
           </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
@@ -69,7 +69,10 @@ export function CustomTabList(props: TabListProps) {
 const styles = StyleSheet.create({
   tabListContainer: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     width: '100%',
+    zIndex: 1,
     padding: Spacing.three,
     justifyContent: 'center',
     alignItems: 'center',

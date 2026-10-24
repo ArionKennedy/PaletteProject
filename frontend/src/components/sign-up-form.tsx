@@ -1,4 +1,3 @@
-import { SocialConnections } from '@/components/social-connections';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,7 +8,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
@@ -52,7 +50,7 @@ export function SignUpForm() {
     if(signUp.status === 'complete'){
       await signUp.finalize({
         navigate: () => {
-          router.replace('/(app)/(tabs)/home');
+          router.replace('/(app)/(tabs)/movies');
         },
       })
 

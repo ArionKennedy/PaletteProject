@@ -1,3 +1,5 @@
+**Implementation Status:** All entities shown in the ER diagram have been implemented, and their corresponding tables have been created in PostgreSQL using EF Core migrations. However, not all entities are currently used by the application's features. Some tables are included to support functionality planned for future sprints.
+
 ## ER Diagram
 
 ```mermaid

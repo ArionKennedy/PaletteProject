@@ -9,8 +9,8 @@ export default function AppTabs() {
       backgroundColor={theme.background}
       indicatorColor={theme.backgroundElement}
       labelStyle={{ selected: { color: theme.text } }}>
-      <NativeTabs.Trigger name="home">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="movies">
+        <NativeTabs.Trigger.Label>Movies</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/home.png')}
           renderingMode="template"

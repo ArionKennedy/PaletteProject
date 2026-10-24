@@ -40,7 +40,13 @@ public sealed class LoggingApiFactory : WebApplicationFactory<Program>
             Path.Combine(AppContext.BaseDirectory, "../../../../../backend")));
         builder.UseEnvironment("Testing");
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
-            new Dictionary<string, string?> { ["ConnectionStrings:DefaultConnection"] = ConnectionString }));
+            new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:DefaultConnection"] = ConnectionString,
+                // Logging tests never call TMDB; satisfy provider startup validation locally.
+                ["Tmdb:ReadAccessToken"] = "logging-tests-no-external-access",
+                ["Tmdb:BaseUrl"] = "http://127.0.0.1:1/",
+            }));
         builder.ConfigureServices(services =>
         {
             // Test-only identities; this handler is not part of the application project.

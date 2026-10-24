@@ -16,8 +16,10 @@ flowchart LR
         D[(Redis Cache)]
     end
 
-    E[Auth0]
+    E[Clerk Authentication]
     F[External Media APIs]
+    G[TMDB API]
+    H[APIs for other Media Types - TBD]
 
     A -->|HTTP / API| B
     B -->|Read / Write| C
@@ -25,38 +27,56 @@ flowchart LR
     A -->|Authentication| E
     B -->|Token Validation| E
     B -->|Media Requests| F
+    F -->G
+    F -->H
 ```
 
 ## 2. Components
 
 ### Frontend
-- **React Native / Expo:** Provides the user interface for searching, tracking, reviewing, and discovering media.
-- Communicates with the backend through HTTP API requests.
+
+- React Native with Expo for cross-platform development.
+- Provides user interfaces for searching and interacting with media.
+- Communicates with the backend through HTTP APIs.
 
 ### Backend
-- **ASP.NET:** Handles API requests, application logic, and communication with supporting services.
-- Interacts with the database, cache, authentication provider, and external media APIs.
+
+- ASP.NET Core Web API.
+- Handles business logic, database operations, and communication
+  with external services.
+- Uses Entity Framework Core for database access.
 
 ### Database
-- **PostgreSQL:** Stores application data, such as user profiles, media logs, reviews, and collections.
 
-### Caching
-- **Redis:** May be used to cache frequently accessed data and reduce repeated requests.
-- Its usage will depend on application needs.
-
-### Authentication
-- **Auth0:** Handles user authentication.
-- The frontend uses Auth0 for login, while the backend validates authentication tokens.
+- PostgreSQL 17, hosted locally using Docker Compose.
+- Stores application-specific data such as users, media records,
+  and other persisted user activity.
 
 ### External Services
-- **External Media APIs:** Provide media information such as titles, creators, genres, and other metadata.
-- Specific API providers will be determined during development.
+
+- TMDB provides movie and TV show information, including
+  searchable metadata and media details.
+
+### Authentication
+
+- Clerk handles user authentication.
+- The frontend uses Clerk for login, while the backend validates authentication tokens.
+
+### Future Components
+
+- Redis caching may be introduced when needed.
+- Additional external media providers may be integrated.
+- Cloud deployment infrastructure is not yet finalized.
 
 ## 3. Deployment
 
-The backend and supporting data services are planned to run in Docker containers.
+During local development, PostgreSQL runs in a Docker container,
+while the ASP.NET Core backend and Expo frontend run as local
+development processes.
 
-The cloud hosting provider has not yet been finalized.
+The application can be started using the unified development
+command described in the Local Setup Guide.
+
 
 ## 4. Future Updates
 

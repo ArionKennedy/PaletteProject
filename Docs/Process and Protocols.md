@@ -1,11 +1,16 @@
-### Git workflow
+### Git Workflow
 
-1. Create feature branch off of master for your changes  
-2. Commit all you changes to your feature branch  
-3. Merge feature branch to develop  
-4. Test changes in develop  
-5. Create PR to master  
-6. Merge PR to master once it has approvals
+1. Pull the latest changes from `develop`.
+2. Create a feature branch from `develop`.
+3. Implement and test the feature locally.
+4. Commit and push changes to the feature branch.
+5. Open a pull request targeting `develop`.
+6. Request peer review and address required changes.
+7. Resolve merge conflicts and verify compatibility with `develop`.
+8. Merge the approved PR into `develop`.
+9. Test integrated functionality in `develop`.
+10. Merge `develop` into the main release branch when the team
+    agrees that the release is ready.
 
 ### Coding Standards
 
