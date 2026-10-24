@@ -10,7 +10,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/lib/theme';
 
 export default function AppTabs() {
   return (

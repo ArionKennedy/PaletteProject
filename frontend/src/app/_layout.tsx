@@ -1,28 +1,44 @@
+import '../global.css';
 import { Stack } from 'expo-router';
 
-import { SessionProvider, useSession } from '@/auth-ctx';
 import { SplashScreenController } from '@/splashScreen';
+import { PortalHost } from '@rn-primitives/portal';
+
+import { ClerkProvider, useAuth } from '@clerk/expo'
+import { tokenCache } from '@clerk/expo/token-cache'
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!
+
+if (!publishableKey) {
+  throw new Error('Add your Clerk Publishable Key to the .env file')
+}
 
 export default function Root() {
   return (
-    <SessionProvider>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <SplashScreenController />
       <RootNavigator />
-    </SessionProvider>
+      <PortalHost />
+    </ClerkProvider>
   );
 }
 
 function RootNavigator() {
-  const { session } = useSession();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) {
+    return null;
+  }
 
   return (
-    <Stack>
-      <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(app)" options={{ headerShown: false }}/>
+    <Stack screenOptions={{ headerShown: false, animation: 'none', contentStyle: { backgroundColor: '#000000' }}}>
+      <Stack.Protected guard={!!isSignedIn}>
+        <Stack.Screen name="(app)"/>
       </Stack.Protected>
 
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="login" options={{ headerShown: false }}/>
+      <Stack.Protected guard={!isSignedIn}>
+        <Stack.Screen name="login"/>
+        <Stack.Screen name="signup"/>
       </Stack.Protected>
     </Stack>
   );

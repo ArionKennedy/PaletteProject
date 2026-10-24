@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Text } from '@/components/ui/text';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/lib/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ShowLog } from '@/types/show-log';
 
@@ -31,34 +31,34 @@ export function ShowList({
         keyExtractor={(show) => show.logId}
         ListHeaderComponent={
           <View style={styles.header}>
-            <ThemedText type="subtitle" accessibilityRole="header">My Shows</ThemedText>
-            <ThemedText themeColor="textSecondary">Your saved viewing history.</ThemedText>
+            <Text variant="h3" style={{ color: theme.text }}>My Shows</Text>
+            <Text style={{ color: theme.textSecondary }}>Your saved viewing history.</Text>
             {children}
             <Pressable accessibilityRole="button" disabled={loading} onPress={onRefresh}
               style={[styles.button, { backgroundColor: theme.backgroundSelected }]}>
-              <ThemedText>{loading ? 'Loading…' : 'Refresh shows'}</ThemedText>
+              <Text style={{ color: theme.text }}>{loading ? 'Loading…' : 'Refresh shows'}</Text>
             </Pressable>
-            {error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
-            {message && <ThemedText accessibilityLiveRegion="polite">{message}</ThemedText>}
-            <ThemedText accessibilityRole="header">Logged shows</ThemedText>
+            {error && <Text style={{ color: theme.text }} accessibilityRole="alert">{error}</Text>}
+            {message && <Text style={{ color: theme.text }} accessibilityLiveRegion="polite">{message}</Text>}
+            <Text variant="h4" style={{ color: theme.text }}>Logged shows</Text>
           </View>
         }
         renderItem={({ item }) => (
           <View style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText>{item.title}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
+            <Text style={{ color: theme.text }}>{item.title}</Text>
+            <Text variant="small" style={{ color: theme.textSecondary }}>
               {item.status ?? 'Logged'} · {item.loggedDate}
-            </ThemedText>
+            </Text>
           </View>
         )}
         ListEmptyComponent={
           loading ? <ActivityIndicator accessibilityLabel="Loading shows" color={theme.text} />
-            : !error ? <ThemedText>You haven&apos;t logged any shows yet.</ThemedText> : null
+            : !error ? <Text style={{ color: theme.text }}>You haven&apos;t logged any shows yet.</Text> : null
         }
         ListFooterComponent={hasMore ? (
           <Pressable accessibilityRole="button" disabled={loading} onPress={onLoadMore}
             style={[styles.button, { backgroundColor: theme.backgroundSelected }]}>
-            <ThemedText>{loading ? 'Loading…' : 'Load more shows'}</ThemedText>
+            <Text style={{ color: theme.text }}>{loading ? 'Loading…' : 'Load more shows'}</Text>
           </Pressable>
         ) : null}
       />

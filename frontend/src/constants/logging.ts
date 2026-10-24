@@ -2,6 +2,7 @@ import type { ShowToLog } from '@/types/show-log';
 
 export const LOGGING_DEMO_ENABLED =
   __DEV__ && process.env.EXPO_PUBLIC_LOGGING_DEMO === 'true';
+export const LOGGING_DEMO_TOKEN = 'palette-local-demo';
 
 // Only a local test picker until Search & Discovery supplies a selected show.
 // These are external TMDB TV IDs, not Palette database IDs.

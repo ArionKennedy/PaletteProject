@@ -3,13 +3,10 @@ import {
 } from '@/constants/logging';
 import type { ShowLog, ShowLogPage, ShowToLog } from '@/types/show-log';
 
-async function request<T>(session: string | null | undefined, path: string,
+async function request<T>(accessToken: string | null | undefined, path: string,
   options: RequestInit = {}): Promise<T> {
-  if (!session) throw new Error('Sign in before opening your shows.');
+  if (!accessToken) throw new Error('Sign in before opening your shows.');
   if (!LOGGING_API_URL) throw new Error('Set EXPO_PUBLIC_API_URL to connect to the backend.');
-  // The existing session is a mock marker, not an access token.
-  if (session === 'xxx' && !LOGGING_DEMO_ENABLED)
-    throw new Error('Authentication is still being built. Enable the local logging demo to test this screen.');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LOGGING_REQUEST_TIMEOUT_MS);
@@ -19,12 +16,14 @@ async function request<T>(session: string | null | undefined, path: string,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session === 'xxx' ? 'palette-local-demo' : session}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
     if (!response.ok) {
       if (response.status === 401 || response.status === 403)
-        throw new Error('Sign-in was not accepted. For local testing, enable LoggingDemo__Enabled on the development backend.');
+        throw new Error(LOGGING_DEMO_ENABLED
+          ? 'Local demo access was not accepted. Enable LoggingDemo__Enabled on the development backend and use localhost.'
+          : 'The logging API did not accept your sign-in. Backend Clerk token validation and profile integration are still required.');
       if (response.status === 404)
         throw new Error('Your profile or the logging endpoint is not available yet.');
       if (response.status === 400)
@@ -43,10 +42,10 @@ async function request<T>(session: string | null | undefined, path: string,
   }
 }
 
-export function getShowLogs(session: string | null | undefined, page = 1) {
-  return request<ShowLogPage>(session, `?page=${page}`);
+export function getShowLogs(accessToken: string | null | undefined, page = 1) {
+  return request<ShowLogPage>(accessToken, `?page=${page}`);
 }
 
-export function saveWatchedShow(session: string | null | undefined, show: ShowToLog) {
-  return request<ShowLog>(session, '', { method: 'POST', body: JSON.stringify(show) });
+export function saveWatchedShow(accessToken: string | null | undefined, show: ShowToLog) {
+  return request<ShowLog>(accessToken, '', { method: 'POST', body: JSON.stringify(show) });
 }
