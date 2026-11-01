@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "start": "concurrently -k -n backend,frontend \"npm:backend\" \"npm:frontend\"",
-    "backend": "dotnet run --project backend/Palette.Api.csproj",
+    "backend": "node --env-file=.env scripts/start-backend.js",
     "frontend": "npm --prefix frontend start"
   },
   "devDependencies": {

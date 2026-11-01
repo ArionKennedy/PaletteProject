@@ -18,7 +18,7 @@ public class UserTests {
 
     [Fact]
     public void CanAddUser() {
-        _context.Users.Add(new User { Username = "WillRox", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { Username = "WillRox", Email = "test@test.com", Auth0Id = "user_123" });
         _context.SaveChanges();
 
         Assert.Equal(1, _context.Users.Count()); 
@@ -28,7 +28,7 @@ public class UserTests {
     public void CanGetUser() {
         Guid TestUserId = Guid.NewGuid();
 
-        _context.Users.Add(new User { UserId = TestUserId, Username = "WillRox", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "WillRox", Email = "test@test.com", Auth0Id = "user_123" });
         _context.SaveChanges();
 
         var user = _context.Users.Find(TestUserId);

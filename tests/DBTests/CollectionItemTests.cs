@@ -22,7 +22,7 @@ public class CollectionItemTests {
         Guid TestUserId = Guid.NewGuid();
         Guid TestCollectionId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
         _context.Collections.Add(new Collection { CollectionId = TestCollectionId, UserId = TestUserId, Name = "My Favourites" });
         _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
         _context.CollectionItems.Add(new CollectionItem { CollectionId = TestCollectionId, MediaId = TestMediaId });
@@ -37,7 +37,7 @@ public class CollectionItemTests {
         Guid TestUserId = Guid.NewGuid();
         Guid TestCollectionId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
         _context.Collections.Add(new Collection { CollectionId = TestCollectionId, UserId = TestUserId, Name = "My Favourites" });
         _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
         _context.CollectionItems.Add(new CollectionItem { CollectionId = TestCollectionId, MediaId = TestMediaId });

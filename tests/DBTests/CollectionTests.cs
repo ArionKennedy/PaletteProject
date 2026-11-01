@@ -20,7 +20,7 @@ public class CollectionTests {
     [Fact]
     public void CanAddCollection() {
         Guid TestUserId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
         _context.Collections.Add(new Collection { UserId = TestUserId, Name = "Favourites" });
 
         _context.SaveChanges();
@@ -32,7 +32,7 @@ public class CollectionTests {
     public void CanGetCollection() {
         Guid TestUserId = Guid.NewGuid();
         Guid TestCollectionId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
         _context.Collections.Add(new Collection { CollectionId = TestCollectionId, UserId = TestUserId, Name = "Favourites" });
 
         _context.SaveChanges();
