@@ -40,13 +40,11 @@ export function SignInForm() {
   async function onSubmit() {
     const { error } = await signIn.password({ emailAddress, password });
     if (error) {
-      // TODO Handle the error in your app.
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
       console.error(JSON.stringify(error, null, 2));
+      console.error(JSON.stringify(errors, null, 2));
       return;
     }
 
-    
     if(signIn.status === 'complete'){
       await signIn.finalize({
         navigate: () => {
@@ -56,7 +54,6 @@ export function SignInForm() {
 
     }
      else {
-      // TODO Check why the sign-in is not complete
       console.error('Sign-in attempt not complete:', signIn);
     }
   }
@@ -73,7 +70,7 @@ export function SignInForm() {
     <View className="gap-6">
       <Card className="border-border/0 sm:border-border shadow-none sm:shadow-sm sm:shadow-black/5">
         <CardHeader>
-          <CardTitle className="text-center text-xl sm:text-left">Sign in to your app</CardTitle>
+          <CardTitle className="text-center text-xl sm:text-left">Palette Sign in</CardTitle>
           <CardDescription className="text-center sm:text-left">
             Welcome back! Please sign in to continue
           </CardDescription>

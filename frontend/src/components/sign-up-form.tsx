@@ -29,24 +29,28 @@ export function SignUpForm() {
   const { signUp, errors, fetchStatus } = useSignUp();
 
   const [emailAddress, setEmailAddress] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  const usernameInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
   function onEmailSubmitEditing() {
-    passwordInputRef.current?.focus();
+    usernameInputRef.current?.focus();
+  }
+
+  function onUsernameSubmitEditing() {
+    passwordInputRef.current?.focus();  
   }
 
   async function onSubmit() {
-    const { error } = await signUp.password({ emailAddress, password });
+    const { error } = await signUp.password({ emailAddress, password, username });
     if (error) {
-      // TODO Handle the error in your app.
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
       console.error(JSON.stringify(error, null, 2));
+      console.error(JSON.stringify(errors, null, 2));
       return;
     }
 
-    
     if(signUp.status === 'complete'){
       await signUp.finalize({
         navigate: () => {
@@ -56,7 +60,6 @@ export function SignUpForm() {
 
     }
      else {
-      // TODO Check why the sign-up is not complete
       console.error('Sign-up attempt not complete:', signUp);
     }
   }
@@ -73,9 +76,9 @@ export function SignUpForm() {
     <View className="gap-6">
       <Card className="border-border/0 sm:border-border shadow-none sm:shadow-sm sm:shadow-black/5">
         <CardHeader>
-          <CardTitle className="text-center text-xl sm:text-left">Create your account</CardTitle>
+          <CardTitle className="text-center text-xl sm:text-left">Create your Palette account</CardTitle>
           <CardDescription className="text-center sm:text-left">
-            Welcome! Please fill in the details to get started.
+            Welcome! Please fill in the details below to get started.
           </CardDescription>
         </CardHeader>
         <CardContent className="gap-6">
@@ -96,13 +99,39 @@ export function SignUpForm() {
 
               {errors.fields.emailAddress && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
-                  <AlertTitle>Unable to Sign In</AlertTitle>
+                  <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
                     {errors?.fields?.emailAddress?.longMessage}
                   </AlertDescription>
                 </Alert>
               }
             </View>
+
+            <View className="gap-1.5">
+              <View className="flex-row items-center">
+                <Label htmlFor="username">Username</Label>
+              </View>
+              <Input
+                ref={usernameInputRef}
+                id="username"
+                placeholder=""
+                autoComplete="username"
+                onSubmitEditing={onUsernameSubmitEditing}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onChangeText={setUsername}
+              />
+
+              {errors.fields.username && 
+                <Alert variant="destructive" icon={AlertCircleIcon}>
+                  <AlertTitle>Unable to Sign Up</AlertTitle>
+                  <AlertDescription>
+                    {errors?.fields?.username?.longMessage}
+                  </AlertDescription>
+                </Alert>
+              }
+            </View>
+
             <View className="gap-1.5">
               <View className="flex-row items-center">
                 <Label htmlFor="password">Password</Label>
@@ -118,7 +147,7 @@ export function SignUpForm() {
 
               {errors.fields.password && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
-                  <AlertTitle>Unable to Sign In</AlertTitle>
+                  <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
                     {errors?.fields?.password?.longMessage}
                   </AlertDescription>
