@@ -25,6 +25,25 @@ public static class TmdbMapper
             // TMDB reports 0 for "unknown", and "0 minutes" is not a real runtime.
             Runtime: source.Runtime is > 0 ? source.Runtime : null);
 
+    public static MediaSearchResult ToSearchResult(TmdbTvSummary source, string imageBaseUrl) =>
+        new(
+            ExternalId: source.Id.ToString(CultureInfo.InvariantCulture),
+            MediaType: MediaConstants.MEDIA_TYPE_TV,
+            Title: source.Name,
+            ReleaseDate: ParseReleaseDate(source.FirstAirDate),
+            PosterUrl: BuildPosterUrl(source.PosterPath, imageBaseUrl));
+
+    public static TvLookupResult ToLookupResult(TmdbTvDetails source, string imageBaseUrl) =>
+        new(
+            ExternalId: source.Id.ToString(CultureInfo.InvariantCulture),
+            Title: source.Name,
+            ReleaseDate: ParseReleaseDate(source.FirstAirDate),
+            Description: NullIfBlank(source.Overview),
+            PosterUrl: BuildPosterUrl(source.PosterPath, imageBaseUrl),
+            // Same idea as the movie runtime: 0 seasons means "unknown", not a real value.
+            NumberOfSeasons: source.NumberOfSeasons is > 0 ? source.NumberOfSeasons : null);
+
+
     /// <summary>TMDB sends "" for a missing date, so anything unparseable becomes null.</summary>
     public static DateOnly? ParseReleaseDate(string? raw) =>
         DateOnly.TryParseExact(
