@@ -13,7 +13,7 @@ public sealed class TmdbClient(HttpClient httpClient)
         RespectNullableAnnotations = true,
     };
 
-    public async Task<TmdbSearchResponse> SearchMoviesAsync(
+    public async Task<TmdbSearchResponse<TmdbMovieSummary>> SearchMoviesAsync(
         string query,
         CancellationToken cancellationToken)
     {
@@ -22,7 +22,19 @@ public sealed class TmdbClient(HttpClient httpClient)
         using var response = await httpClient.GetAsync(path, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await ReadBodyAsync<TmdbSearchResponse>(response, cancellationToken);
+        return await ReadBodyAsync<TmdbSearchResponse<TmdbMovieSummary>>(response, cancellationToken);
+    }
+
+    public async Task<TmdbSearchResponse<TmdbTvSummary>> SearchTvAsync(
+        string query,
+        CancellationToken cancellationToken)
+    {
+        var path = $"{TmdbConstants.SEARCH_TV_PATH}?query={Uri.EscapeDataString(query)}";
+
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await ReadBodyAsync<TmdbSearchResponse<TmdbTvSummary>>(response, cancellationToken);
     }
 
     public async Task<TmdbMovieDetails?> LookupMovieAsync(
@@ -41,6 +53,24 @@ public sealed class TmdbClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
 
         return await ReadBodyAsync<TmdbMovieDetails>(response, cancellationToken);
+    }
+
+    public async Task<TmdbTvDetails?> LookupTvAsync(
+        int tvId,
+        CancellationToken cancellationToken)
+    {
+        var path = $"{TmdbConstants.TV_PATH}/{tvId}";
+
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await ReadBodyAsync<TmdbTvDetails>(response, cancellationToken);
     }
 
     private static async Task<T> ReadBodyAsync<T>(

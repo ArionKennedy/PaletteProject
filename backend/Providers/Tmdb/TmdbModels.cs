@@ -2,9 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Backend.Providers.Tmdb;
 
-public sealed record TmdbSearchResponse(
+public sealed record TmdbSearchResponse<T>(
     int Page,
-    [property: JsonRequired] List<TmdbMovieSummary> Results,
+    [property: JsonRequired] List<T> Results,
     int TotalPages,
     int TotalResults);
 
@@ -21,3 +21,18 @@ public sealed record TmdbMovieDetails(
     string? ReleaseDate,
     string? PosterPath,
     int? Runtime);
+
+
+public sealed record TmdbTvSummary(
+    [property: JsonRequired] int Id,
+    [property: JsonRequired] string Name,
+    string? FirstAirDate,
+    string? PosterPath);
+
+public sealed record TmdbTvDetails(
+    [property: JsonRequired] int Id,
+    [property: JsonRequired] string Name,
+    string? Overview,
+    string? FirstAirDate,
+    string? PosterPath,
+    int? NumberOfSeasons);

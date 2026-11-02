@@ -32,6 +32,8 @@ public static class TmdbServiceCollectionExtensions
 
         // Registering as IMediaProvider is what makes the resolver find it.
         services.AddScoped<IMediaProvider, TmdbMovieProvider>();
+        services.AddScoped<IMediaProvider, TmdbTvProvider>();
+
 
         return services;
     }
