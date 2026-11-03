@@ -23,6 +23,8 @@ export function PageHeader({ title }: PageHeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
