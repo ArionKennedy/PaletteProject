@@ -12,7 +12,8 @@ import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useState, useRef } from 'react'
+import { useState, useRef } from 'react';
+import { useUpdateEffect } from '@/hooks/UseUpdateEffect';
 import {
   ActivityIndicator,
   Keyboard,
@@ -22,7 +23,8 @@ import {
   type TextInput,
   View,
 } from 'react-native';
-import { useAuth, useSignIn } from '@clerk/expo'
+import { useAuth, useSignIn } from '@clerk/expo';
+import { clerkErrorsToPageErrors, validateEmail } from '@/lib/validation';
 
 export function SignInForm() {
   const { isLoaded } = useAuth();
@@ -30,6 +32,7 @@ export function SignInForm() {
   
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
 
   const passwordInputRef = useRef<TextInput>(null);
 
@@ -37,7 +40,19 @@ export function SignInForm() {
     passwordInputRef.current?.focus();
   }
 
+  useUpdateEffect(() => {
+    setPageErrors(clerkErrorsToPageErrors(errors));
+  }, [errors]);
+
   async function onSubmit() {
+    setPageErrors({});
+
+    const emailError = validateEmail(emailAddress);
+    if (emailError) {
+      setPageErrors({ identifier: emailError });
+      return;
+    }
+
     const { error } = await signIn.password({ emailAddress, password });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
@@ -70,11 +85,21 @@ export function SignInForm() {
     <View className="gap-6">
       <Card className="border-border/0 sm:border-border shadow-none sm:shadow-sm sm:shadow-black/5">
         <CardHeader>
-          <CardTitle className="text-center text-xl sm:text-left">Palette Sign in</CardTitle>
+          <CardTitle className="text-center text-xl sm:text-left">Palette Sign In</CardTitle>
           <CardDescription className="text-center sm:text-left">
-            Welcome back! Please sign in to continue
+            Welcome back! Please Sign In to continue
           </CardDescription>
+          
+          {pageErrors?.global &&
+            <Alert variant="destructive" icon={AlertCircleIcon}>
+              <AlertTitle>Unable to Sign In</AlertTitle>
+              <AlertDescription>
+                {pageErrors?.global}
+              </AlertDescription>
+            </Alert>
+          }
         </CardHeader>
+
         <CardContent className="gap-6">
           <View className="gap-6">
             <View className="gap-1.5">
@@ -91,11 +116,11 @@ export function SignInForm() {
                 onChangeText={setEmailAddress}
               />
 
-              {errors.fields.identifier && 
+              {pageErrors?.identifier && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign In</AlertTitle>
                   <AlertDescription>
-                    {errors?.fields?.identifier?.longMessage}
+                    {pageErrors?.identifier}
                   </AlertDescription>
                 </Alert>
               }
@@ -122,11 +147,11 @@ export function SignInForm() {
                 onChangeText={setPassword}
               />
 
-              {errors.fields.password && 
+              {pageErrors?.password && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign In</AlertTitle>
                   <AlertDescription>
-                    {errors?.fields?.password?.longMessage}
+                    {pageErrors?.password}
                   </AlertDescription>
                 </Alert>
               }

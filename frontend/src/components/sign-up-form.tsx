@@ -12,7 +12,8 @@ import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useState, useRef } from 'react'
+import { useState, useRef } from 'react';
+import { useUpdateEffect } from '@/hooks/UseUpdateEffect';
 import {
   ActivityIndicator,
   Keyboard,
@@ -22,7 +23,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { useAuth, useSignUp } from '@clerk/expo'
+import { useAuth, useSignUp } from '@clerk/expo';
+import { clerkErrorsToPageErrors, validateEmail } from '@/lib/validation';
 
 export function SignUpForm() {
   const { isLoaded } = useAuth();
@@ -31,6 +33,7 @@ export function SignUpForm() {
   const [emailAddress, setEmailAddress] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
 
   const usernameInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
@@ -43,7 +46,19 @@ export function SignUpForm() {
     passwordInputRef.current?.focus();  
   }
 
+  useUpdateEffect(() => {
+    setPageErrors(clerkErrorsToPageErrors(errors));
+  }, [errors]);
+
   async function onSubmit() {
+    setPageErrors({});
+
+    const emailError = validateEmail(emailAddress);
+    if (emailError) {
+      setPageErrors({ emailAddress: emailError });
+      return;
+    }
+
     const { error } = await signUp.password({ emailAddress, password, username });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
@@ -76,11 +91,21 @@ export function SignUpForm() {
     <View className="gap-6">
       <Card className="border-border/0 sm:border-border shadow-none sm:shadow-sm sm:shadow-black/5">
         <CardHeader>
-          <CardTitle className="text-center text-xl sm:text-left">Create your Palette account</CardTitle>
+          <CardTitle className="text-center text-xl sm:text-left">Create Your Palette Account</CardTitle>
           <CardDescription className="text-center sm:text-left">
             Welcome! Please fill in the details below to get started.
           </CardDescription>
+
+          {pageErrors?.global &&
+            <Alert variant="destructive" icon={AlertCircleIcon}>
+              <AlertTitle>Unable to Sign Up</AlertTitle>
+              <AlertDescription>
+                {pageErrors?.global}
+              </AlertDescription>
+            </Alert>
+          }
         </CardHeader>
+
         <CardContent className="gap-6">
           <View className="gap-6">
             <View className="gap-1.5">
@@ -97,11 +122,11 @@ export function SignUpForm() {
                 onChangeText={setEmailAddress}
               />
 
-              {errors.fields.emailAddress && 
+              {pageErrors?.emailAddress && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
-                    {errors?.fields?.emailAddress?.longMessage}
+                    {pageErrors?.emailAddress}
                   </AlertDescription>
                 </Alert>
               }
@@ -122,11 +147,11 @@ export function SignUpForm() {
                 onChangeText={setUsername}
               />
 
-              {errors.fields.username && 
+              {pageErrors?.username && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
-                    {errors?.fields?.username?.longMessage}
+                    {pageErrors?.username}
                   </AlertDescription>
                 </Alert>
               }
@@ -145,11 +170,11 @@ export function SignUpForm() {
                 onChangeText={setPassword}
               />
 
-              {errors.fields.password && 
+              {pageErrors?.password && 
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
-                    {errors?.fields?.password?.longMessage}
+                    {pageErrors?.password}
                   </AlertDescription>
                 </Alert>
               }
