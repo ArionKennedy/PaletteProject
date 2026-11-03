@@ -11,6 +11,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 
 import { MaxContentWidth, Spacing } from '@/lib/theme';
+import { UserMenu } from '@/components/user-menu';
 
 export default function AppTabs() {
   return (
@@ -58,6 +59,7 @@ export function CustomTabList(props: TabListProps) {
         <Text style={[styles.brandText, { color: theme.text }]}>Palette</Text>
 
         {props.children}
+        <UserMenu />
       </View>
     </View>
   );
