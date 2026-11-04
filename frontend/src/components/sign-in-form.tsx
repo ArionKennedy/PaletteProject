@@ -38,33 +38,39 @@ export function SignInForm() {
   }
 
   async function onSubmit() {
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      // TODO Handle the error in your app.
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
-      console.error(JSON.stringify(error, null, 2));
-      return;
-    }
+    try {
+      const normalizedEmailAddress = emailAddress.trim();
+      if (!normalizedEmailAddress || !password) {
+        return;
+      }
 
-    
-    if(signIn.status === 'complete'){
-      await signIn.finalize({
-        navigate: () => {
-          router.replace('/(app)/(tabs)/movies');
-        },
-      })
+      const { error } = await signIn.password({ emailAddress: normalizedEmailAddress, password });
+      if (error) {
+        // TODO Handle the error in your app.
+        // See https://clerk.com/docs/guides/development/custom-flows/error-handling
+        console.error(JSON.stringify(error, null, 2));
+        return;
+      }
 
-    }
-     else {
-      // TODO Check why the sign-in is not complete
-      console.error('Sign-in attempt not complete:', signIn);
+      if (signIn.status === 'complete') {
+        await signIn.finalize({
+          navigate: () => {
+            router.replace('/(app)/(tabs)/movies');
+          },
+        });
+      } else {
+        // TODO Check why the sign-in is not complete
+        console.error('Sign-in attempt not complete:', signIn);
+      }
+    } catch (error) {
+      console.error('Sign-in exception:', error instanceof Error ? error.message : error);
     }
   }
 
   if (!isLoaded) {
     return (
       <View className="items-center gap-3">
-        <ActivityIndicator />
+        <ActivityIndicator accessibilityLabel="Loading sign in" />
       </View>
     );
   }
@@ -119,6 +125,7 @@ export function SignInForm() {
               <Input
                 ref={passwordInputRef}
                 id="password"
+                placeholder="Password"
                 secureTextEntry
                 returnKeyType="send"
                 onSubmitEditing={onSubmit}
@@ -134,7 +141,7 @@ export function SignInForm() {
                 </Alert>
               }
             </View>
-            <Button className="w-full" onPress={onSubmit} disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
+            <Button className="w-full" onPress={onSubmit} disabled={!emailAddress.trim() || !password || fetchStatus === 'fetching'}>
               <Text>Continue</Text>
             </Button>
           </View>
