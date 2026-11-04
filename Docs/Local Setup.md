@@ -7,7 +7,7 @@ This guide explains how to set up and run Palette locally, including the Expo fr
 Install the following tools before starting:
 
 - **Git** — for cloning the repository
-- **Node.js and npm** — for the Expo frontend and development scripts
+- **Node.js 20.6+ and npm** — for the Expo frontend and environment-file loading
 - **.NET SDK 10** — for the ASP.NET Core backend
 - **Docker Desktop** (or Docker Engine with Compose) — for containerized services
 - **Expo Go** (optional) — for testing on a physical mobile device
@@ -109,10 +109,13 @@ Palette uses PostgreSQL 17, running in a Docker container for local development.
 Create a `.env` file in the same directory as the Docker Compose file:
 
 ```env
+POSTGRES_DB=palette
+POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_local_password
+POSTGRES_PORT=5433
 ```
 
-Replace `your_local_password` with a password of your choice. Make sure the `.env` file is ignored by Git.
+Replace `your_local_password` with a password of your choice. `POSTGRES_PORT` is optional and defaults to `5433`, which avoids conflicts with a local PostgreSQL server using port `5432`. Make sure the `.env` file is ignored by Git.
 
 The Docker Compose configuration uses the following settings:
 
@@ -138,7 +141,9 @@ Check that the container is running:
 docker compose ps
 ```
 
-### Configure the Backend Connection
+### Configure the Backend Connection (optional alternative)
+
+Normally, the root-level `npm start` and `npm run backend` commands load the root `.env` file before starting .NET, and the backend builds its connection string from those variables. No database user-secret command is needed for that flow. The manual steps below are only for running the backend outside those npm scripts.
 
 The backend must use the same PostgreSQL credentials configured above.
 
@@ -172,6 +177,18 @@ dotnet user-secrets set "Tmdb:ReadAccessToken" "<your_token>" --project backend
 Replace `<your_token>` with the actual TMDB API Read Access Token.
 
 Do not commit the token to the repository.
+
+### Configure Clerk Authentication
+
+The frontend uses Clerk, and the backend validates Clerk session tokens on authenticated API routes. Get the issuer URL for your Clerk instance from the Clerk dashboard and configure it as a backend user secret:
+
+```bash
+cd backend
+dotnet user-secrets set "Authentication:Clerk:Issuer" "https://your-clerk-url"
+cd ..
+```
+
+The issuer is a URL, not a Clerk secret key. The first authenticated app load sends the Clerk session token to `PUT /api/users/me`; the backend validates the token and creates or updates that account's database profile. `GET /api/users/me` returns the profile associated with the same authenticated account.
 
 ### Stop PostgreSQL
 
@@ -226,7 +243,7 @@ For detailed instructions, see [Database Migrations](db-migration.md).
 
 ## 7. Run the Application
 
-Make sure PostgreSQL is running and the backend connection string, TMDB token, and frontend environment variables have been configured.
+Make sure PostgreSQL is running, the database connection (or root `.env`) is configured, and the TMDB token, Clerk issuer, and frontend environment variables have been set.
 
 ### Option A: Start Frontend and Backend Together
 
@@ -259,9 +276,10 @@ The frontend and backend can also be started independently in separate terminals
 **Terminal 1 — Backend**
 
 ```bash
-cd backend
-dotnet run
+npm run backend
 ```
+
+Run this command from the project root so it can load the root `.env` file.
 
 **Terminal 2 — Frontend**
 

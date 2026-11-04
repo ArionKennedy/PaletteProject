@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- The PostgreSQL logging integration suite is a separate project. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Palette.Api.Tests/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,20 @@
-@Palette.Api_HostAddress = http://localhost:5251
+@Palette.Api_HostAddress = https://localhost:7101
+@ClerkSessionToken = replace-with-a-valid-clerk-session-token
 
-GET {{Palette.Api_HostAddress}}/weatherforecast/
+### Check API connectivity
+GET {{Palette.Api_HostAddress}}/api/test
 Accept: application/json
 
-###
+### Synchronize the authenticated user's profile
+PUT {{Palette.Api_HostAddress}}/api/users/me
+Authorization: Bearer {{ClerkSessionToken}}
+Content-Type: application/json
+
+{
+  "username": "palette-user",
+  "email": "user@example.com"
+}
+
+### Read the authenticated user's profile
+GET {{Palette.Api_HostAddress}}/api/users/me
+Authorization: Bearer {{ClerkSessionToken}}

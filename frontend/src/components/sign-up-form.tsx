@@ -12,7 +12,7 @@ import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useState, useRef } from 'react'
+import { useState, useRef, type ComponentRef } from 'react'
 import {
   ActivityIndicator,
   Keyboard,
@@ -31,7 +31,7 @@ export function SignUpForm() {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
 
-  const passwordInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   function onEmailSubmitEditing() {
     passwordInputRef.current?.focus();
