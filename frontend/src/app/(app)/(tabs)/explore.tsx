@@ -8,7 +8,7 @@ export default function Explore() {
   const theme = useTheme();
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background}]}>
-      <FlatList data={[]} renderItem={() => null} ListHeaderComponent={null} ListFooterComponent={null} style={styles.list} />
+      <FlatList data={[]} renderItem={() => null} style={styles.list} />
     </SafeAreaView>
   );
 }

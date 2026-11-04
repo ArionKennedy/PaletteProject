@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,15 +10,13 @@ type ShowListProps = {
   shows: ShowLog[];
   loading: boolean;
   error: string | null;
-  message: string | null;
   hasMore: boolean;
   onRefresh: () => void;
   onLoadMore: () => void;
-  children?: ReactNode;
 };
 
 export function ShowList({
-  shows, loading, error, message, hasMore, onRefresh, onLoadMore, children,
+  shows, loading, error, hasMore, onRefresh, onLoadMore,
 }: ShowListProps) {
   const theme = useTheme();
   return (
@@ -28,39 +25,37 @@ export function ShowList({
         style={styles.list}
         contentContainerStyle={styles.content}
         data={shows}
-        keyExtractor={(show) => show.logId}
+        keyExtractor={(show) => show.mediaId}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text variant="h3" style={{ color: theme.text }}>My Shows</Text>
-            <Text style={{ color: theme.textSecondary }}>Your saved viewing history.</Text>
-            {children}
+            <Text style={{ color: theme.textSecondary }}>Titles you have reviewed.</Text>
             <Pressable accessibilityRole="button" disabled={loading} onPress={onRefresh}
               style={[styles.button, { backgroundColor: theme.backgroundSelected }]}>
               <Text style={{ color: theme.text }}>{loading ? 'Loading…' : 'Refresh shows'}</Text>
             </Pressable>
             {error && <Text style={{ color: theme.text }} accessibilityRole="alert">{error}</Text>}
-            {message && <Text style={{ color: theme.text }} accessibilityLiveRegion="polite">{message}</Text>}
-            <Text variant="h4" style={{ color: theme.text }}>Logged shows</Text>
+            <Text variant="h4" style={{ color: theme.text }}>Reviewed titles</Text>
           </View>
         }
         renderItem={({ item }) => (
           <View style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
             <Text style={{ color: theme.text }}>{item.title}</Text>
             <Text variant="small" style={{ color: theme.textSecondary }}>
-              {item.status ?? 'Logged'} · {item.loggedDate}
+              Reviewed · {item.lastReviewedAt.slice(0, 10)}
             </Text>
           </View>
         )}
         ListEmptyComponent={
           loading ? <ActivityIndicator accessibilityLabel="Loading shows" color={theme.text} />
-            : !error ? <Text style={{ color: theme.text }}>You haven&apos;t logged any shows yet.</Text> : null
+            : !error ? <Text style={{ color: theme.text }}>You haven&apos;t reviewed any titles yet.</Text> : undefined
         }
         ListFooterComponent={hasMore ? (
           <Pressable accessibilityRole="button" disabled={loading} onPress={onLoadMore}
             style={[styles.button, { backgroundColor: theme.backgroundSelected }]}>
             <Text style={{ color: theme.text }}>{loading ? 'Loading…' : 'Load more shows'}</Text>
           </Pressable>
-        ) : null}
+        ) : undefined}
       />
     </SafeAreaView>
   );

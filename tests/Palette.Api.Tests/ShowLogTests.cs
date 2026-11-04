@@ -24,6 +24,9 @@ public sealed class LoggingApiFactory : WebApplicationFactory<Program>
 
     private static string GetTestConnection()
     {
+        if (new[] { "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD" }
+            .Any(key => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key))))
+            throw new InvalidOperationException("Unset POSTGRES_* overrides before running isolated logging tests.");
         var value = Environment.GetEnvironmentVariable("PALETTE_TEST_DATABASE")
             ?? throw new InvalidOperationException("Set PALETTE_TEST_DATABASE to a dedicated PostgreSQL test database.");
         var parsed = new NpgsqlConnectionStringBuilder(value);
@@ -39,6 +42,10 @@ public sealed class LoggingApiFactory : WebApplicationFactory<Program>
         builder.UseContentRoot(Path.GetFullPath(
             Path.Combine(AppContext.BaseDirectory, "../../../../../backend")));
         builder.UseEnvironment("Testing");
+        builder.UseSetting("AUTH_CLERK_URL", "https://clerk.logging-tests.invalid");
+        builder.UseSetting("ConnectionStrings:DefaultConnection", ConnectionString);
+        builder.UseSetting("Tmdb:ReadAccessToken", "logging-tests-no-external-access");
+        builder.UseSetting("Tmdb:BaseUrl", "http://127.0.0.1:1/");
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
             new Dictionary<string, string?>
             {
@@ -93,82 +100,103 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
 {
     private readonly LoggingApiFactory factory;
     public ShowLogTests(LoggingApiFactory factory) => this.factory = factory;
-    private static LogShowRequest NewShow() => new(Random.Shared.Next(10000000, int.MaxValue), "Integration show");
+
+    private async Task<Guid> AddTitle(HttpClient client, string type = "movie",
+        bool reviewed = true, Guid? mediaId = null, DateTime? createdAt = null)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
+        var subject = client.DefaultRequestHeaders.GetValues("X-Test-Subject").Single();
+        var user = await db.Users.SingleAsync(user => user.Auth0Id == subject);
+        var id = mediaId ?? Guid.NewGuid();
+        if (mediaId is null)
+            db.Media.Add(new Media { MediaId = id, Title = "Review test " + id, MediaType = type });
+        if (reviewed)
+            db.Reviews.Add(new Review {
+                ReviewId = Guid.NewGuid(), UserId = user.UserId, MediaId = id,
+                Rating = 4, Body = "Test review", CreatedAt = createdAt ?? DateTime.UtcNow
+            });
+        else
+            db.UserMediaLogs.Add(new UserMediaLog {
+                LogId = Guid.NewGuid(), UserId = user.UserId, MediaId = id,
+                Status = "watched", LoggedDate = DateOnly.FromDateTime(DateTime.UtcNow)
+            });
+        await db.SaveChangesAsync();
+        return id;
+    }
 
     [Fact]
     public async Task UnauthenticatedRequestsAreRejected()
     {
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/me/shows")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized,
-            (await client.PostAsJsonAsync("/api/me/shows", NewShow())).StatusCode);
-        client.DefaultRequestHeaders.Authorization = new("Bearer", LoggingAuthentication.DemoToken);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", "invalid-token");
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/me/shows")).StatusCode);
     }
 
     [Fact]
-    public async Task EmptyHistoryDoesNotPopulateMedia()
+    public async Task EmptyHistoryDoesNotWriteRecords()
     {
         using var client = await factory.NewUserClient();
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
-        var before = await db.Media.CountAsync();
+        var mediaCount = await db.Media.CountAsync();
+        var logCount = await db.UserMediaLogs.CountAsync();
+        var reviewCount = await db.Reviews.CountAsync();
         var result = await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows");
         Assert.Empty(result!.Items);
         Assert.False(result.HasMore);
-        Assert.Equal(before, await db.Media.CountAsync());
+        Assert.Equal(mediaCount, await db.Media.CountAsync());
+        Assert.Equal(logCount, await db.UserMediaLogs.CountAsync());
+        Assert.Equal(reviewCount, await db.Reviews.CountAsync());
     }
 
     [Fact]
-    public async Task SavePersistsAndAnotherUserCannotSeeIt()
+    public async Task OnlyOwnReviewedTitlesAppearAcrossMediaTypes()
     {
         using var first = await factory.NewUserClient();
         using var second = await factory.NewUserClient();
-        var show = NewShow();
-        var response = await first.PostAsJsonAsync("/api/me/shows", show);
-        response.EnsureSuccessStatusCode();
-        var saved = await response.Content.ReadFromJsonAsync<ShowLogItem>();
-        var history = await first.GetFromJsonAsync<ShowLogPage>("/api/me/shows");
-        Assert.Equal(saved!.LogId, Assert.Single(history!.Items).LogId);
-        Assert.Equal("watched", saved.Status);
-        // Each GET uses a fresh server context, so this verifies persisted data, not component state.
-        Assert.Single((await first.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
-        Assert.Empty((await second.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
-        Assert.True(await db.TvShows.AnyAsync(item => item.TmdbTvId == show.TmdbTvId));
-        Assert.False(await db.Reviews.AnyAsync(review => review.MediaId == saved.MediaId));
+        var movie = await AddTitle(first, "movie");
+        var tv = await AddTitle(first, "tv");
+        await AddTitle(first, reviewed: false);
+        await AddTitle(second, "book");
+        var page = await first.GetFromJsonAsync<ShowLogPage>("/api/me/shows");
+        Assert.Equal(2, page!.Items.Count);
+        Assert.Contains(page.Items, item => item.MediaId == movie && item.MediaType == "movie");
+        Assert.Contains(page.Items, item => item.MediaId == tv && item.MediaType == "tv");
+        Assert.Single((await second.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
+        // Caller-supplied IDs must not change whose history is read.
+        var spoofed = await second.GetFromJsonAsync<ShowLogPage>("/api/me/shows?user_id=" + first.DefaultRequestHeaders.GetValues("X-Test-Subject").Single());
+        Assert.DoesNotContain(spoofed!.Items, item => item.MediaId == movie || item.MediaId == tv);
     }
 
     [Fact]
-    public async Task ConcurrentSavesAreIdempotentAndMediaIsShared()
-    {
-        using var first = await factory.NewUserClient();
-        using var second = await factory.NewUserClient();
-        var show = NewShow();
-        var responses = await Task.WhenAll(
-            Enumerable.Range(0, 6).Select(_ => first.PostAsJsonAsync("/api/me/shows", show)));
-        foreach (var response in responses) response.EnsureSuccessStatusCode();
-        (await second.PostAsJsonAsync("/api/me/shows", show)).EnsureSuccessStatusCode();
-        var firstItem = Assert.Single((await first.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
-        var secondItem = Assert.Single((await second.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
-        Assert.Equal(firstItem.MediaId, secondItem.MediaId);
-        Assert.NotEqual(firstItem.LogId, secondItem.LogId);
-        var repeated = await (await first.PostAsJsonAsync("/api/me/shows", show)).Content.ReadFromJsonAsync<ShowLogItem>();
-        Assert.Equal(firstItem.LogId, repeated!.LogId);
-        Assert.Equal(firstItem.LoggedDate, repeated.LoggedDate);
-    }
-
-    [Theory]
-    [InlineData(0, "Invalid ID")]
-    [InlineData(-1, "Invalid ID")]
-    [InlineData(44, "  ")]
-    [InlineData(44, null)]
-    public async Task InvalidInputIsRejectedWithoutCreatingALog(int id, string? title)
+    public async Task RepeatedReviewsProduceOneTitleWithLatestDate()
     {
         using var client = await factory.NewUserClient();
-        var response = await client.PostAsJsonAsync("/api/me/shows", new LogShowRequest(id, title));
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var latest = DateTime.UtcNow.AddMinutes(-1);
+        var first = await AddTitle(client, createdAt: latest.AddDays(-2));
+        var second = await AddTitle(client, createdAt: latest.AddDays(-1));
+        await AddTitle(client, mediaId: first, createdAt: latest);
+        var page = await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows");
+        Assert.Equal(2, page!.Items.Count);
+        Assert.Equal(first, page.Items[0].MediaId);
+        Assert.Equal(second, page.Items[1].MediaId);
+        Assert.True(Math.Abs((page.Items[0].LastReviewedAt - latest).TotalMilliseconds) < 1);
+        Assert.Equal(first, (await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items[0].MediaId);
+    }
+
+    [Fact]
+    public async Task RemovingLastReviewRemovesTitleFromHistory()
+    {
+        using var client = await factory.NewUserClient();
+        var id = await AddTitle(client);
+        Assert.Single((await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
+        // Only this test's review in the dedicated test database is removed.
+        db.Reviews.Remove(await db.Reviews.SingleAsync(review => review.MediaId == id));
+        await db.SaveChangesAsync();
         Assert.Empty((await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows"))!.Items);
     }
 
@@ -176,16 +204,16 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     public async Task PagesAreBoundedAndDoNotOverlap()
     {
         using var client = await factory.NewUserClient();
-        for (var index = 0; index < 51; index++)
-            (await client.PostAsJsonAsync("/api/me/shows", NewShow())).EnsureSuccessStatusCode();
+        for (var i = 0; i < 51; i++) await AddTitle(client);
         var first = await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows");
         var second = await client.GetFromJsonAsync<ShowLogPage>("/api/me/shows?page=2");
         Assert.Equal(50, first!.Items.Count);
         Assert.True(first.HasMore);
         Assert.Single(second!.Items);
         Assert.False(second.HasMore);
-        Assert.DoesNotContain(second.Items[0].LogId, first.Items.Select(item => item.LogId));
+        Assert.DoesNotContain(second.Items[0].MediaId, first.Items.Select(item => item.MediaId));
         Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/me/shows?page=0")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/me/shows?page=10001")).StatusCode);
     }
 
     [Fact]
@@ -194,5 +222,13 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         client.DefaultRequestHeaders.Add("X-Test-Subject", $"unprovisioned|{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/me/shows")).StatusCode);
+    }
+
+    [Fact]
+    public async Task WatchedSaveEndpointIsNoLongerExposed()
+    {
+        using var client = await factory.NewUserClient();
+        Assert.Equal(HttpStatusCode.MethodNotAllowed,
+            (await client.PostAsJsonAsync("/api/me/shows", new { tmdbTvId = 1396, title = "Not a review" })).StatusCode);
     }
 }
