@@ -5,10 +5,12 @@
   "dependencies": {
     "@clerk/expo": "^4.14.0",
     "@expo/ui": "~58.0.23",
+    "@react-native/jest-preset": "^0.88.1",
     "@rn-primitives/label": "^1.5.2",
     "@rn-primitives/portal": "^1.5.3",
     "@rn-primitives/separator": "^1.5.2",
     "@rn-primitives/slot": "^1.5.2",
+    "@types/jest": "30.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "^58.0.19",
@@ -25,6 +27,8 @@
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
     "expo-web-browser": "~58.0.6",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.14",
     "lucide-react-native": "^1.61.0",
     "nativewind": "^4.2.7",
     "react": "19.3.0",
@@ -41,6 +45,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.1.0",
     "@types/react": "~19.3.0",
     "babel-preset-expo": "~58.0.0",
     "eslint": "^9.0.0",
@@ -55,7 +60,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "jest --runInBand"
   },
   "private": true,
   "allowScripts": {

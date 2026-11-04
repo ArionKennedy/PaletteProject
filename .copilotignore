@@ -1,0 +1,3 @@
+.env
+/frontend/.env.example
+/frontend/.env.local

@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Input } from "@/components/ui/input"
 import { View } from 'react-native';
 
-export default function SearchBar({ onSubmitSearch }: { onSubmitSearch: Function }) {
+export default function SearchBar({ onSubmitSearch }: { onSubmitSearch: (query: string) => void }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     function handleSearchSubmit(){
-        if(searchQuery){
-            onSubmitSearch(searchQuery);
+        const trimmedQuery = typeof searchQuery === 'string' ? searchQuery.trim() : '';
+        if(trimmedQuery){
+            onSubmitSearch(trimmedQuery);
         }
     }
 

@@ -6,8 +6,17 @@ export async function mediaSearch(
   query: string,
   signal?: AbortSignal,
 ): Promise<MediaSearchResult[]> {
+  if (
+    typeof mediaType !== 'string' ||
+    typeof query !== 'string' ||
+    !mediaType.trim() ||
+    !query.trim()
+  ) {
+    return [];
+  }
+
   const path = `/api/search/${encodeURIComponent(mediaType)}?q=${encodeURIComponent(query)}`;
   const data = await getJson<{ results: MediaSearchResult[] }>(path, signal);
 
-  return data.results;
+  return data?.results ?? [];
 }
