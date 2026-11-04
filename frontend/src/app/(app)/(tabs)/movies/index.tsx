@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import * as React from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -18,8 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/lib/theme';
 import { mediaSearch } from '@/services/search';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
-import { useAuth } from '@clerk/expo';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/page-header';
 
 export default function MoviesSearchPage() {
   const theme = useTheme();
@@ -27,8 +27,6 @@ export default function MoviesSearchPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signOut } = useAuth();
-
   // Holds the request that is currently running, so a new search can cancel it.
   const abortRef = useRef<AbortController | null>(null);
 
@@ -81,12 +79,12 @@ export default function MoviesSearchPage() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {Platform.OS !== 'web' ? (
+        <PageHeader title="Movies" />
+      ) : null}
       <View style={[styles.searchBar, Platform.OS === 'web' && { marginTop: 80 }]}>
         <SearchBar onSubmitSearch={searchMovie} />
       </View>
-      <Button onPress={() => signOut()} style={styles.logoutButton}>
-        <Text>Logout</Text>
-      </Button>
       <FlatList
         data={searchResults}
         renderItem={renderMovieItem}
@@ -115,10 +113,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
-  },
-  logoutButton: {
-    alignSelf: 'flex-start',
-    marginLeft: Spacing.four,
   },
   list: {
     flex: 1,
