@@ -56,9 +56,8 @@ if (app.Environment.IsDevelopment())
     }
 
     app.MapOpenApi();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.MapGet("/api/test", () =>
     Results.Ok(new { message = "Connected to backend!" })
