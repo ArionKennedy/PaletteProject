@@ -4,7 +4,6 @@ using Palette.Api.Models;
 
 namespace Palette.Tests;
 
-
 public class CollectionTests {
 
     private readonly PaletteDbContext _context;
