@@ -38,6 +38,8 @@ public class PaletteDbContext : DbContext
         modelBuilder.Entity<Media>(entity =>
         {
             entity.ToTable("MEDIA");
+            entity.Property(m => m.MediaType)
+                .HasConversion<string>();
         });
 
         // Movies

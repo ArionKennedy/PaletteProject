@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
-
 
 public class CollectionItemTests {
 
@@ -24,7 +24,7 @@ public class CollectionItemTests {
         Guid TestMediaId = Guid.NewGuid();
         _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
         _context.Collections.Add(new Collection { CollectionId = TestCollectionId, UserId = TestUserId, Name = "My Favourites" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.CollectionItems.Add(new CollectionItem { CollectionId = TestCollectionId, MediaId = TestMediaId });
 
         _context.SaveChanges();
@@ -39,7 +39,7 @@ public class CollectionItemTests {
         Guid TestMediaId = Guid.NewGuid();
         _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
         _context.Collections.Add(new Collection { CollectionId = TestCollectionId, UserId = TestUserId, Name = "My Favourites" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.CollectionItems.Add(new CollectionItem { CollectionId = TestCollectionId, MediaId = TestMediaId });
 
         _context.SaveChanges();
@@ -49,5 +49,4 @@ public class CollectionItemTests {
         Assert.NotNull(item);
         Assert.Equal(TestCollectionId, item.CollectionId);
     }
-
 }
