@@ -21,7 +21,7 @@ public class MovieTests {
     [Fact]
     public void CanAddMovie() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie});
         _context.Movies.Add(new Movie{MediaId = TestMediaId, TmdbMovieId = 0});
 
         _context.SaveChanges();
