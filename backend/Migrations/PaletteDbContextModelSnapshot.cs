@@ -201,7 +201,7 @@ namespace Palette.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Auth0Id")
+                    b.Property<string>("ClerkId")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -218,7 +218,7 @@ namespace Palette.Api.Migrations
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("Auth0Id")
+                    b.HasIndex("ClerkId")
                         .IsUnique();
 
                     b.HasIndex("Email")
