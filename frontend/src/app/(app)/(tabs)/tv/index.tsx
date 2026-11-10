@@ -13,14 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
 
+import Movie from '@/components/movie';
 import SearchBar from '@/components/searchBar';
 import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/lib/theme';
 import { mediaSearch } from '@/services/search';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
-import { useAuth } from '@clerk/expo';
-import { Button } from '@/components/ui/button';
-import Movie from '@/components/movie';
+import { PageHeader } from '@/components/page-header';
 
 export default function TvSearchPage() {
   const theme = useTheme();
@@ -28,7 +27,6 @@ export default function TvSearchPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signOut } = useAuth();
 
   // Holds the request that is currently running, so a new search can cancel it.
   const abortRef = useRef<AbortController | null>(null);
@@ -82,12 +80,12 @@ export default function TvSearchPage() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {Platform.OS !== 'web' ? (
+        <PageHeader title="TV SHows" />
+      ) : null}
       <View style={[styles.searchBar, Platform.OS === 'web' && { marginTop: 80 }]}>
         <SearchBar onSubmitSearch={searchTv} />
       </View>
-      <Button onPress={() => signOut()} style={styles.logoutButton}>
-        <Text>Logout</Text>
-      </Button>
       <FlatList
         data={searchResults}
         renderItem={renderTvItem}
