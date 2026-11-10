@@ -1,6 +1,7 @@
 using Backend.Features.Health;
 using Backend.Features.Lookup;
 using Backend.Features.Search;
+using Backend.Features.Users;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
 using Backend.Shared.Errors;
@@ -28,6 +29,7 @@ builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
+builder.Services.AddUserService();
 
 builder.Services.AddCors(options =>
 {
@@ -38,6 +40,8 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -86,6 +90,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<EnsureUserExistsMiddleware>();
 
 app.MapGet("/api/test", () =>
     Results.Ok(new { message = "Connected to backend!" })
