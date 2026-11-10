@@ -168,7 +168,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5251
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
 ```
 
-Configure the PostgreSQL database, backend connection string, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
+Configure the PostgreSQL database, backend connection string, Clerk Frontend API URL, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
 
 Make sure the database is running before starting the backend.
 

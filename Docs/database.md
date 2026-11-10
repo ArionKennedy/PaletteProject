@@ -6,7 +6,7 @@
 erDiagram
     USERS {
         uuid user_id PK
-        string auth0_id UK
+        string clerk_id UK
         string username
         string email UK
         datetime date_joined

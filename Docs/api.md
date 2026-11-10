@@ -21,22 +21,23 @@ The backend provides two endpoints for searching media and retrieving item detai
 
 Currently, only movies are supported through TMDB.
 
-These endpoints do not require user authentication.
-
 For request parameters, response formats, error handling, and examples, see [Search & Lookup API Contract](search-api.md).
 
 ## 3. Authentication
 
-Palette uses Clerk for user authentication and session management.
+Clerk manages authentication for Palette and is the source of truth for user identity and profile data.
 
-Authentication is managed through Clerk on the frontend.
+The frontend calls Clerks API to authenticate/create users, obtaining a Clerk session JWT. Requests to protected backend endpoints include that token as a bearer token in the `Authorization` header. In the frontend you can use `fetchWithAuth` to inject the token in your request. The backend validates the token using the configured Clerk Frontend API URL.
 
-**Clerk Configuration (Development):**
+The Clerk session token is configured to include the user's `username` and `email` within the token as claims.
 
-- **Frontend API:** `https://crisp-ocelot-4132.clerk.accounts.dev/`
-- **Backend API:** `https://api.clerk.com/`
-- **JWKS Endpoint:** `https://crisp-ocelot-4132.clerk.accounts.dev/.well-known/jwks.json`
+The frontend can read these claims from `sessionClaims`. For example:
 
-The JWKS endpoint provides public keys that can be used to verify Clerk-issued JWTs.
+```tsx
+const { sessionClaims } = useAuth();
+const username = sessionClaims?.username;
+```
 
-The current ASP.NET Core endpoint configuration does not expose a dedicated authentication endpoint. Backend token verification and user synchronization have not yet been confirmed.
+The backend reads these claims through `UserService`. Middleware uses these claims to create a new user record from the claims when an authenticated Clerk user has no record yet.
+
+By default all backend endpoints require authentication, rejecting requests if not authorized. You can mark public endpoints with `[AllowAnonymous]` or `.AllowAnonymous()` to not require authenticaiton.
