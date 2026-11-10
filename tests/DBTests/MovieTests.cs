@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
 
@@ -20,7 +21,7 @@ public class MovieTests {
     [Fact]
     public void CanAddMovie() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie});
         _context.Movies.Add(new Movie{MediaId = TestMediaId, TmdbMovieId = 0});
 
         _context.SaveChanges();
@@ -33,7 +34,7 @@ public class MovieTests {
     [Fact]
     public void CanGetMovie() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie});
         _context.Movies.Add(new Movie{MediaId = TestMediaId, TmdbMovieId = 0});
 
         _context.SaveChanges();
@@ -43,5 +44,4 @@ public class MovieTests {
         Assert.NotNull(movie);
         Assert.Equal(TestMediaId, movie.MediaId);
     }
-
 }

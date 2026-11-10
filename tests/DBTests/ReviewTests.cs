@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
 
-
 public class ReviewTests {
-
 
     private readonly PaletteDbContext _context;
 
@@ -22,8 +21,8 @@ public class ReviewTests {
     public void CanAddReview() {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.Reviews.Add(new Review { UserId = TestUserId, MediaId = TestMediaId, Rating = 5, Body = "Great movie" });
 
         _context.SaveChanges();
@@ -36,8 +35,8 @@ public class ReviewTests {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
         Guid TestReviewId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.Reviews.Add(new Review { ReviewId = TestReviewId, UserId = TestUserId, MediaId = TestMediaId, Rating = 5, Body = "Great movie" });
 
         _context.SaveChanges();

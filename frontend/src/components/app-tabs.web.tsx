@@ -1,4 +1,3 @@
-import type { ComponentProps } from 'react';
 import {
   Tabs,
   TabList,
@@ -12,6 +11,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 
 import { MaxContentWidth, Spacing } from '@/lib/theme';
+import { UserMenu } from '@/components/user-menu';
 
 export default function AppTabs() {
   return (
@@ -34,9 +34,7 @@ export default function AppTabs() {
   );
 }
 
-type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> & Pick<ComponentProps<typeof Pressable>, 'ref'>;
-
-export function TabButton({ children, isFocused, ...props }: TabButtonProps) {
+export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   const theme = useTheme();
 
   return (
@@ -64,6 +62,7 @@ export function CustomTabList(props: TabListProps) {
         <Text style={[styles.brandText, { color: theme.text }]}>Palette</Text>
 
         {props.children}
+        <UserMenu />
       </View>
     </View>
   );
@@ -83,7 +82,7 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.five,
     borderRadius: Spacing.five,
     flexDirection: 'row',
     alignItems: 'center',

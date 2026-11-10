@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
 
-
 public class UserMediaLogTests {
-
 
     private readonly PaletteDbContext _context;
 
@@ -22,8 +21,8 @@ public class UserMediaLogTests {
     public void CanAddUserMediaLog() {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.UserMediaLogs.Add(new UserMediaLog { UserId = TestUserId, MediaId = TestMediaId, Status = "Watched", LoggedDate = DateOnly.FromDateTime(DateTime.Now) });
 
         _context.SaveChanges();
@@ -36,8 +35,8 @@ public class UserMediaLogTests {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
         Guid TestLogId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "user_123" });
-        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Movie" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.UserMediaLogs.Add(new UserMediaLog { LogId = TestLogId, UserId = TestUserId, MediaId = TestMediaId, Status = "Watched", LoggedDate =
         DateOnly.FromDateTime(DateTime.Now) });
 
@@ -48,5 +47,4 @@ public class UserMediaLogTests {
         Assert.NotNull(log);
         Assert.Equal(TestLogId, log.LogId);
     }
-    
 }

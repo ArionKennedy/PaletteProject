@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@clerk/expo';
@@ -7,7 +7,7 @@ import { getShowLogs } from '@/services/show-logs';
 import type { ShowLog } from '@/types/show-log';
 
 export default function MyShowsScreen() {
-  const { getToken, isLoaded, isSignedIn, userId, sessionId } = useAuth();
+  const { isLoaded, isSignedIn, userId, sessionId } = useAuth();
   const [shows, setShows] = useState<ShowLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,26 +15,13 @@ export default function MyShowsScreen() {
   const [hasMore, setHasMore] = useState(false);
   const version = useRef(0);
   const focused = useRef(false);
-  const getTokenRef = useRef(getToken);
-
-  useEffect(() => {
-    getTokenRef.current = getToken;
-  }, [getToken]);
-
-  const getAccessToken = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) throw new Error('Sign in before opening your shows.');
-    return await getTokenRef.current();
-  }, [isLoaded, isSignedIn]);
-
   const load = useCallback(async (nextPage = 1) => {
-    if (!isLoaded || !isSignedIn || !focused.current) return;
+    if (!isLoaded || !isSignedIn || !userId || !focused.current) return;
     const currentVersion = ++version.current;
     setLoading(true);
     setError(null);
     try {
-      const accessToken = await getAccessToken();
-      if (currentVersion !== version.current) return;
-      const result = await getShowLogs(accessToken, nextPage);
+      const result = await getShowLogs(userId, nextPage);
       if (currentVersion !== version.current) return;
       setShows(previous => nextPage === 1 ? result.items : [
         ...previous,
@@ -48,7 +35,7 @@ export default function MyShowsScreen() {
     } finally {
       if (currentVersion === version.current) setLoading(false);
     }
-  }, [getAccessToken, isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, userId]);
 
   useFocusEffect(useCallback(() => {
     // A different Clerk user/session starts a new screen lifecycle.

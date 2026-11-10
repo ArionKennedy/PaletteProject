@@ -1,42 +1,47 @@
 # Logging and archiving
 
-## Confirmed Sprint 1 scope
+## Sprint 1 scope
 
-Display only titles the signed-in user has reviewed. A watched status alone is not enough.
-Reviews are the source of truth: the list joins REVIEWS to MEDIA, covers any reviewed media type,
-and displays each title once, ordered by its most recent review.
-No extra log record, demo account, sample picker, review editor, or watched-save action is needed.
-Creating and editing reviews belongs to the team's review feature.
+My Shows displays only titles the user has reviewed. Watched status alone is not enough.
+REVIEWS joined to MEDIA is the source of truth. Each title appears once, newest review first.
+History reads do not create media, reviews, profiles, or duplicate USER_MEDIA_LOGS records.
+There is no demo account, sample picker, review editor, or watched-save action.
 
-## Current integration
+## Temporary integration contract
 
-The working branch targets develop and retains link-develop's shared Clerk authentication.
-GET /api/me/shows?page=1 returns items, page, and hasMore (up to 50 titles per page).
-Each item contains mediaId, title, mediaType, and lastReviewedAt.
-The verified Clerk subject maps to USERS.Auth0Id (the existing column name).
-The shared /api/users/me flow synchronizes the Palette profile before displaying tabs.
-Caller-supplied user IDs do not select whose history is returned.
-POST /api/me/shows has been removed: it saved watched TV shows, which is outside the confirmed scope.
-No database schema changes are required.
+This branch is based on develop. Discarded link-develop authentication and profile-sync code
+is not part of the implementation. Sign-in screens and the app layout come from develop.
 
-My Shows refreshes on focus, account changes, and manual refresh; pagination is available.
-Old requests are ignored after leaving the screen or changing accounts.
-Empty, loading, and failure states are displayed.
-Removing a user's last review for a title removes it from their history on the next refresh.
+POST /api/me/shows/query accepts { "userId": "<Clerk useAuth().userId>", "page": 1 }.
+POST is used only to carry a JSON query body; the operation is read-only.
+The service maps Clerk userId to the existing USERS.Auth0Id column and filters reviews
+using that user's database UUID. A missing profile returns 404; logging never creates one.
+The response contains items, page, and hasMore (up to 50 titles).
+Items contain mediaId, title, mediaType (develop's enum name), and lastReviewedAt.
 
-## Local verification
+IMPORTANT: userId is caller-supplied and is not yet verified by the backend.
+This is filtering, NOT access control. Changing userId can expose another user's history.
+The authentication feature owner must verify it against the signed-in identity before release.
+No bearer token, custom authentication scheme, JWT package, or Clerk issuer setting is added here.
 
-Follow Local Setup.md for the team's actual Clerk, TMDB, and database configuration.
-Real sign-in requires frontend/.env configuration; do not commit credentials.
+## Frontend behavior
 
-Frontend checks from frontend/: npx tsc --noEmit and npx expo lint --no-cache.
-Refresh-loop regression from the repository root: node --test tests/frontend/my-shows.test.cjs.
+The list refreshes on focus, account/session changes, and manual refresh, with pagination.
+Only primitive identity values drive the focus callback; changing Clerk function references
+does not restart it. Responses from a previous screen lifecycle are ignored.
+Loading, empty, and failure states are displayed.
+Deleting the last review removes that title on the next refresh.
 
-Database integration tests: set PALETTE_TEST_DATABASE to a dedicated local PostgreSQL database
-named palette_logging_tests, unset POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD overrides,
-and run dotnet test tests/Palette.Api.Tests/Palette.Api.Tests.csproj.
-The tests use test-only authenticated identities, not real Clerk sign-in, and create test records.
-They verify reviewed-only filtering, account isolation, deduplication, ordering, pagination,
-no writes during history reads, removal after review deletion, and authentication failures.
+## Verification
 
-Before merging, test the app with real Clerk accounts and reviews created by the team's review flow.
+Use develop's normal local setup. No additional profile-sync service or backend startup script is needed.
+The database must already contain the user's Clerk ID and reviews from the team's review feature.
+Actual sign-in testing requires local Clerk configuration.
+
+Run from frontend/: npx tsc --noEmit and npx expo lint --no-cache.
+Run from the repository root: node --test tests/frontend/my-shows.test.cjs.
+For database tests, set PALETTE_TEST_DATABASE to a local PostgreSQL database named
+palette_logging_tests and run dotnet test tests/Palette.Api.Tests/Palette.Api.Tests.csproj.
+Tests create isolated test records and verify request validation, filtering, deduplication,
+ordering, pagination, no writes on reads, and removal after review deletion.
+They explicitly document the current lack of identity verification; they do not test real Clerk sign-in.

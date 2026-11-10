@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
-
 
 public class MediaTests {
 
@@ -20,7 +20,7 @@ public class MediaTests {
     [Fact]
     public void CanAddMedia() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Media"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie});
 
         _context.SaveChanges();
 
@@ -30,7 +30,7 @@ public class MediaTests {
     [Fact]
     public void CanGetMedia() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = "Media"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie});
 
         _context.SaveChanges();
 

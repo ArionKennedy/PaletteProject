@@ -23,7 +23,7 @@ public sealed class ShowLogService(PaletteDbContext db)
             .Skip((page - 1) * PageSize).Take(PageSize + 1)
             .ToListAsync(cancellationToken);
         return new ShowLogPage(items.Take(PageSize)
-            .Select(item => new ShowLogItem(item.MediaId, item.Title, item.MediaType, item.LastReviewedAt))
+            .Select(item => new ShowLogItem(item.MediaId, item.Title, item.MediaType.ToString(), item.LastReviewedAt))
             .ToList(), page, items.Count > PageSize);
     }
 }

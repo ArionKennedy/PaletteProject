@@ -50,7 +50,7 @@ test('My Shows does not reload for a changing getToken reference; account change
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
       if (name === '@clerk/expo') return {
         // Deliberately create a new function on EVERY render, reproducing the reported trigger.
-        useAuth: () => ({ getToken: async () => userId, isLoaded: true, isSignedIn: true, userId, sessionId }),
+        useAuth: () => ({ getToken: async () => { throw new Error('Logging must not request a token'); }, isLoaded: true, isSignedIn: true, userId, sessionId }),
       };
       if (name === 'expo-router') return { useFocusEffect(callback) {
         hooks.useEffect(() => {
@@ -60,9 +60,9 @@ test('My Shows does not reload for a changing getToken reference; account change
         }, [callback]);
       } };
       if (name === '@/components/show-list') return { ShowList: 'ShowList' };
-      if (name === '@/services/show-logs') return { getShowLogs: async token => {
+      if (name === '@/services/show-logs') return { getShowLogs: async requestedUserId => {
         calls++;
-        return { items: [{ mediaId: token, title: token }], page: 1, hasMore: false };
+        return { items: [{ mediaId: requestedUserId, title: requestedUserId }], page: 1, hasMore: false };
       } };
       throw new Error('Unexpected import: ' + name);
     },
@@ -96,4 +96,34 @@ test('My Shows does not reload for a changing getToken reference; account change
   await settle();
   assert.equal(calls, 3, 'Returning to the screen should refetch');
   cleanup();
+});
+
+test('history requests send Clerk userId in JSON without a bearer token', async () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../frontend/src/services/show-logs.ts'), 'utf8');
+  const code = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const exports = {};
+  let request;
+  const page = { items: [], page: 2, hasMore: false };
+  vm.runInNewContext(code, {
+    exports, AbortController, setTimeout, clearTimeout,
+    require(name) {
+      assert.equal(name, '@/constants/logging');
+      return { LOGGING_API_URL: 'http://localhost:5251', LOGGING_REQUEST_TIMEOUT_MS: 1000 };
+    },
+    fetch: async (url, options) => {
+      request = { url, options };
+      return { ok: true, json: async () => page };
+    },
+  });
+  assert.equal(await exports.getShowLogs('user_test', 2), page);
+  assert.equal(request.url, 'http://localhost:5251/api/me/shows/query');
+  assert.equal(request.options.method, 'POST');
+  assert.deepEqual(JSON.parse(request.options.body), { userId: 'user_test', page: 2 });
+  assert.equal(request.options.headers.Authorization, undefined);
+  assert.equal(request.options.headers['Content-Type'], 'application/json');
+  request = undefined;
+  await assert.rejects(exports.getShowLogs(null), /Sign in/);
+  assert.equal(request, undefined, 'Missing identity must not trigger a request');
 });

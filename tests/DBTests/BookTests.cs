@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
 
@@ -19,11 +20,10 @@ public class BookTests {
     [Fact]
     public void CanAddBook() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = "Book"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book});
         _context.Books.Add(new Book{MediaId = TestMediaId, OpenLibraryId = "0"});
 
         _context.SaveChanges();
-
 
         Assert.Equal(1, _context.Books.Count());
         Assert.Equal(1, _context.Media.Count());
@@ -32,7 +32,7 @@ public class BookTests {
     [Fact]
     public void CanGetBook() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = "Book"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book});
         _context.Books.Add(new Book{MediaId = TestMediaId, OpenLibraryId = "0"});
 
         _context.SaveChanges();
