@@ -28,7 +28,7 @@ public class UserTests {
     public void CanGetUser() {
         Guid TestUserId = Guid.NewGuid();
 
-        _context.Users.Add(new User { UserId = TestUserId, Username = "WillRox", Email = "test@test.com", ClerkId = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "WillRox", Email = "test@test.com", ClerkId = "user_123" });
         _context.SaveChanges();
 
         var user = _context.Users.Find(TestUserId);
