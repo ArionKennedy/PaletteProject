@@ -48,8 +48,17 @@ export default function TvDetailsPage() {
     );
   }
 
-  const releaseYear = tv.releaseDate?.slice(0, 4); 
-  const seasons = (tv.numberOfSeasons) ? tv.numberOfSeasons + " Seasons" : "1 season"  // "2010-07-15" -> "2010"
+  const releaseYear = tv.releaseDate?.slice(0, 4);
+  const seasons = tv.numberOfSeasons
+    ? `${tv.numberOfSeasons} ${tv.numberOfSeasons === 1 ? 'Season' : 'Seasons'}`
+    : null;
+
+  const metaText = [
+    releaseYear ? `First Air: ${releaseYear}` : null,
+    seasons,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <ScrollView
@@ -77,10 +86,12 @@ export default function TvDetailsPage() {
       <Text style={[styles.title, { color: theme.text }]}>{tv.title}</Text>
 
       <Text style={[styles.meta, { color: theme.textSecondary }]}>
-        {/* {[releaseYear ?? 'First Air date unknown', tv.numberOfSeasons ?? '1']
-          .filter(Boolean)
-          .join(' · ')} */}
-        {"First Air: " + releaseYear + " · " + seasons}
+        {metaText ? (
+          <Text style={[styles.meta, { color: theme.textSecondary }]}>
+            {metaText}
+          </Text>
+        ) : null}
+
       </Text>
 
       <Text style={[styles.description, { color: theme.text }]}>

@@ -81,7 +81,7 @@ export default function TvSearchPage() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       {Platform.OS !== 'web' ? (
-        <PageHeader title="TV SHows" />
+        <PageHeader title="TV Shows" />
       ) : null}
       <View style={[styles.searchBar, Platform.OS === 'web' && { marginTop: 80 }]}>
         <SearchBar onSubmitSearch={searchTv} />
