@@ -22,7 +22,7 @@ public static class GoogleBooksMapper
         ExternalId: v.Id,
         Title: v.VolumeInfo.Title,
         ReleaseDate: ParsePublishedDate(v.VolumeInfo.PublishedDate),
-        Description: NullIfBlank(v.VolumeInfo.Description),
+        Description: CleanDescription(v.VolumeInfo.Description),
         PosterUrl: BuildPosterUrl(v.VolumeInfo.ImageLinks?.Thumbnail),
         ISBN: PickIsbn(v.VolumeInfo.IndustryIdentifiers));
 
