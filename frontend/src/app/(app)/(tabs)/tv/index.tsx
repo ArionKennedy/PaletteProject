@@ -73,7 +73,7 @@ export default function TvSearchPage() {
       return <Text style={[styles.message, { color: theme.textSecondary }]}>{error}</Text>;
     }
     if (hasSearched) {
-      return <Text style={[styles.message, { color: theme.textSecondary }]}>No movies found.</Text>;
+      return <Text style={[styles.message, { color: theme.textSecondary }]}>No tv shows found.</Text>;
     }
     return null;
   }

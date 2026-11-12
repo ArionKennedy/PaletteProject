@@ -23,8 +23,10 @@ builder.Services.AddApiErrorHandling();
 // Register media providers and the search feature
 builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
+builder.Services.AddGoogleBooksProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
+
 
 builder.Services.AddCors(options =>
 {
