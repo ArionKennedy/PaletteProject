@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+
+          <Include>[Palette.Api]*</Include>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+
+          <!-- EF-generated migrations and model snapshot -->
+          <!-- OpenAPI-generated code and compiler support types -->
+          <Exclude>[Palette.Api]Palette.Api.Migrations.*,[Palette.Api]Microsoft.AspNetCore.OpenApi.Generated*,[Palette.Api]System.Runtime.CompilerServices.*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
