@@ -173,4 +173,170 @@ public class UserMediaLogDatabaseTests
         Assert.NotNull(savedMedia);
         Assert.Equal(mediaId, savedMedia.MediaId);
     }
+
+    [Fact]
+    public async Task CannotSaveLogWithoutMedia()
+    {
+        await using var db = _fixture.CreateContext();
+        await using var transaction =
+            await db.Database.BeginTransactionAsync();
+
+        var userId = Guid.NewGuid();
+
+        var user = new User
+        {
+            UserId = userId,
+            Auth0Id = $"integration|{userId:N}",
+            Username = "Log foreign key test user",
+            Email = $"{userId:N}@example.com",
+            DateJoined = new DateTime(
+                2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+        };
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        db.ChangeTracker.Clear();
+
+        db.UserMediaLogs.Add(new UserMediaLog
+        {
+            LogId = Guid.NewGuid(),
+            UserId = userId,
+            MediaId = Guid.NewGuid(),
+            Status = "watched",
+            LoggedDate = new DateOnly(2026, 1, 2),
+        });
+
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => db.SaveChangesAsync());
+
+        var postgres = Assert.IsType<PostgresException>(
+            exception.InnerException);
+
+        Assert.Equal(
+            PostgresErrorCodes.ForeignKeyViolation,
+            postgres.SqlState);
+
+        Assert.Equal(
+            "FK_USER_MEDIA_LOGS_MEDIA_MediaId",
+            postgres.ConstraintName);
+    }
+
+    [Fact]
+    public async Task DeletingMediaCascadesToLogsButPreservesUsersAndOtherLogs()
+    {
+        await using var db = _fixture.CreateContext();
+        await using var transaction =
+            await db.Database.BeginTransactionAsync();
+
+        var testTime = new DateTime(
+            2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+        var loggedDate = new DateOnly(2026, 1, 2);
+
+        var firstUserId = Guid.NewGuid();
+        var secondUserId = Guid.NewGuid();
+
+        db.Users.AddRange(
+            new User
+            {
+                UserId = firstUserId,
+                Auth0Id = $"integration|{firstUserId:N}",
+                Username = "First viewer",
+                Email = $"{firstUserId:N}@example.com",
+                DateJoined = testTime,
+            },
+            new User
+            {
+                UserId = secondUserId,
+                Auth0Id = $"integration|{secondUserId:N}",
+                Username = "Second viewer",
+                Email = $"{secondUserId:N}@example.com",
+                DateJoined = testTime,
+            });
+
+        var removedMediaId = Guid.NewGuid();
+        var preservedMediaId = Guid.NewGuid();
+
+        db.Media.AddRange(
+            new Media
+            {
+                MediaId = removedMediaId,
+                Title = "Remove this media",
+                MediaType = MediaType.Movie,
+            },
+            new Media
+            {
+                MediaId = preservedMediaId,
+                Title = "Keep this media",
+                MediaType = MediaType.Movie,
+            });
+
+        await db.SaveChangesAsync();
+
+        var preservedLogId = Guid.NewGuid();
+
+        db.UserMediaLogs.AddRange(
+            new UserMediaLog
+            {
+                LogId = Guid.NewGuid(),
+                UserId = firstUserId,
+                MediaId = removedMediaId,
+                Status = "watched",
+                LoggedDate = loggedDate,
+            },
+            new UserMediaLog
+            {
+                LogId = Guid.NewGuid(),
+                UserId = secondUserId,
+                MediaId = removedMediaId,
+                Status = "watching",
+                LoggedDate = loggedDate,
+            },
+            new UserMediaLog
+            {
+                LogId = preservedLogId,
+                UserId = firstUserId,
+                MediaId = preservedMediaId,
+                Status = "watched",
+                LoggedDate = loggedDate,
+            });
+
+        await db.SaveChangesAsync();
+
+        // Leave logs untracked so PostgreSQL performs the cascade.
+        db.ChangeTracker.Clear();
+
+        var mediaToDelete = await db.Media.SingleAsync(
+            media => media.MediaId == removedMediaId);
+
+        db.Media.Remove(mediaToDelete);
+        await db.SaveChangesAsync();
+
+        db.ChangeTracker.Clear();
+
+        Assert.False(await db.Media.AnyAsync(
+            media => media.MediaId == removedMediaId));
+
+        Assert.False(await db.UserMediaLogs.AnyAsync(
+            log => log.MediaId == removedMediaId));
+
+        Assert.True(await db.Users.AnyAsync(
+            user => user.UserId == firstUserId));
+
+        Assert.True(await db.Users.AnyAsync(
+            user => user.UserId == secondUserId));
+
+        Assert.True(await db.Media.AnyAsync(
+            media => media.MediaId == preservedMediaId));
+
+        var preservedLog = await db.UserMediaLogs
+            .AsNoTracking()
+            .SingleAsync(log => log.LogId == preservedLogId);
+
+        Assert.Equal(firstUserId, preservedLog.UserId);
+        Assert.Equal(preservedMediaId, preservedLog.MediaId);
+        Assert.Equal("watched", preservedLog.Status);
+        Assert.Equal(loggedDate, preservedLog.LoggedDate);
+    }
 }
