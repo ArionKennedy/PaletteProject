@@ -65,7 +65,7 @@ These tests do not require a real TMDB account or API token.
 
 ### Application Startup Tests
 
-WebApplicationFactory starts the application’s actual entry point using an isolated `Testing` configuration.
+WebApplicationFactory starts the application’s actual entry point using isolated `Testing` and `Development` configurations.
 
 Startup tests verify:
 
@@ -75,7 +75,14 @@ Startup tests verify:
 - CORS preflight handling.
 - Application exception-handling middleware.
 
-These tests do not exercise the Development-only startup branch.
+Development startup tests additionally verify:
+
+- Automatic application of migrations to a fresh PostgreSQL database.
+- Exposure of the OpenAPI document and expected API paths.
+- HTTP-to-HTTPS redirection while preserving the path and query string.
+- Successful HTTPS requests without another redirect.
+
+These tests use a separate temporary database. The test fixture does not apply migrations before application startup, so the tests verify that Program.cs performs the migration.
 
 ### PostgreSQL Integration Tests
 
@@ -129,6 +136,8 @@ If `PALETTE_TEST_DB_CONNECTION` is supplied, the fixture uses that connection in
 
 Testcontainers manages only the containers it creates. An externally supplied database remains managed by its owner.
 
+`DevelopmentApplicationFixture` always creates a separate temporary PostgreSQL 17 container for Development startup tests, regardless of `PALETTE_TEST_DB_CONNECTION`. It inspects the fresh database before startup and lets Program.cs apply migrations. The application is disposed before the temporary container is removed.
+
 ## 5. Running Tests
 
 ### Prerequisites
@@ -149,7 +158,7 @@ dotnet test tests/Palette.Tests.csproj
 
 With the default Testcontainers setup, no manual database creation, connection-string export, or local environment file is required.
 
-If the terminal already contains `PALETTE_TEST_DB_CONNECTION`, that setting overrides automatic database creation. The configured database must then be available.
+For tests using `PostgresFixture`, an existing `PALETTE_TEST_DB_CONNECTION` overrides automatic database creation, and the configured database must be available. Development startup tests always create their own temporary database and require Docker.
 
 ### Run Only Unit Tests
 
@@ -167,7 +176,9 @@ dotnet test tests/Palette.Tests.csproj \
   --filter "FullyQualifiedName~Palette.Tests.Integration.Api"
 ```
 
-The current HTTP tests use isolated application settings and simulated TMDB responses.
+The current HTTP tests use isolated application settings and simulated TMDB responses where TMDB is exercised.
+
+This filter also includes `DevelopmentStartupTests`, which require Docker and create a separate temporary PostgreSQL database.
 
 ### Run PostgreSQL Integration Tests
 
@@ -255,17 +266,17 @@ Exclusion rules should be kept consistent between local and CI reports and docum
 
 ### Recorded Local Evidence
 
-A local report captured on November 13, 2026 showed:
+[Local verification on November 14, 2026](evidence/backend-test-coverage-2026-11-14.png) combined the existing test sources with the four Development startup tests in an isolated test project against the current backend:
 
-- **Line coverage: 98.3% — 587 of 597 lines.**
-- **Branch coverage: 98.1% — 53 of 54 branches.**
-- **Program.cs: 75% line coverage and 50% branch coverage.**
+- **330 tests passed, with no failures or skipped tests.**
+- **Line coverage: 100% — 597 of 597 lines.**
+- **Branch coverage: 100% — 54 of 54 branches.**
+- **Program.cs: 100% line coverage and 100% branch coverage.**
 
-The remaining Program.cs gap corresponds to Development-only startup behaviour. Current startup tests run in the `Testing` environment.
+The generated-code exclusions described above were applied.
 
-These figures describe that recorded local run. They are not a claim that CI has already produced the same result or that all acceptance criteria are covered.
+These figures describe the latest recorded local verification. They do not establish that CI has produced the same result or that all acceptance criteria are covered. A normal repository test run and CI run should retain their own execution evidence after the new tests are added.
 
-For milestone evidence, retain a report or screenshot together with its tested commit, test execution result, and coverage configuration.
 
 ### Continuous Integration
 
@@ -284,7 +295,7 @@ If a regression test fails, investigate whether the implementation regressed, th
 
 ## 7. Current Limitations and Follow-Up Work
 
-- **Development startup:** Automatic migrations, OpenAPI exposure, and HTTPS redirection inside the Development-only Program.cs branch are not covered by the current startup tests.
+- **HTTPS transport:** TestServer tests verify HTTPS redirection and request handling, but do not validate a real TLS handshake, certificates, or deployed HTTPS configuration.
 - **Frontend automation:** This backend suite does not measure frontend coverage or replace frontend component, navigation, and browser tests.
 - **Real external services:** Simulated TMDB responses verify application behaviour but do not prove that live TMDB credentials or deployed connectivity are correct.
 - **Acceptance criteria:** User-story acceptance criteria still need an explicit mapping to automated tests or recorded manual checks.
