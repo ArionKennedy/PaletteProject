@@ -14,13 +14,16 @@ function formatRuntime(minutes: number): string {
 
 export default function MovieDetailsPage() {
   const { id } = useLocalSearchParams<{ id: string }>();   // "27205" from /movies/27205
+  return <MovieDetails key={id} id={id} />;
+}
+
+function MovieDetails({ id }: { id: string }) {
+  const theme = useTheme();
   const [movie, setMovie] = useState<MovieLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    setMovie(null);
-    setError(null);
 
     movieLookup(id, controller.signal)
       .then(setMovie)

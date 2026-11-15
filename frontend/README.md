@@ -1,5 +1,8 @@
 # Welcome to your Expo app 👋
 
+For Palette's standalone Android APK, EAS production environment, OTA updates,
+and GitHub Actions publishing, see [EAS.md](./EAS.md).
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
