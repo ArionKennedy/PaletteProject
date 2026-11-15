@@ -21,7 +21,7 @@ public class ReviewTests {
     public void CanAddReview() {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", ClerkId = "user_123" });
         _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.Reviews.Add(new Review { UserId = TestUserId, MediaId = TestMediaId, Rating = 5, Body = "Great movie" });
 
@@ -35,7 +35,7 @@ public class ReviewTests {
         Guid TestUserId = Guid.NewGuid();
         Guid TestMediaId = Guid.NewGuid();
         Guid TestReviewId = Guid.NewGuid();
-        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", Auth0Id = "auth0|123" });
+        _context.Users.Add(new User { UserId = TestUserId, Username = "test", Email = "test@test.com", ClerkId = "user_123" });
         _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Revenge of Guderian", MediaType = MediaType.Movie });
         _context.Reviews.Add(new Review { ReviewId = TestReviewId, UserId = TestUserId, MediaId = TestMediaId, Rating = 5, Body = "Great movie" });
 
