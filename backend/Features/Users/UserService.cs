@@ -53,7 +53,8 @@ public class UserService
         var user = await _dbContext.Users
             .SingleOrDefaultAsync(user => user.ClerkId == clerkId, cancellationToken);
 
-        if (user is null)
+        bool isNewUser = user is null;
+        if (isNewUser)
         {
             // create new user
             user = new User
@@ -73,7 +74,25 @@ public class UserService
             user.Email = email;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException) when (isNewUser)
+        {
+            _dbContext.Entry(user).State = EntityState.Detached;
+
+            var existingUser = await _dbContext.Users
+                .SingleOrDefaultAsync(existing => existing.ClerkId == clerkId, cancellationToken);
+
+            if (existingUser is not null)
+            {
+                return existingUser;
+            }
+
+            throw;
+        }
+
         return user;
     }
 }
