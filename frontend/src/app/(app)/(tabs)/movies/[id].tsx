@@ -18,7 +18,6 @@ export default function MovieDetailsPage() {
 }
 
 function MovieDetails({ id }: { id: string }) {
-  const theme = useTheme();
   const [movie, setMovie] = useState<MovieLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 

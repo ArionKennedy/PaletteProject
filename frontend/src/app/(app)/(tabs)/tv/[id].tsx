@@ -12,7 +12,6 @@ export default function TvDetailsPage() {
 }
 
 function TvDetails({ id }: { id: string }) {
-  const theme = useTheme();
   const [tv, setTv] = useState<TvLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
