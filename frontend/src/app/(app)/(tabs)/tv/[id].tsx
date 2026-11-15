@@ -11,15 +11,17 @@ import { tvLookup } from '@/services/lookup';
 
 
 export default function TvDetailsPage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <TvDetails key={id} id={id} />;
+}
+
+function TvDetails({ id }: { id: string }) {
   const theme = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();   // "27205" from /movies/27205
   const [tv, setTv] = useState<TvLookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    setTv(null);
-    setError(null);
 
     tvLookup(id, controller.signal)
       .then(setTv)
