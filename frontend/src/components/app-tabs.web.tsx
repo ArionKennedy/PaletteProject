@@ -22,6 +22,9 @@ export default function AppTabs() {
           <TabTrigger name="movies" href="/movies" asChild>
             <TabButton>Movies</TabButton>
           </TabTrigger>
+          <TabTrigger name="tv" href="/tv" asChild>
+            <TabButton>Tv Shows</TabButton>
+          </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
           </TabTrigger>
@@ -31,7 +34,11 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+// Use the native element ref rather than Expo Router's legacy View component ref.
+type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> &
+  React.RefAttributes<React.ComponentRef<typeof Pressable>>;
+
+export function TabButton({ children, isFocused, ...props }: TabButtonProps) {
   const theme = useTheme();
 
   return (
