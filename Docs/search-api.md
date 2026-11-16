@@ -8,7 +8,7 @@ This document describes the backend endpoints that let the client **search** for
 | `GET /api/lookup/{type}/{id}`      | Get the details of one media item by its provider id |
 
 - **Base URL (local dev):** `http://localhost:5251`
-- **Auth:** none required from the client. The backend adds the TMDB token itself.
+- **Auth:** send a Clerk session JWT as a bearer token in the `Authorization` header. The backend adds the TMDB token itself.
 - **Content type:** responses are `application/json` on success and `application/problem+json` on error.
 - **Field naming:** JSON properties are `camelCase`.
 - **OpenAPI:** in the Development environment, the generated spec is served at `GET /openapi/v1.json`.

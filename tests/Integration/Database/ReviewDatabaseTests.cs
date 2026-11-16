@@ -31,7 +31,7 @@ public class ReviewDatabaseTests
         var user = new User
         {
             UserId = userId,
-            Auth0Id = $"test-auth-{userId}",
+            ClerkId = $"test-auth-{userId}",
             Username = "testuser",
             Email = $"test-{userId}@example.com",
             DateJoined = DateTime.UtcNow
@@ -87,7 +87,7 @@ public class ReviewDatabaseTests
         var user = new User
         {
             UserId = userId,
-            Auth0Id = $"test-auth-{userId}",
+            ClerkId = $"test-auth-{userId}",
             Username = "testuser",
             Email = $"test-{userId}@example.com",
             DateJoined = DateTime.UtcNow
@@ -133,7 +133,7 @@ public class ReviewDatabaseTests
         var user = new User
         {
             UserId = userId,
-            Auth0Id = $"test-auth-{userId}",
+            ClerkId = $"test-auth-{userId}",
             Username = "testuser",
             Email = $"test-{userId}@example.com",
             DateJoined = DateTime.UtcNow
