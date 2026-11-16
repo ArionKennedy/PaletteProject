@@ -2,6 +2,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useTheme } from '@/hooks/use-theme';
 
+
 export default function AppTabs() {
   const theme = useTheme();
   return (
@@ -12,7 +13,7 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="movies">
         <NativeTabs.Trigger.Label>Movies</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
+          src={require('@/assets/images/tabIcons/movie.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
@@ -20,7 +21,7 @@ export default function AppTabs() {
       <NativeTabs.Trigger name='tv'>
         <NativeTabs.Trigger.Label>Tv Shows</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon 
-          src={require('@/assets/images/tabIcons/home.png')}
+          src={require('@/assets/images/tabIcons/tv.png')}
           renderingMode='template'
         />
       </NativeTabs.Trigger>
