@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using Palette.Api.Data;
+using Palette.Tests.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,78 +10,44 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Backend.Features.Lookup;
-using Backend.Features.Search;
-using Backend.Providers;
-using Backend.Providers.Tmdb;
-using Backend.Shared.Errors;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Palette.Tests.Integration.Api;
 
+[Collection("Postgres Integration Tests")]
 public class SearchAndLookupApiTests : IAsyncLifetime
 {
-    private WebApplication _app = null!;
+    private readonly PaletteApplicationFactory _factory;
+    private readonly string _identity = $"search-{Guid.NewGuid():N}";
     private HttpClient _client = null!;
 
-    public async Task InitializeAsync()
+    public SearchAndLookupApiTests(PostgresFixture fixture)
     {
-        var builder = WebApplication.CreateBuilder(
-            new WebApplicationOptions
-            {
-                EnvironmentName = "Testing",
-            });
+        _factory = new PaletteApplicationFactory(fixture.ConnectionString, () => new StubTmdbHandler());
+    }
 
-        builder.WebHost.UseTestServer();
-        builder.Logging.ClearProviders();
-
-        builder.Configuration.AddInMemoryCollection(
-            new Dictionary<string, string?>
-            {
-                ["Tmdb:BaseUrl"] = "https://tmdb.example/3/",
-                ["Tmdb:ImageBaseUrl"] =
-                    "https://image.tmdb.org/t/p/w500",
-                ["Tmdb:ReadAccessToken"] = "test-token",
-            });
-
-        // Use the real application registrations.
-        builder.Services.AddApiErrorHandling();
-        builder.Services.AddMediaProviders();
-        builder.Services.AddTmdbProvider(builder.Configuration);
-        builder.Services.AddSearchFeature();
-        builder.Services.AddLookupFeature();
-
-        // Replace only TMDB's external HTTP transport.
-        builder.Services
-            .AddHttpClient<TmdbClient>()
-            .ConfigurePrimaryHttpMessageHandler(
-                () => new StubTmdbHandler());
-
-        _app = builder.Build();
-
-        _app.UseExceptionHandler();
-        _app.MapSearchEndpoints();
-        _app.MapLookupEndpoints();
-
-        await _app.StartAsync();
-
-        _client = _app.GetTestClient();
+    public Task InitializeAsync()
+    {
+        _client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+        _client.DefaultRequestHeaders.Add(TestAuthenticationHandler.UserHeader, _identity);
+        return Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
     {
         _client?.Dispose();
-
-        if (_app is not null)
+        try
         {
-            await _app.DisposeAsync();
+            using var scope = _factory.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<PaletteDbContext>().Users
+                .Where(u => u.ClerkId == _identity).ExecuteDeleteAsync();
         }
+        finally { await _factory.DisposeAsync(); }
     }
 
     [Theory]

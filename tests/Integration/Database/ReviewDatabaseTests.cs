@@ -246,7 +246,7 @@ public class ReviewDatabaseTests
         var firstUser = new User
         {
             UserId = firstUserId,
-            Auth0Id = $"integration|{firstUserId:N}",
+            ClerkId = $"integration|{firstUserId:N}",
             Username = "First reviewer",
             Email = $"{firstUserId:N}@example.com",
             DateJoined = testTime,
@@ -255,7 +255,7 @@ public class ReviewDatabaseTests
         var secondUser = new User
         {
             UserId = secondUserId,
-            Auth0Id = $"integration|{secondUserId:N}",
+            ClerkId = $"integration|{secondUserId:N}",
             Username = "Second reviewer",
             Email = $"{secondUserId:N}@example.com",
             DateJoined = testTime,

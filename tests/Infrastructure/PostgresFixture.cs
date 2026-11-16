@@ -13,6 +13,8 @@ public class PostgresFixture : IAsyncLifetime
     private PostgreSqlContainer? _container;
     private DbContextOptions<PaletteDbContext>? _options;
 
+    public string ConnectionString { get; private set; } = null!;
+
     public PaletteDbContext CreateContext()
     {
         if (_options is null)
@@ -53,6 +55,8 @@ public class PostgresFixture : IAsyncLifetime
                 // preventing accidental use of a development database.
                 ValidateExternalConnection(connectionString);
             }
+
+            ConnectionString = connectionString;
 
             _options =
                 new DbContextOptionsBuilder<PaletteDbContext>()

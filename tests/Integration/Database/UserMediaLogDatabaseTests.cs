@@ -186,7 +186,7 @@ public class UserMediaLogDatabaseTests
         var user = new User
         {
             UserId = userId,
-            Auth0Id = $"integration|{userId:N}",
+            ClerkId = $"integration|{userId:N}",
             Username = "Log foreign key test user",
             Email = $"{userId:N}@example.com",
             DateJoined = new DateTime(
@@ -241,7 +241,7 @@ public class UserMediaLogDatabaseTests
             new User
             {
                 UserId = firstUserId,
-                Auth0Id = $"integration|{firstUserId:N}",
+                ClerkId = $"integration|{firstUserId:N}",
                 Username = "First viewer",
                 Email = $"{firstUserId:N}@example.com",
                 DateJoined = testTime,
@@ -249,7 +249,7 @@ public class UserMediaLogDatabaseTests
             new User
             {
                 UserId = secondUserId,
-                Auth0Id = $"integration|{secondUserId:N}",
+                ClerkId = $"integration|{secondUserId:N}",
                 Username = "Second viewer",
                 Email = $"{secondUserId:N}@example.com",
                 DateJoined = testTime,

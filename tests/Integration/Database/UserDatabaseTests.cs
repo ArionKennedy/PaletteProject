@@ -37,7 +37,7 @@ public class UserDatabaseTests
             .SingleAsync(item => item.UserId == user.UserId);
 
         Assert.Equal(user.UserId, saved.UserId);
-        Assert.Equal(user.Auth0Id, saved.Auth0Id);
+        Assert.Equal(user.ClerkId, saved.ClerkId);
         Assert.Equal(user.Username, saved.Username);
         Assert.Equal(user.Email, saved.Email);
         Assert.Equal(user.DateJoined, saved.DateJoined);
@@ -79,7 +79,7 @@ public class UserDatabaseTests
     }
 
     [Fact]
-    public async Task CannotInsertDuplicateAuth0Id()
+    public async Task CannotInsertDuplicateClerkId()
     {
         await using var db = _fixture.CreateContext();
         await using var transaction =
@@ -94,7 +94,7 @@ public class UserDatabaseTests
 
         // Keep the email and primary key different so only
         // the external identity constraint is violated.
-        second.Auth0Id = first.Auth0Id;
+        second.ClerkId = first.ClerkId;
 
         db.Users.Add(second);
 
@@ -108,13 +108,13 @@ public class UserDatabaseTests
             PostgresErrorCodes.UniqueViolation,
             postgres.SqlState);
         Assert.Equal(
-            "IX_USERS_Auth0Id",
+            "IX_USERS_ClerkId",
             postgres.ConstraintName);
     }
 
     [Theory]
     [InlineData("Email", "IX_USERS_Email")]
-    [InlineData("Auth0Id", "IX_USERS_Auth0Id")]
+    [InlineData("ClerkId", "IX_USERS_ClerkId")]
     public async Task CannotUpdateUserToAnotherUsersUniqueValue(
         string property,
         string expectedConstraint)
@@ -140,8 +140,8 @@ public class UserDatabaseTests
                 savedSecond.Email = first.Email;
                 break;
 
-            case "Auth0Id":
-                savedSecond.Auth0Id = first.Auth0Id;
+            case "ClerkId":
+                savedSecond.ClerkId = first.ClerkId;
                 break;
 
             default:
@@ -168,7 +168,7 @@ public class UserDatabaseTests
     [Theory]
     [InlineData("Email")]
     [InlineData("Username")]
-    [InlineData("Auth0Id")]
+    [InlineData("ClerkId")]
     public async Task CannotInsertNullRequiredField(
         string property)
     {
@@ -190,8 +190,8 @@ public class UserDatabaseTests
                 user.Username = null!;
                 break;
 
-            case "Auth0Id":
-                user.Auth0Id = null!;
+            case "ClerkId":
+                user.ClerkId = null!;
                 break;
 
             default:
@@ -233,7 +233,7 @@ public class UserDatabaseTests
         await db.SaveChangesAsync();
 
         var originalUserId = user.UserId;
-        var originalAuth0Id = user.Auth0Id;
+        var originalClerkId = user.ClerkId;
         var originalDateJoined = user.DateJoined;
 
         db.ChangeTracker.Clear();
@@ -259,7 +259,7 @@ public class UserDatabaseTests
         Assert.Equal(updatedEmail, updated.Email);
 
         Assert.Equal(originalUserId, updated.UserId);
-        Assert.Equal(originalAuth0Id, updated.Auth0Id);
+        Assert.Equal(originalClerkId, updated.ClerkId);
         Assert.Equal(originalDateJoined, updated.DateJoined);
     }
 
@@ -270,7 +270,7 @@ public class UserDatabaseTests
         return new User
         {
             UserId = id,
-            Auth0Id = $"integration|{id:N}",
+            ClerkId = $"integration|{id:N}",
             Username = $"user_{id:N}",
             Email = $"user-{id:N}@example.com",
 

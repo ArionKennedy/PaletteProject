@@ -49,7 +49,11 @@ EF Core InMemory tests are not used as evidence that PostgreSQL constraints or d
 
 HTTP integration tests use ASP.NET Core TestServer and the real endpoint, service, provider, mapper, and error-handling implementations.
 
-Only the external TMDB HTTP transport is replaced.
+`ApplicationStartupTests` and `SearchAndLookupApiTests` execute the real `Program.cs` through `PaletteApplicationFactory`. Tests replace the external TMDB HTTP transport and register a test authentication scheme. The real fallback authorization policy, exception handling, `EnsureUserExistsMiddleware`, `UserService`, and PostgreSQL persistence remain active.
+
+`TestAuthenticationHandler` authenticates only when the test client sends `X-Test-User`. It supplies a controlled Clerk ID, username, and email; clients without that header remain anonymous. This scheme is registered only by test factories. A dummy `Clerk:FrontendAPIURL` supplies startup configuration; these tests make no Clerk calls and do not validate real JWT signatures, expiry, issuers, or Clerk connectivity.
+
+Both classes share the existing migrated `PostgresFixture`, use unique test identities, and delete users they provision. An identity does not bypass user provisioning. `HealthEndpointsTests` remains a small endpoint-only test; authorization assertions belong to the real-entry-point tests.
 
 Tests cover:
 
@@ -57,7 +61,11 @@ Tests cover:
 - Movie and TV lookup responses, including media-specific fields.
 - Missing optional data.
 - Invalid requests and unsupported media types.
-- HTTP 400, 404, and 502 responses.
+- HTTP 400, 404, and 502 responses under a controlled authenticated identity.
+- Anonymous movie/TV search and lookup requests return 401 before business validation or provisioning.
+- `/api/test` stays public, including CORS requests without authentication.
+- `/api/health` requires authentication in the current application; it has no `AllowAnonymous` metadata.
+- Authenticated first requests provision a user, and subsequent requests reuse the row without overwriting the stored profile.
 - ProblemDetails content types, response fields, and trace IDs.
 - Protection against leaking upstream error details.
 
@@ -69,16 +77,17 @@ WebApplicationFactory starts the application’s actual entry point using isolat
 
 Startup tests verify:
 
-- Health and backend connection endpoints.
+- Authenticated health and anonymous backend connection endpoints.
 - Movie and TV search registration.
 - CORS behaviour for allowed and other origins.
 - CORS preflight handling.
 - Application exception-handling middleware.
+- Bearer authority and validation settings, including rejection of a missing Clerk URL, without fetching Clerk metadata.
 
 Development startup tests additionally verify:
 
 - Automatic application of migrations to a fresh PostgreSQL database.
-- Exposure of the OpenAPI document and expected API paths.
+- Authenticated access to the OpenAPI document and expected API paths; anonymous OpenAPI requests return 401 under the current fallback policy.
 - HTTP-to-HTTPS redirection while preserving the path and query string.
 - Successful HTTPS requests without another redirect.
 
@@ -105,7 +114,22 @@ Database tests cover:
 
 Tests clear EF tracking where necessary so that assertions verify database reads and PostgreSQL behaviour rather than only the tracked object graph.
 
-Database test data is isolated using transactions that are rolled back after each test.
+Most database test data is isolated using transactions that roll back after each test. User-provisioning race and unique-email failure tests require committed writes and use unique identities with explicit cleanup instead.
+
+### User Provisioning
+
+PR #80 already supplies `tests/Features/Users/UserServiceTests.cs`, which simulates a duplicate Clerk ID during a save using EF InMemory and verifies that middleware continues. That regression test is retained unchanged.
+
+Additional coverage lives in `tests/Unit/Users/UserProvisioningTests.cs`, `tests/Integration/Database/UserProvisioningDatabaseTests.cs`, and the real-entry-point startup tests:
+
+- Missing request/claims and invalid existence-query arguments.
+- Anonymous or missing/blank Clerk identity skips provisioning and continues the pipeline without database access.
+- Missing username/email fails provisioning and does not invoke the next middleware delegate.
+- First creation, existence lookup, explicit service profile updates, and preservation of identity/join date.
+- Cancellation propagation and unrelated PostgreSQL email-uniqueness failures.
+- Two concurrent first creations with separate DbContexts and real PostgreSQL unique-index enforcement. A shared asynchronous save interceptor holds both contexts after their absent-user SELECTs until both reach saving, then permits real INSERTs. Distinct emails isolate the Clerk ID constraint. The test asserts one actual PostgreSQL `23505` error on `IX_USERS_ClerkId`, recovery to the same persisted user, and detachment of the losing insert. A bounded cancellation token prevents a broken coordination path from hanging. No sleeps or synthetic database errors are used in this test.
+
+The startup tests also establish the current middleware behavior: it provisions absent users, but does not update an existing profile on every HTTP request. Explicit `SaveCurrentUserAsync` calls do update the profile.
 
 ## 4. Mocking and Test Utilities
 
@@ -167,7 +191,7 @@ dotnet test tests/Palette.Tests.csproj \
   --filter "FullyQualifiedName~Palette.Tests.Unit"
 ```
 
-Unit tests do not require PostgreSQL.
+Tests under `Palette.Tests.Unit` do not require PostgreSQL.
 
 ### Run HTTP Integration Tests
 
@@ -178,7 +202,14 @@ dotnet test tests/Palette.Tests.csproj \
 
 The current HTTP tests use isolated application settings and simulated TMDB responses where TMDB is exercised.
 
-This filter also includes `DevelopmentStartupTests`, which require Docker and create a separate temporary PostgreSQL database.
+This filter requires Docker: startup and search/lookup tests now use the shared PostgreSQL fixture for user provisioning. `DevelopmentStartupTests` additionally create a separate temporary PostgreSQL database.
+
+To run authentication/provisioning and API regression tests together:
+
+```bash
+dotnet test tests/Palette.Tests.csproj \
+  --filter "FullyQualifiedName~UserProvisioning|FullyQualifiedName~Integration.Api|FullyQualifiedName~UserServiceTests"
+```
 
 ### Run PostgreSQL Integration Tests
 
@@ -264,19 +295,15 @@ These exclusions separate generated infrastructure from application code. Databa
 
 Exclusion rules should be kept consistent between local and CI reports and documented whenever they change.
 
-### Recorded Local Evidence
+### Latest Test Results
 
-[Local verification on November 14, 2026](evidence/backend-test-coverage-2026-11-14.png) combined the existing test sources with the four Development startup tests in an isolated test project against the current backend:
+Last verified locally: November 15, 2026.
 
-- **330 tests passed, with no failures or skipped tests.**
-- **Line coverage: 100% — 597 of 597 lines.**
-- **Branch coverage: 100% — 54 of 54 branches.**
-- **Program.cs: 100% line coverage and 100% branch coverage.**
+- **Full backend suite: 357 passed; no failures or skipped tests.**
+- **Line coverage: 100.00% — 698 of 698 lines.**
+- **Branch coverage: 100.00% — 86 of 86 branches.**
 
-The generated-code exclusions described above were applied.
-
-These figures describe the latest recorded local verification. They do not establish that CI has produced the same result or that all acceptance criteria are covered. A normal repository test run and CI run should retain their own execution evidence after the new tests are added.
-
+[evidence screenshot](!evidence/backend-test-coverage-11-15.png)
 
 ### Continuous Integration
 
@@ -301,7 +328,8 @@ If a regression test fails, investigate whether the implementation regressed, th
 - **Acceptance criteria:** User-story acceptance criteria still need an explicit mapping to automated tests or recorded manual checks.
 - **CI evidence:** The updated coverage collection and artifact publication must be verified after the pull request is created.
 - **Deployed workflows:** Local automated tests do not replace representative checks of the deployed application.
-- **Future features:** Authentication and history/logging functionality require their own tests when integrated. Existing coverage percentages must not be interpreted as coverage of unmerged features.
+- **Future features:** No new Books or history/logging coverage is added for unmerged PRs. Existing model tests remain. Coverage percentages must not be interpreted as coverage of unmerged features.
+- **Clerk JWT validation:** The controlled authentication scheme tests authorization and provisioning, but does not establish production bearer-token validation. Offline signed-token tests for invalid signatures, issuer, and expiration remain a possible follow-up; live Clerk calls are outside this suite.
 - **Custom migrations:** Future migrations containing hand-written data transformations should receive dedicated upgrade/data-preservation tests even though migration classes are excluded from the application coverage metric.
 
 Testing is a shared team responsibility. Feature changes should include relevant regression tests, and the testing documentation should be updated as functionality and known gaps change.

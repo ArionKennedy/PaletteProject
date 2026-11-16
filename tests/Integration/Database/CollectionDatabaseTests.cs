@@ -63,8 +63,8 @@ public class CollectionDatabaseTests
             seed.User.UserId,
             saved.Collection.UserId);
         Assert.Equal(
-            seed.User.Auth0Id,
-            saved.Collection.User.Auth0Id);
+            seed.User.ClerkId,
+            saved.Collection.User.ClerkId);
 
         Assert.Equal(seed.Media.Title, saved.Media.Title);
         Assert.Equal(MediaType.Movie, saved.Media.MediaType);
@@ -446,7 +446,7 @@ public class CollectionDatabaseTests
         var user = new User
         {
             UserId = userId,
-            Auth0Id = $"integration|{userId:N}",
+            ClerkId = $"integration|{userId:N}",
             Username = $"user_{userId:N}",
             Email = $"user-{userId:N}@example.com",
             DateJoined = TestTime,

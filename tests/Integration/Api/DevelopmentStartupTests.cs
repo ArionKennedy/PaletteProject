@@ -1,3 +1,4 @@
+using Palette.Tests.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,16 +59,17 @@ public class DevelopmentStartupTests
         Assert.Equal(expected, applied);
 
         // Verify that startup created usable application tables.
-        Assert.Equal(0, await db.Users.CountAsync());
+        Assert.Equal(0, _fixture.UsersAfterStartup);
         Assert.Equal(0, await db.Media.CountAsync());
     }
 
     [Fact]
-    public async Task DevelopmentExposesOpenApiDocument()
+    public async Task DevelopmentExposesOpenApiDocumentToAuthenticatedUser()
     {
         using var client =
             _fixture.CreateClient("https://localhost");
 
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.UserHeader, "development-openapi-tests");
         using var response =
             await client.GetAsync("/openapi/v1.json");
 
@@ -104,6 +106,16 @@ public class DevelopmentStartupTests
                 out _));
     }
 
+    [Theory]
+    [InlineData("/openapi/v1.json")]
+    [InlineData("/api/health")]
+    public async Task DevelopmentProtectedEndpointsRequireAuthentication(string path)
+    {
+        using var client = _fixture.CreateClient("https://localhost");
+        using var response = await client.GetAsync(path);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     [Fact]
     public async Task DevelopmentRedirectsHttpToHttpsAndPreservesPathAndQuery()
     {
@@ -111,7 +123,7 @@ public class DevelopmentStartupTests
             _fixture.CreateClient("http://localhost");
 
         using var response =
-            await client.GetAsync("/api/health?probe=1");
+            await client.GetAsync("/api/test?probe=1");
 
         Assert.Equal(
             HttpStatusCode.TemporaryRedirect,
@@ -119,7 +131,7 @@ public class DevelopmentStartupTests
 
         Assert.Equal(
             new Uri(
-                "https://localhost:7443/api/health?probe=1"),
+                "https://localhost:7443/api/test?probe=1"),
             response.Headers.Location);
     }
 
@@ -130,7 +142,7 @@ public class DevelopmentStartupTests
             _fixture.CreateClient("https://localhost:7443");
 
         using var response =
-            await client.GetAsync("/api/health");
+            await client.GetAsync("/api/test");
 
         Assert.Equal(
             HttpStatusCode.OK,
@@ -142,9 +154,9 @@ public class DevelopmentStartupTests
             await response.Content.ReadAsStringAsync());
 
         Assert.Equal(
-            "ok",
+            "Connected to backend!",
             document.RootElement
-                .GetProperty("status")
+                .GetProperty("message")
                 .GetString());
     }
 }
@@ -167,6 +179,8 @@ public sealed class DevelopmentApplicationFixture
         get;
         private set;
     } = null!;
+
+    public int UsersAfterStartup { get; private set; }
 
     public string[] MigrationsBeforeStartup
     {
@@ -203,6 +217,8 @@ public sealed class DevelopmentApplicationFixture
             // Its Development branch must apply the migrations.
             using var client =
                 CreateClient("https://localhost");
+            using var scope = Factory.Services.CreateScope();
+            UsersAfterStartup = await scope.ServiceProvider.GetRequiredService<PaletteDbContext>().Users.CountAsync();
         }
         catch
         {
@@ -255,6 +271,8 @@ public sealed class DevelopmentApplicationFactory(
                         ["ConnectionStrings:DefaultConnection"] =
                             connectionString,
 
+                        ["Clerk:FrontendAPIURL"] = "https://clerk.example.test",
+
                         ["Tmdb:BaseUrl"] =
                             "https://tmdb.example/3/",
 
@@ -273,6 +291,7 @@ public sealed class DevelopmentApplicationFactory(
 
         builder.ConfigureServices(services =>
         {
+            TestAuthenticationHandler.Register(services);
             // TestServer has no real HTTPS listener.
             // Specify a deterministic redirect destination.
             services.Configure<HttpsRedirectionOptions>(
