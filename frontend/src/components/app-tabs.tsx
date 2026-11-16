@@ -2,8 +2,6 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useTheme } from '@/hooks/use-theme';
 
-import Entypo from '@expo/vector-icons/Entypo';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export default function AppTabs() {
   const theme = useTheme();
