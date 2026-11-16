@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
+import { Href } from 'expo-router'
 
 
 import Movie from '@/components/movie';
@@ -21,14 +22,13 @@ import { mediaSearch } from '@/services/search';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
 import { PageHeader } from '@/components/page-header';
 
-
 type MediaSearchProps = {
     mediaType: string;
     title: string;
-    detailPathname: string;
+    getDetailHref: (id: string) => Href;
 };
 
-export default function MediaSearchPage({mediaType, title, detailPathname} : MediaSearchProps) {
+export default function MediaSearchPage({mediaType, title, getDetailHref} : MediaSearchProps) {
   const theme = useTheme();
   const [searchResults, setSearchResults] = useState<MediaSearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -61,7 +61,7 @@ export default function MediaSearchPage({mediaType, title, detailPathname} : Med
   }
 
   const renderItem: ListRenderItem<MediaSearchResult> = ({ item }) => (
-    <Link href={{ pathname: detailPathname as any, params: { id: item.externalId } }} asChild>
+    <Link href={getDetailHref(item.externalId )} asChild>
       <Pressable
         accessibilityRole="link"
         accessibilityLabel={`Open details for ${item.title}`}
