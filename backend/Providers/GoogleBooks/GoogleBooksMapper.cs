@@ -40,9 +40,6 @@ public static class GoogleBooksMapper
     public static string? BuildPosterUrl(string? url) =>
         string.IsNullOrWhiteSpace(url) ? null : url.Replace("http://", "https://");
 
-    private static string? NullIfBlank(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value;
-
     private static string? PickIsbn(List<GoogleBooksIdentifier>? identifiers)
     {
         if (identifiers is null || identifiers.Count == 0)

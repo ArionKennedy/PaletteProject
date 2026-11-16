@@ -173,7 +173,7 @@ public class MediaSubtypeDatabaseTests
         "IX_TV_SHOWS_TmdbTvId")]
     [InlineData(
         MediaType.Book,
-        "IX_BOOKS_OpenLibraryId")]
+        "IX_BOOKS_GoogleBooksId")]
     [InlineData(
         MediaType.Game,
         "IX_GAMES_RawgGameId")]
@@ -425,7 +425,7 @@ public class MediaSubtypeDatabaseTests
     }
 
     [Fact]
-    public async Task BookCannotHaveNullOpenLibraryId()
+    public async Task BookCannotHaveNullGoogleBooksId()
     {
         await using var db = _fixture.CreateContext();
         await using var transaction =
@@ -451,7 +451,7 @@ public class MediaSubtypeDatabaseTests
             PostgresErrorCodes.NotNullViolation,
             postgres.SqlState);
         Assert.Equal("BOOKS", postgres.TableName);
-        Assert.Equal("OpenLibraryId", postgres.ColumnName);
+        Assert.Equal("GoogleBooksId", postgres.ColumnName);
     }
 
     private static void AddSubtype(
