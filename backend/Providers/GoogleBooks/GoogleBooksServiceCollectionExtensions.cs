@@ -3,7 +3,7 @@ using Backend.Constants;
 using Backend.Providers.GoogleBooks;
 using Microsoft.Extensions.Options;
 
-namespace Backend.Providers.Tmdb;
+namespace Backend.Providers.GoogleBooks;
 
 public static class GoogleBooksServiceCollectionExtensions
 {

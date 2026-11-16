@@ -4,6 +4,7 @@ using Backend.Features.Search;
 using Backend.Features.Users;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
+using Backend.Providers.GoogleBooks;
 using Backend.Shared.Errors;
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;

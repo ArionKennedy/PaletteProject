@@ -31,6 +31,8 @@ public sealed class GoogleBooksClient(HttpClient httpClient)
         var path = $"{GoogleBooksConstants.VOLUME_PATH}/{Uri.EscapeDataString(volumeId)}";
         using var response = await httpClient.GetAsync(path, cancellationToken);
 
+        // Google Books returns 503 for unknown/malformed volume ids, so treat it as "not found".
+        // Trade-off: a real outage is also reported as not found.
         if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
         {
             return null;
@@ -47,6 +49,6 @@ public sealed class GoogleBooksClient(HttpClient httpClient)
     {
         var body = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
 
-        return body ?? throw new JsonException("TMDB returned an empty response body.");
+        return body ?? throw new JsonException("GoogleBooks returned an empty response body.");
     }
 }
