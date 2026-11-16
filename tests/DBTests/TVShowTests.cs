@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
 using Palette.Api.Models;
+using Palette.Api.Enums;
 
 namespace Palette.Tests;
-
 
 public class TVShowTests {
 
@@ -20,7 +20,7 @@ public class TVShowTests {
     [Fact]
     public void CanAddTVShow() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Adventures of Himbeault", MediaType = "TVShow"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Adventures of Himbeault", MediaType = MediaType.TVShow});
         _context.TvShows.Add(new TvShow{MediaId = TestMediaId, TmdbTvId = 0});
 
         _context.SaveChanges();
@@ -32,7 +32,7 @@ public class TVShowTests {
     [Fact]
     public void CanGetTVShow() {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Adventures of Himbeault", MediaType = "TVShow"});
+        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Adventures of Himbeault", MediaType = MediaType.TVShow});
         _context.TvShows.Add(new TvShow{MediaId = TestMediaId, TmdbTvId = 0});
 
         _context.SaveChanges();

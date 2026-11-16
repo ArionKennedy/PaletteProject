@@ -31,13 +31,15 @@ public class PaletteDbContext : DbContext
         {
             entity.ToTable("USERS");
             entity.HasIndex(u => u.Email).IsUnique();
-            entity.HasIndex(u => u.Auth0Id).IsUnique();
+            entity.HasIndex(u => u.ClerkId).IsUnique();
         });
 
         // Media
         modelBuilder.Entity<Media>(entity =>
         {
             entity.ToTable("MEDIA");
+            entity.Property(m => m.MediaType)
+                .HasConversion<string>();
         });
 
         // Movies

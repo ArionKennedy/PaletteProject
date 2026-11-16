@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Palette.Api.Enums;
 
 namespace Palette.Api.Models;
 
@@ -12,7 +13,7 @@ public class Media
     public string? Description { get; set; }
     public string? PosterUrl { get; set; }
     [Required]
-    public string MediaType { get; set; } = string.Empty;
+    public MediaType MediaType { get; set; }
     
     public Movie? Movie { get; set; }
     public TvShow? TvShow { get; set; }
