@@ -13,18 +13,24 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="movies">
         <NativeTabs.Trigger.Label>Movies</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/movie.png')}
-          renderingMode="template"
+          sf="film" md="movie"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name='tv'>
         <NativeTabs.Trigger.Label>Tv Shows</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon 
-          src={require('@/assets/images/tabIcons/tv.png')}
-          renderingMode='template'
+          sf="tv" md="tv"
         />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="books">
+        <NativeTabs.Trigger.Label>Books</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="book" md="menu_book"
+        />
+      </NativeTabs.Trigger>
+
 
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>

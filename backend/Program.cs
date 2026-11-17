@@ -4,6 +4,7 @@ using Backend.Features.Search;
 using Backend.Features.Users;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
+using Backend.Providers.GoogleBooks;
 using Backend.Shared.Errors;
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
@@ -27,9 +28,11 @@ builder.Services.AddApiErrorHandling();
 // Register media providers and the search feature
 builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
+builder.Services.AddGoogleBooksProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
 builder.Services.AddUserService();
+
 
 builder.Services.AddCors(options =>
 {

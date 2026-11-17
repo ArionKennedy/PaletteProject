@@ -116,13 +116,13 @@ Replace `your_local_password` with a password of your choice. Make sure the `.en
 
 The Docker Compose configuration uses the following settings:
 
-| Setting | Value |
-|---|---|
-| Container | `palette-postgres` |
-| Database | `palette_dev` |
-| Username | `palette` |
-| Password | Value of `POSTGRES_PASSWORD` |
-| Port | `5432` |
+| Setting   | Value                        |
+| --------- | ---------------------------- |
+| Container | `palette-postgres`           |
+| Database  | `palette_dev`                |
+| Username  | `palette`                    |
+| Password  | Value of `POSTGRES_PASSWORD` |
+| Port      | `5432`                       |
 
 ### Start PostgreSQL
 
@@ -155,6 +155,22 @@ Replace `your_local_password` with the same password used in the Docker `.env` f
 
 If the backend project already has a `UserSecretsId`, you can skip `dotnet user-secrets init`.
 
+
+### Configure the Google Books Key
+
+The backend requires a Google Books API key to access movie information.
+
+Obtain the key from the team's shared development resources and store it using .NET User Secrets.
+
+From the project root:
+
+```bash
+dotnet user-secrets set "GoogleBooks:ApiKey" "<your_api_key>" --project backend
+```
+
+Replace `<your_api_key>` with the actual Google Books API key.
+
+Do not commit the token to the repository.
 
 ### Stop PostgreSQL
 

@@ -71,7 +71,7 @@ public class PaletteDbContext : DbContext
         {
             entity.ToTable("BOOKS");
 
-            entity.HasIndex(b => b.OpenLibraryId).IsUnique();
+            entity.HasIndex(b => b.GoogleBooksId).IsUnique();
 
             entity.HasOne(b => b.Media)
                 .WithOne(m => m.Book)
