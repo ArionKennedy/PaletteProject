@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Providers.Tmdb;
+using Backend.Providers.GoogleBooks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -357,7 +358,7 @@ public class ApplicationStartupTests : IAsyncLifetime
 
 // PaletteDbContext identifies the application assembly.
 // WebApplicationFactory executes that assembly's real Program.cs.
-public sealed class PaletteApplicationFactory(string connectionString, Func<HttpMessageHandler>? transport = null)
+public sealed class PaletteApplicationFactory(string connectionString, Func<HttpMessageHandler>? transport = null, Func<HttpMessageHandler>? googleBooksTransport = null)
     : WebApplicationFactory<PaletteDbContext>
 {
     protected override void ConfigureWebHost(
@@ -387,6 +388,8 @@ public sealed class PaletteApplicationFactory(string connectionString, Func<Http
                             "startup-test-token",
 
                         ["Tmdb:TimeoutSeconds"] = "10",
+
+                        ["GoogleBooks:BaseUrl"] = "https://books.example/books/v1/",
                     });
             });
 
@@ -403,8 +406,24 @@ public sealed class PaletteApplicationFactory(string connectionString, Func<Http
                 .AddHttpClient<TmdbClient>()
                 .ConfigurePrimaryHttpMessageHandler(
                     () => transport?.Invoke() ?? new StubTmdbHandler());
+            services
+                .AddHttpClient<GoogleBooksClient>()
+                .ConfigurePrimaryHttpMessageHandler(
+                    () => googleBooksTransport?.Invoke() ?? new UnexpectedGoogleBooksHandler());
+
         });
     }
+
+    // Tests that do not exercise books must never reach Google Books.
+    private sealed class UnexpectedGoogleBooksHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            throw new InvalidOperationException(
+                $"Unexpected Google Books request: {request.RequestUri}");
+    }
+
 
     private sealed class StubTmdbHandler
         : HttpMessageHandler

@@ -99,7 +99,7 @@ public class MediaSubtypeDatabaseTests
                 Assert.Equal(mediaId, saved.Book.MediaId);
                 Assert.Equal(
                     $"OL{externalId}W",
-                    saved.Book.OpenLibraryId);
+                    saved.Book.GoogleBooksId);
                 Assert.Equal(
                     "9781234567897",
                     saved.Book.ISBN);
@@ -173,7 +173,7 @@ public class MediaSubtypeDatabaseTests
         "IX_TV_SHOWS_TmdbTvId")]
     [InlineData(
         MediaType.Book,
-        "IX_BOOKS_OpenLibraryId")]
+        "IX_BOOKS_GoogleBooksId")]
     [InlineData(
         MediaType.Game,
         "IX_GAMES_RawgGameId")]
@@ -402,12 +402,12 @@ public class MediaSubtypeDatabaseTests
             await db.Database.BeginTransactionAsync();
 
         var mediaId = Guid.NewGuid();
-        var openLibraryId = $"OL{Guid.NewGuid():N}W";
+        var googleBooksId = $"OL{Guid.NewGuid():N}W";
 
         db.Set<Book>().Add(new Book
         {
             MediaId = mediaId,
-            OpenLibraryId = openLibraryId,
+            GoogleBooksId = googleBooksId,
             ISBN = null,
             Media = CreateMedia(mediaId, MediaType.Book),
         });
@@ -420,12 +420,12 @@ public class MediaSubtypeDatabaseTests
             .AsNoTracking()
             .SingleAsync(value => value.MediaId == mediaId);
 
-        Assert.Equal(openLibraryId, saved.OpenLibraryId);
+        Assert.Equal(googleBooksId, saved.GoogleBooksId);
         Assert.Null(saved.ISBN);
     }
 
     [Fact]
-    public async Task BookCannotHaveNullOpenLibraryId()
+    public async Task BookCannotHaveNullGoogleBooksId()
     {
         await using var db = _fixture.CreateContext();
         await using var transaction =
@@ -436,7 +436,7 @@ public class MediaSubtypeDatabaseTests
         db.Set<Book>().Add(new Book
         {
             MediaId = mediaId,
-            OpenLibraryId = null!,
+            GoogleBooksId = null!,
             ISBN = null,
             Media = CreateMedia(mediaId, MediaType.Book),
         });
@@ -451,7 +451,7 @@ public class MediaSubtypeDatabaseTests
             PostgresErrorCodes.NotNullViolation,
             postgres.SqlState);
         Assert.Equal("BOOKS", postgres.TableName);
-        Assert.Equal("OpenLibraryId", postgres.ColumnName);
+        Assert.Equal("GoogleBooksId", postgres.ColumnName);
     }
 
     private static void AddSubtype(
@@ -491,7 +491,7 @@ public class MediaSubtypeDatabaseTests
                 db.Set<Book>().Add(new Book
                 {
                     MediaId = mediaId,
-                    OpenLibraryId = $"OL{externalId}W",
+                    GoogleBooksId = $"OL{externalId}W",
                     ISBN = "9781234567897",
                     Media = media!,
                 });

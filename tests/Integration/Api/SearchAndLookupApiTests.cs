@@ -24,7 +24,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
 
     public SearchAndLookupApiTests(PostgresFixture fixture)
     {
-        _factory = new PaletteApplicationFactory(fixture.ConnectionString, () => new StubTmdbHandler());
+        _factory = new PaletteApplicationFactory(fixture.ConnectionString, () => new StubTmdbHandler(), () => new StubGoogleBooksHandler());
     }
 
     public Task InitializeAsync()
@@ -105,6 +105,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [Theory]
     [InlineData("movie")]
     [InlineData("tv")]
+    [InlineData("book")]
     public async Task SearchWithNoMatchesReturnsAnEmptyArray(
         string mediaType)
     {
@@ -125,6 +126,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [Theory]
     [InlineData("movie")]
     [InlineData("tv")]
+    [InlineData("book")]
     public async Task SearchLimitsResultsToTenItems(
         string mediaType)
     {
@@ -154,6 +156,9 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("/api/search/tv?q=")]
     [InlineData("/api/search/movie?q=%20%20")]
     [InlineData("/api/search/unregistered?q=Example")]
+    [InlineData("/api/search/book")]
+    [InlineData("/api/search/book?q=%20%20")]
+    [InlineData("/api/search/book?q=")]
     public async Task InvalidSearchReturnsBadRequest(
         string path)
     {
@@ -165,6 +170,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [Theory]
     [InlineData("movie", 200)]
     [InlineData("tv", 200)]
+    [InlineData("book", 200)]
     public async Task SearchAcceptsTwoHundredCharacterQuery(
         string mediaType,
         int length)
@@ -180,6 +186,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [Theory]
     [InlineData("movie")]
     [InlineData("tv")]
+    [InlineData("book")]
     public async Task SearchRejectsQueryLongerThanTwoHundredCharacters(
         string mediaType)
     {
@@ -347,6 +354,10 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("/api/search/tv?q=invalid-json")]
     [InlineData("/api/lookup/movie/501")]
     [InlineData("/api/lookup/tv/501")]
+    [InlineData("/api/search/book?q=upstream-error")]
+    [InlineData("/api/search/book?q=invalid-json")]
+    [InlineData("/api/lookup/book/server-error")]
+    [InlineData("/api/lookup/book/bad-json")]
     public async Task UpstreamFailureReturnsBadGatewayWithoutLeakingDetails(
         string path)
     {
@@ -383,6 +394,115 @@ public class SearchAndLookupApiTests : IAsyncLifetime
             problem.GetProperty("traceId").GetString()));
     }
 
+    // ---------- Books (Google Books) ----------
+
+    [Fact]
+    public async Task BookSearchReturnsMappedResults()
+    {
+        using var response = await _client.GetAsync("/api/search/book?q=Example");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var results = document.RootElement.GetProperty("results");
+
+        Assert.Equal(2, results.GetArrayLength());
+
+        var first = results[0];
+        Assert.Equal("vol-1", first.GetProperty("externalId").GetString());
+        Assert.Equal("book", first.GetProperty("mediaType").GetString());
+        Assert.Equal("Book 1", first.GetProperty("title").GetString());
+        Assert.Equal("2024-03-15", first.GetProperty("releaseDate").GetString());
+        // The stub serves an http:// thumbnail; the API must upgrade it to https.
+        Assert.Equal(
+            "https://books.example/cover.jpg",
+            first.GetProperty("posterUrl").GetString());
+
+        var second = results[1];
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("releaseDate").ValueKind);
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("posterUrl").ValueKind);
+    }
+
+    [Fact]
+    public async Task BookLookupIncludesCommonAndBookSpecificFields()
+    {
+        using var response = await _client.GetAsync("/api/lookup/book/vol-1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var result = document.RootElement;
+
+        Assert.Equal("vol-1", result.GetProperty("externalId").GetString());
+        Assert.Equal("Example Book", result.GetProperty("title").GetString());
+        Assert.Equal("2024-03-15", result.GetProperty("releaseDate").GetString());
+        // The stub serves HTML; the API must return cleaned plain text.
+        Assert.Equal("A description & more.", result.GetProperty("description").GetString());
+        Assert.Equal(
+            "https://books.example/cover.jpg",
+            result.GetProperty("posterUrl").GetString());
+
+        // Serialization of the derived BookLookupResult, not just the common fields.
+        Assert.Equal("9780441013593", result.GetProperty("isbn").GetString());
+        Assert.False(result.TryGetProperty("runtime", out _));
+        Assert.False(result.TryGetProperty("numberOfSeasons", out _));
+    }
+
+    [Fact]
+    public async Task BookLookupNormalizesMissingOptionalDataToNull()
+    {
+        using var response = await _client.GetAsync("/api/lookup/book/vol-bare");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var result = document.RootElement;
+
+        Assert.Equal("vol-bare", result.GetProperty("externalId").GetString());
+        Assert.Equal("Bare Book", result.GetProperty("title").GetString());
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("releaseDate").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("description").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("posterUrl").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("isbn").ValueKind);
+    }
+
+    [Fact]
+    public async Task BookLookupTrimsTheId()
+    {
+        using var response = await _client.GetAsync("/api/lookup/book/%20vol-1%20");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal("vol-1", document.RootElement.GetProperty("externalId").GetString());
+    }
+
+    [Fact]
+    public async Task BookLookupWithBlankIdReturnsBadRequest()
+    {
+        await AssertProblemAsync("/api/lookup/book/%20", HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UnknownBookVolumeReturnsNotFound()
+    {
+        // Google Books answers 503 for unknown ids; the API must report 404, not 502.
+        await AssertProblemAsync("/api/lookup/book/missing-volume", HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UnknownMediaTypeProblemListsBookAsSupported()
+    {
+        using var response = await _client.GetAsync("/api/search/unregistered?q=x");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("book", await response.Content.ReadAsStringAsync());
+    }
+
+
     private async Task AssertProblemAsync(
         string path,
         HttpStatusCode expectedStatus)
@@ -410,6 +530,121 @@ public class SearchAndLookupApiTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(
             problem.GetProperty("traceId").GetString()));
     }
+
+    private sealed class StubGoogleBooksHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var uri = request.RequestUri
+                ?? throw new InvalidOperationException("The HTTP request has no URI.");
+
+            var path = uri.AbsolutePath;
+
+            if (path == "/books/v1/volumes")
+            {
+                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+                switch (query["q"])
+                {
+                    case "upstream-error":
+                        return Respond(
+                            HttpStatusCode.ServiceUnavailable,
+                            """{ "error": "sensitive-upstream-marker" }""");
+
+                    case "invalid-json":
+                        return Respond(
+                            HttpStatusCode.OK,
+                            "sensitive-upstream-marker: invalid JSON");
+
+                    case "empty":
+                        // Google Books omits "items" entirely when nothing matches.
+                        return Respond(HttpStatusCode.OK, """{ "totalItems": 0 }""");
+
+                    case "many":
+                        // Google Books enforces maxResults itself, so the API must forward it.
+                        return Respond(
+                            HttpStatusCode.OK,
+                            CreateSearchBody(int.Parse(query["maxResults"]!)));
+
+                    default:
+                        return Respond(HttpStatusCode.OK, CreateSearchBody(2));
+                }
+            }
+
+            if (path.StartsWith("/books/v1/volumes/", StringComparison.Ordinal))
+            {
+                var id = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
+
+                return id switch
+                {
+                    "vol-1" => Respond(HttpStatusCode.OK, """
+                    {
+                      "id": "vol-1",
+                      "volumeInfo": {
+                        "title": "Example Book",
+                        "publishedDate": "2024-03-15",
+                        "description": "<p>A description &amp; more.</p>",
+                        "imageLinks": { "thumbnail": "http://books.example/cover.jpg" },
+                        "industryIdentifiers": [
+                          { "type": "ISBN_10", "identifier": "0441013597" },
+                          { "type": "ISBN_13", "identifier": "9780441013593" }
+                        ]
+                      }
+                    }
+                    """),
+
+                    "vol-bare" => Respond(HttpStatusCode.OK, """
+                    { "id": "vol-bare", "volumeInfo": { "title": "Bare Book" } }
+                    """),
+
+                    "server-error" => Respond(
+                        HttpStatusCode.InternalServerError,
+                        """{ "error": "sensitive-upstream-marker" }"""),
+
+                    "bad-json" => Respond(
+                        HttpStatusCode.OK,
+                        "sensitive-upstream-marker: invalid JSON"),
+
+                    // Real Google Books answers 503 for unknown or malformed volume ids.
+                    _ => Respond(HttpStatusCode.ServiceUnavailable, "{}"),
+                };
+            }
+
+            throw new InvalidOperationException($"Unexpected upstream request: {uri}");
+        }
+
+        private static string CreateSearchBody(int count)
+        {
+            var items = Enumerable
+                .Range(0, count)
+                .Select(index => new
+                {
+                    id = $"vol-{index + 1}",
+                    volumeInfo = new Dictionary<string, object?>
+                    {
+                        ["title"] = $"Book {index + 1}",
+                        ["publishedDate"] = index == 0 ? "2024-03-15" : null,
+                        ["imageLinks"] = index == 0
+                            ? new { thumbnail = "http://books.example/cover.jpg" }
+                            : null,
+                    },
+                })
+                .ToArray();
+
+            return JsonSerializer.Serialize(new { totalItems = count, items });
+        }
+
+        private static Task<HttpResponseMessage> Respond(HttpStatusCode statusCode, string body) =>
+            Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            });
+    }
+
 
     private sealed class StubTmdbHandler : HttpMessageHandler
     {

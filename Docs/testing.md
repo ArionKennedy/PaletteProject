@@ -8,7 +8,7 @@ Palette uses unit tests and integration tests to verify application behaviour an
 
 The backend regression suite covers:
 
-- Normal search and lookup workflows for movies and TV shows.
+- Normal search and lookup workflows for movies and TV shows and books.
 - Input validation, boundary values, missing data, and failure handling.
 - External-provider request construction and response processing.
 - HTTP response contracts and application middleware.
@@ -29,17 +29,21 @@ Coverage percentages help identify untested code, but do not establish that ever
 
 ### Tested Components
 
-| Component | Tested behaviour |
-| --- | --- |
-| SearchService | Missing queries, query-length boundaries, trimming, provider selection, result-limit forwarding, empty results, errors, and cancellation |
-| LookupService | Missing IDs, trimming, provider selection, cancellation-token forwarding, and error propagation |
-| MediaProviderResolver | Case-insensitive resolution, unknown types, duplicate registrations, and independent provider selection |
-| TmdbMapper | Movie and TV mapping, dates, poster URLs, descriptions, runtimes, season counts, and missing optional values |
-| ProviderCallGuard | Successful calls, HTTP and JSON failures, upstream cancellation, caller cancellation, and unexpected exceptions |
-| TmdbClient | Request paths, query encoding, response deserialization, HTTP failures, invalid responses, and cancellation |
-| Movie and TV providers | ID validation, result limits, mapping, missing items, provider failures, and cancellation |
-| ApiExceptionHandler | ProblemDetails responses, trace IDs, logging levels, internal-detail protection, and unhandled exceptions |
-| TMDB configuration | Required settings, URL validation, timeout boundaries, defaults, client configuration, and provider registration |
+| Component                  | Tested behaviour                                                                                                                                                                        |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SearchService              | Missing queries, query-length boundaries, trimming, provider selection, result-limit forwarding, empty results, errors, and cancellation                                                |
+| LookupService              | Missing IDs, trimming, provider selection, cancellation-token forwarding, and error propagation                                                                                         |
+| MediaProviderResolver      | Case-insensitive resolution, unknown types, duplicate registrations, and independent provider selection                                                                                 |
+| TmdbMapper                 | Movie and TV mapping, dates, poster URLs, descriptions, runtimes, season counts, and missing optional values                                                                            |
+| ProviderCallGuard          | Successful calls, HTTP and JSON failures, upstream cancellation, caller cancellation, and unexpected exceptions                                                                         |
+| TmdbClient                 | Request paths, query encoding, response deserialization, HTTP failures, invalid responses, and cancellation                                                                             |
+| Movie and TV providers     | ID validation, result limits, mapping, missing items, provider failures, and cancellation                                                                                               |
+| ApiExceptionHandler        | ProblemDetails responses, trace IDs, logging levels, internal-detail protection, and unhandled exceptions                                                                               |
+| TMDB configuration         | Required settings, URL validation, timeout boundaries, defaults, client configuration, and provider registration                                                                        |
+| GoogleBooksMapper          | Search and lookup mapping, published-date formats (full, month, year), HTTPS poster URLs, ISBN-13/ISBN-10 priority and trimming, HTML description cleaning, and missing optional values |
+| GoogleBooksClient          | Request paths, query and volume-id escaping, response deserialization, 503 treated as not found, HTTP failures, empty or invalid bodies, required fields, and cancellation              |
+| Google Books provider      | Result mapping and order, empty results, missing volume to `MediaNotFoundException`, provider failures, and cancellation                                                                |
+| Google Books configuration | Required and valid BaseUrl, trailing slash, optional API key header, default timeout, client configuration, and provider registration                                                   |
 
 EF Core InMemory tests are not used as evidence that PostgreSQL constraints or database-side cascade deletion work correctly. Those behaviours are verified separately against PostgreSQL.
 
@@ -49,16 +53,18 @@ EF Core InMemory tests are not used as evidence that PostgreSQL constraints or d
 
 HTTP integration tests use ASP.NET Core TestServer and the real endpoint, service, provider, mapper, and error-handling implementations.
 
-`ApplicationStartupTests` and `SearchAndLookupApiTests` execute the real `Program.cs` through `PaletteApplicationFactory`. Tests replace the external TMDB HTTP transport and register a test authentication scheme. The real fallback authorization policy, exception handling, `EnsureUserExistsMiddleware`, `UserService`, and PostgreSQL persistence remain active.
+`ApplicationStartupTests` and `SearchAndLookupApiTests` execute the real `Program.cs` through `PaletteApplicationFactory`. Tests replace the external TMDB and Google Books HTTP transport and register a test authentication scheme. The real fallback authorization policy, exception handling, `EnsureUserExistsMiddleware`, `UserService`, and PostgreSQL persistence remain active.
 
 `TestAuthenticationHandler` authenticates only when the test client sends `X-Test-User`. It supplies a controlled Clerk ID, username, and email; clients without that header remain anonymous. This scheme is registered only by test factories. A dummy `Clerk:FrontendAPIURL` supplies startup configuration; these tests make no Clerk calls and do not validate real JWT signatures, expiry, issuers, or Clerk connectivity.
 
 Both classes share the existing migrated `PostgresFixture`, use unique test identities, and delete users they provision. An identity does not bypass user provisioning. `HealthEndpointsTests` remains a small endpoint-only test; authorization assertions belong to the real-entry-point tests.
 
+Tests that do not excercise books uses a handler that throws on any Google Books request, so not test can reach the network by accident.
+
 Tests cover:
 
-- Movie and TV search results, empty results, and result limits.
-- Movie and TV lookup responses, including media-specific fields.
+- Movie, TV and Book search results, empty results, and result limits (the book limit is forwarded to Google Books as `maxResults`).
+- Movie, TV and Book lookup responses, including media-specific fields (book `isbn`, cleaned description, HTTPS poster).
 - Missing optional data.
 - Invalid requests and unsupported media types.
 - HTTP 400, 404, and 502 responses under a controlled authenticated identity.
@@ -68,8 +74,9 @@ Tests cover:
 - Authenticated first requests provision a user, and subsequent requests reuse the row without overwriting the stored profile.
 - ProblemDetails content types, response fields, and trace IDs.
 - Protection against leaking upstream error details.
+- Book lookup of an unknown volume returns 404 (Google Books reports it as HTTP 503), while a 503 on search returns 502.
 
-These tests do not require a real TMDB account or API token.
+These tests do not require a real TMDB account, token or Google Books API key.
 
 ### Application Startup Tests
 
@@ -141,7 +148,7 @@ Service tests configure its responses and inspect recorded calls. Unexpected, un
 
 ### Stub HTTP Handlers
 
-Stub handlers provide deterministic HTTP responses to the real `TmdbClient`.
+Stub handlers provide deterministic HTTP responses to the real `TmdbClient` and `GoogleBooksClient`.
 
 They simulate successful responses, missing items, invalid JSON, network errors, and cancellation. Automated tests do not depend on live TMDB data or availability.
 
@@ -297,13 +304,13 @@ Exclusion rules should be kept consistent between local and CI reports and docum
 
 ### Latest Test Results
 
-Last verified locally: November 15, 2026.
+Last verified locally: November 16, 2026.
 
-- **Full backend suite: 357 passed; no failures or skipped tests.**
-- **Line coverage: 100.00% — 698 of 698 lines.**
-- **Branch coverage: 100.00% — 86 of 86 branches.**
+- **Full backend suite: 460 passed; no failures or skipped tests.**
+- **Line coverage: 100.00% — 832 of 832 lines.**
+- **Branch coverage: 100.00% — 118 of 118 branches.**
 
-[evidence screenshot](!evidence/backend-test-coverage-11-15.png)
+![evidence screenshot](evidence/backend-test-coverage-11-16.png)
 
 ### Continuous Integration
 
@@ -328,7 +335,7 @@ If a regression test fails, investigate whether the implementation regressed, th
 - **Acceptance criteria:** User-story acceptance criteria still need an explicit mapping to automated tests or recorded manual checks.
 - **CI evidence:** The updated coverage collection and artifact publication must be verified after the pull request is created.
 - **Deployed workflows:** Local automated tests do not replace representative checks of the deployed application.
-- **Future features:** No new Books or history/logging coverage is added for unmerged PRs. Existing model tests remain. Coverage percentages must not be interpreted as coverage of unmerged features.
+- **Future features:** No history/logging coverage is added for unmerged PRs. Existing model tests remain. Coverage percentages must not be interpreted as coverage of unmerged features.
 - **Clerk JWT validation:** The controlled authentication scheme tests authorization and provisioning, but does not establish production bearer-token validation. Offline signed-token tests for invalid signatures, issuer, and expiration remain a possible follow-up; live Clerk calls are outside this suite.
 - **Custom migrations:** Future migrations containing hand-written data transformations should receive dedicated upgrade/data-preservation tests even though migration classes are excluded from the application coverage metric.
 
