@@ -1,4 +1,3 @@
-
 using Palette.Api.MachineLearning;
 
 namespace Palette.Tests.MachineLearning;

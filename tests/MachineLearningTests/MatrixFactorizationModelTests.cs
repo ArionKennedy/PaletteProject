@@ -1,4 +1,3 @@
-
 using Palette.Api.MachineLearning;
 using Xunit;
 
