@@ -37,6 +37,8 @@ describe('<SignUpForm />', () => {
     mockSignUpReady();
   });
 
+
+
   test('renders the form title, inputs, and Continue button', () => {
     render(<SignUpForm />);
 
@@ -44,6 +46,8 @@ describe('<SignUpForm />', () => {
     expect(screen.getByPlaceholderText('m@example.com')).toBeTruthy();
     expect(screen.getByText('Continue')).toBeTruthy();
   });
+
+
 
   test('shows a loading spinner while Clerk is initialising', () => {
     (useAuth as jest.Mock).mockReturnValue({ isLoaded: false });
@@ -53,17 +57,21 @@ describe('<SignUpForm />', () => {
     expect(screen.queryByText('Create Your Palette Account')).toBeNull();
   });
 
+
+
   test('Continue button is disabled when fields are empty', () => {
     render(<SignUpForm />);
 
     expect(screen.getByText('Continue')).toBeDisabled();
   });
 
+
+
   test('shows an email validation error when the email is invalid', async () => {
-    render(<SignUpForm />);
+    await render(<SignUpForm />);
 
     const { TextInput } = require('react-native');
-    const inputs = screen.UNSAFE_getAllByType(TextInput);
+    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
     fireEvent.changeText(inputs[0], 'notanemail');   // email
     fireEvent.changeText(inputs[1], 'myusername');   // username
     fireEvent.changeText(inputs[2], 'password123');  // password
@@ -75,6 +83,8 @@ describe('<SignUpForm />', () => {
     });
   });
 
+
+
   test('calls signUp.password with the entered credentials on submit', async () => {
     const mockPassword = jest.fn().mockResolvedValue({ error: null });
     const mockFinalize = jest.fn().mockImplementation(({ navigate }) => navigate());
@@ -84,10 +94,10 @@ describe('<SignUpForm />', () => {
       fetchStatus: 'idle',
     });
 
-    render(<SignUpForm />);
+    await render(<SignUpForm />);
 
     const { TextInput } = require('react-native');
-    const inputs = screen.UNSAFE_getAllByType(TextInput);
+    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
     fireEvent.changeText(inputs[0], 'user@example.com');
     fireEvent.changeText(inputs[1], 'myusername');
     fireEvent.changeText(inputs[2], 'password123');
@@ -102,6 +112,8 @@ describe('<SignUpForm />', () => {
     });
   });
 
+
+
   test('navigates to movies after a successful sign up', async () => {
     const mockFinalize = jest.fn().mockImplementation(({ navigate }) => navigate());
     (useSignUp as jest.Mock).mockReturnValue({
@@ -114,10 +126,10 @@ describe('<SignUpForm />', () => {
       fetchStatus: 'idle',
     });
 
-    render(<SignUpForm />);
+    await render(<SignUpForm />);
 
     const { TextInput } = require('react-native');
-    const inputs = screen.UNSAFE_getAllByType(TextInput);
+    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
     fireEvent.changeText(inputs[0], 'user@example.com');
     fireEvent.changeText(inputs[1], 'myusername');
     fireEvent.changeText(inputs[2], 'password123');
@@ -128,6 +140,8 @@ describe('<SignUpForm />', () => {
     });
   });
 
+
+  
   test('pressing "Sign in" navigates to the login screen', () => {
     render(<SignUpForm />);
 

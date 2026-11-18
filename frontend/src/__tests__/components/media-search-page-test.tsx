@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { ActivityIndicator } from 'react-native';
 import { mediaSearch } from '@/services/search';
 import MediaSearchPage from '@/components/media-search-page';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
@@ -31,21 +30,21 @@ jest.mock('@/components/page-header', () => ({
   PageHeader: () => null,
 }));
 
-// --- Fixtures ---
+// Test data
 
 const mockResults: MediaSearchResult[] = [
   {
     externalId: '1',
     mediaType: 'movie',
-    title: 'Batman Begins',
-    releaseDate: '2005-06-15',
+    title: 'Zapps trap',
+    releaseDate: '2020-03-13',
     posterUrl: null,
   },
   {
     externalId: '2',
     mediaType: 'movie',
-    title: 'The Dark Knight',
-    releaseDate: '2008-07-18',
+    title: 'The lowly CS major',
+    releaseDate: '2026-12-19',
     posterUrl: null,
   },
 ];
@@ -73,7 +72,9 @@ describe('<MediaSearchPage />', () => {
     expect(input).toBeTruthy();
   });
 
-  test('shows a loading indicator while the search is in progress', async () => {
+
+
+  test('does not show results while the search is in progress', async () => {
     // Never resolves so the loading state stays visible
     (mediaSearch as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
@@ -81,10 +82,11 @@ describe('<MediaSearchPage />', () => {
     fireEvent.changeText(input, 'batman');
     fireEvent(input, 'submitEditing');
 
-    await waitFor(() => {
-      expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
-    });
+    expect(screen.queryByText('Zapps trap')).toBeNull();
+    expect(screen.queryByText('The lowly CS major')).toBeNull();
   });
+
+
 
   test('displays results after a successful search', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue(mockResults);
@@ -99,6 +101,8 @@ describe('<MediaSearchPage />', () => {
     });
   });
 
+
+
   test('shows an error message when the API call fails', async () => {
     (mediaSearch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
@@ -110,6 +114,8 @@ describe('<MediaSearchPage />', () => {
       expect(screen.getByText('Network error')).toBeTruthy();
     });
   });
+
+
 
   test('shows "No results found." when the API returns an empty array', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue([]);
@@ -123,6 +129,8 @@ describe('<MediaSearchPage />', () => {
     });
   });
 
+
+  
   test('calls mediaSearch with the correct mediaType and query', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue([]);
 

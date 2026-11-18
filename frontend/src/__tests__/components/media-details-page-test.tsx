@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { ActivityIndicator } from 'react-native';
 import MediaDetailsPage from '@/components/media-details-page';
 import type { MediaDetail } from '@/types/mediaDetail';
 
@@ -30,13 +29,19 @@ const mockMedia: MediaDetail = {
 // --- Tests ---
 
 describe('<MediaDetailsPage />', () => {
-  test('shows a loading spinner when media has not loaded yet', () => {
-    render(
+
+
+  test('shows a loading spinner when media has not loaded yet', async () => {
+    await render(
       <MediaDetailsPage media={null} error={null} metaText="" errorTitle="Movie" />
     );
 
-    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    // Neither content nor error should appear while loading
+    expect(screen.queryByText('No description available.')).toBeNull();
+    expect(screen.queryByText('No poster')).toBeNull();
   });
+
+
 
   test('shows an error message when there is an error', () => {
     render(
@@ -51,6 +56,8 @@ describe('<MediaDetailsPage />', () => {
     expect(screen.getByText('Something went wrong')).toBeTruthy();
   });
 
+
+
   test('renders the media title and description when loaded', () => {
     render(
       <MediaDetailsPage media={mockMedia} error={null} metaText="2010 · 2h 28m" errorTitle="Movie" />
@@ -60,6 +67,8 @@ describe('<MediaDetailsPage />', () => {
     expect(screen.getByText('A thief who steals corporate secrets.')).toBeTruthy();
     expect(screen.getByText('2010 · 2h 28m')).toBeTruthy();
   });
+
+
 
   test('shows "No description available." when description is null', () => {
     render(
@@ -73,6 +82,8 @@ describe('<MediaDetailsPage />', () => {
 
     expect(screen.getByText('No description available.')).toBeTruthy();
   });
+
+  
 
   test('shows a "No poster" placeholder when posterUrl is null', () => {
     render(

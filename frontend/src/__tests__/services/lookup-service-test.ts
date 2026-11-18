@@ -32,6 +32,8 @@ const mockTv = {
 // Movie lookup tests
 
 describe('movieLookup()', () => {
+
+
   test('returns the movie object on success', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -42,6 +44,8 @@ describe('movieLookup()', () => {
 
     expect(result).toEqual(mockMovie);
   });
+
+
 
   test('calls the correct URL', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
@@ -57,6 +61,8 @@ describe('movieLookup()', () => {
     );
   });
 
+
+  
   test('throws an error message on a failed response', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -66,11 +72,15 @@ describe('movieLookup()', () => {
 
     await expect(movieLookup('99999')).rejects.toThrow('Movie not found');
   });
+
+
 });
 
 // TV lookup tests
 
 describe('tvLookup()', () => {
+
+
   test('returns the TV show object on success', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -81,6 +91,8 @@ describe('tvLookup()', () => {
 
     expect(result).toEqual(mockTv);
   });
+
+
 
   test('calls the correct URL', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
@@ -96,6 +108,8 @@ describe('tvLookup()', () => {
     );
   });
 
+
+
   test('throws an error message on a failed response', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -105,4 +119,6 @@ describe('tvLookup()', () => {
 
     await expect(tvLookup('99999')).rejects.toThrow('TV show not found');
   });
+
+  
 });

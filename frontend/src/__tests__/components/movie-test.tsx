@@ -26,6 +26,8 @@ const baseMovie: MediaSearchResult = {
 // --- Tests ---
 
 describe('<Movie />', () => {
+
+
   test('renders the title, media type, and release date', () => {
     render(<Movie movie={baseMovie} />);
 
@@ -34,17 +36,23 @@ describe('<Movie />', () => {
     expect(screen.getByText('2010-07-16')).toBeTruthy();
   });
 
+
+
   test('shows "Release date unknown" when releaseDate is null', () => {
     render(<Movie movie={{ ...baseMovie, releaseDate: null }} />);
 
     expect(screen.getByText('Release date unknown')).toBeTruthy();
   });
 
+
+
   test('shows a "No poster" placeholder when posterUrl is null', () => {
     render(<Movie movie={{ ...baseMovie, posterUrl: null }} />);
 
     expect(screen.getByText('No poster')).toBeTruthy();
   });
+
+  
 
   test('does not show "No poster" when a posterUrl is provided', () => {
     render(<Movie movie={baseMovie} />);

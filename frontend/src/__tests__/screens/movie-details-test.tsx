@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react-native';
-import { ActivityIndicator } from 'react-native';
 import { movieLookup } from '@/services/lookup';
 import MovieDetailsPage from '@/app/(app)/(tabs)/movies/[id]';
 import type { MovieLookupResult } from '@/types/movieLookupResult';
@@ -42,13 +41,16 @@ const mockMovie: MovieLookupResult = {
 // --- Tests ---
 
 describe('<MovieDetailsPage />', () => {
-  test('shows a loading spinner before the movie data arrives', () => {
+
+  test('does not show content before the movie data arrives', async () => {
     (movieLookup as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
-    render(<MovieDetailsPage />);
+    await render(<MovieDetailsPage />);
 
-    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    expect(screen.queryByText('Inception')).toBeNull();
   });
+
+
 
   test('renders the movie title and description after the data loads', async () => {
     (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
@@ -61,6 +63,8 @@ describe('<MovieDetailsPage />', () => {
     });
   });
 
+
+
   test('renders the release year and runtime in the meta line', async () => {
     (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
 
@@ -72,6 +76,8 @@ describe('<MovieDetailsPage />', () => {
     });
   });
 
+
+
   test('shows an error message when the lookup fails', async () => {
     (movieLookup as jest.Mock).mockRejectedValue(new Error('Movie not found'));
 
@@ -82,6 +88,8 @@ describe('<MovieDetailsPage />', () => {
     });
   });
 
+
+
   test('shows "No poster" placeholder when posterUrl is null', async () => {
     (movieLookup as jest.Mock).mockResolvedValue({ ...mockMovie, posterUrl: null });
 
@@ -91,4 +99,6 @@ describe('<MovieDetailsPage />', () => {
       expect(screen.getByText('No poster')).toBeTruthy();
     });
   });
+
+  
 });

@@ -18,6 +18,8 @@ jest.mock('expo-router', () => ({
 }));
 
 describe('<IndexRoute />', () => {
+
+
   test('redirects to movies when the user is signed in', () => {
     (useAuth as jest.Mock).mockReturnValue({ isSignedIn: true });
 
@@ -26,6 +28,8 @@ describe('<IndexRoute />', () => {
     expect(mockRedirectHref).toHaveBeenCalledWith('/(app)/(tabs)/movies');
   });
 
+
+
   test('redirects to login when the user is not signed in', () => {
     (useAuth as jest.Mock).mockReturnValue({ isSignedIn: false });
 
@@ -33,4 +37,6 @@ describe('<IndexRoute />', () => {
 
     expect(mockRedirectHref).toHaveBeenCalledWith('/login');
   });
+
+  
 });
