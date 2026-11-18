@@ -11,6 +11,9 @@
       ]
     }
   },
+  "compilerOptions": {
+    "types": ["jest"]
+  },
   "include": [
     "**/*.ts",
     "**/*.tsx",

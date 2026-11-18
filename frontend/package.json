@@ -52,7 +52,11 @@
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.3"
   },
+  "jest": {
+    "preset": "jest-expo"
+  },
   "scripts": {
+    "test": "jest --watchALL",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
