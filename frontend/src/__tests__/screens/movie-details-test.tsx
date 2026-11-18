@@ -1,0 +1,94 @@
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react-native';
+import { ActivityIndicator } from 'react-native';
+import { movieLookup } from '@/services/lookup';
+import MovieDetailsPage from '@/app/(app)/(tabs)/movies/[id]';
+import type { MovieLookupResult } from '@/types/movieLookupResult';
+
+// --- Mocks ---
+
+jest.mock('@/services/lookup', () => ({
+  movieLookup: jest.fn(),
+  tvLookup: jest.fn(),
+}));
+
+// useLocalSearchParams provides the route param (:id) to the component
+jest.mock('expo-router', () => ({
+  useLocalSearchParams: jest.fn(() => ({ id: '27205' })),
+  Stack: { Screen: () => null },
+}));
+
+jest.mock('@/hooks/use-theme', () => ({
+  useTheme: () => ({
+    background: '#000000',
+    text: '#ffffff',
+    textSecondary: '#888888',
+    backgroundElement: '#111111',
+  }),
+}));
+
+// --- Fixtures ---
+
+const mockMovie: MovieLookupResult = {
+  externalId: '27205',
+  mediaType: 'movie',
+  title: 'Inception',
+  releaseDate: '2010-07-16',
+  posterUrl: null,
+  description: 'A thief who steals corporate secrets.',
+  runtime: 148,
+};
+
+// --- Tests ---
+
+describe('<MovieDetailsPage />', () => {
+  test('shows a loading spinner before the movie data arrives', () => {
+    (movieLookup as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    render(<MovieDetailsPage />);
+
+    expect(screen.UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+  });
+
+  test('renders the movie title and description after the data loads', async () => {
+    (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
+
+    render(<MovieDetailsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Inception')).toBeTruthy();
+      expect(screen.getByText('A thief who steals corporate secrets.')).toBeTruthy();
+    });
+  });
+
+  test('renders the release year and runtime in the meta line', async () => {
+    (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
+
+    render(<MovieDetailsPage />);
+
+    await waitFor(() => {
+      // formatRuntime(148) = "2h 28m"
+      expect(screen.getByText('2010 · 2h 28m')).toBeTruthy();
+    });
+  });
+
+  test('shows an error message when the lookup fails', async () => {
+    (movieLookup as jest.Mock).mockRejectedValue(new Error('Movie not found'));
+
+    render(<MovieDetailsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Movie not found')).toBeTruthy();
+    });
+  });
+
+  test('shows "No poster" placeholder when posterUrl is null', async () => {
+    (movieLookup as jest.Mock).mockResolvedValue({ ...mockMovie, posterUrl: null });
+
+    render(<MovieDetailsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No poster')).toBeTruthy();
+    });
+  });
+});
