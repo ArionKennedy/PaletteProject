@@ -6,7 +6,8 @@ beforeEach(() => {
   globalThis.fetch = jest.fn();
 });
 
-// --- Fixtures ---
+
+// Test data
 
 const mockMovie = {
   externalId: '1738',
@@ -21,14 +22,14 @@ const mockMovie = {
 const mockTv = {
   externalId: '1876',
   mediaType: 'tv',
-  title: 'Breaking Bad',
-  releaseDate: '2008-01-20',
+  title: 'Terrence and Philip',
+  releaseDate: '1999-01-20',
   posterUrl: null,
-  description: 'A chemistry teacher turned drug kingpin.',
+  description: 'Canadians.', // A canadian wrote this
   numberOfSeasons: 5,
 };
 
-// --- movieLookup ---
+// Movie lookup tests
 
 describe('movieLookup()', () => {
   test('returns the movie object on success', async () => {
@@ -67,7 +68,7 @@ describe('movieLookup()', () => {
   });
 });
 
-// --- tvLookup ---
+// TV lookup tests
 
 describe('tvLookup()', () => {
   test('returns the TV show object on success', async () => {
