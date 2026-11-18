@@ -48,7 +48,7 @@ public sealed class LoggingApiFactory : WebApplicationFactory<Program>
         var subject = $"tests|{Guid.NewGuid()}";
         db.Users.Add(new User
         {
-            UserId = Guid.NewGuid(), Auth0Id = subject, Username = "Test viewer",
+            UserId = Guid.NewGuid(), ClerkId = subject, Username = "Test viewer",
             Email = $"{Guid.NewGuid()}@palette.invalid", DateJoined = DateTime.UtcNow,
         });
         await db.SaveChangesAsync();
@@ -72,7 +72,7 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
         var subject = client.UserId;
-        var user = await db.Users.SingleAsync(user => user.Auth0Id == subject);
+        var user = await db.Users.SingleAsync(user => user.ClerkId == subject);
         var id = mediaId ?? Guid.NewGuid();
         if (mediaId is null)
             db.Media.Add(new Media { MediaId = id, Title = "Review test " + id, MediaType = type });

@@ -6,6 +6,33 @@ The platform is designed around different ways people engage with media. Some us
 
 Palette brings these activities together in one place and helps users build a picture of their own media taste, or their personal “palette.”
 
+## Try Palette on Android — Testers
+
+### Download and Install
+
+1. On your Android phone, [download the Palette 1.0.0 APK](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk) (approximately 105 MiB).
+2. Open the downloaded file. If Android prompts you, allow your browser or file manager to install apps from this source, then install Palette.
+3. Open **Palette** and create an account or sign in.
+4. Open **Movies**, enter a movie title, and select a result to view its details.
+
+You do not need the source code, terminal commands, Expo Go, an Expo account, or a local development server. An internet connection is required for sign-in and movie data. This download is for Android; iOS distribution is not part of the external test build.
+
+### What You Can Try
+
+- Search for movies by title using data provided by TMDB through the deployed backend.
+- Browse matching movies and their posters.
+- Open a movie to view its description, release information, and runtime when available.
+
+Logging watched movies, collections, reviews, recommendations, social features, and analytics are still planned. External testing currently focuses on the movie search flow above.
+
+### App Updates
+
+Compatible updates to screens, application logic, styles, and resources are downloaded automatically when the app is opened online. Fully close and reopen Palette after the update downloads to apply it.
+
+**Changes to native dependencies, Expo/React Native, or native app configuration require a new APK.** In that case, the team will share a new download link and ask testers to install the updated APK. The download link above identifies this specific build and will be updated when a new APK is distributed.
+
+For developer build and publishing instructions, see [Android APK and OTA Updates](frontend/EAS.md).
+
 ## Core Features
 
 Palette is designed around six core features. Development is ongoing, with Authentication and Movie Search implemented during Sprint 1.
@@ -73,13 +100,14 @@ For the database schema, ER diagram, relationships, and data storage strategy, s
 
 ### Hosting
 
-- Currently running locally
-- Cloud hosting provider: TBD
-- AWS is being considered
+- Android app: standalone APK built and distributed through Expo EAS Build
+- App updates: compatible Android OTA updates through EAS Update
+- Backend: ASP.NET Core API deployed on Render
+- Database: PostgreSQL hosted on Supabase
 
 React Native with Expo is used for cross-platform development, while ASP.NET Core provides backend application logic and APIs. PostgreSQL serves as the primary database, with Entity Framework Core managing database operations and migrations. Clerk handles user authentication, and TMDB provides movie data through backend API integrations.
 
-Docker Compose is currently used for local PostgreSQL development. Additional infrastructure, including caching and cloud deployment, may be introduced in future sprints.
+Docker Compose is used for local PostgreSQL development. The external test APK connects to the deployed backend and does not require testers to run local services. Additional infrastructure, including caching, may be introduced in future sprints.
 
 For more details, see [System Architecture](Docs/architecture.md).
 
@@ -96,6 +124,7 @@ Important project documentation:
 - [Testing Documentation](Docs/testing.md)
 - [Process and Protocols](Docs/Process%20and%20Protocols.md)
 - [Local Setup](Docs/Local%20Setup.md)
+- [Android APK and OTA Updates](frontend/EAS.md)
 - [Database Migrations](Docs/db_migration.md)
 
 ## Team
@@ -124,7 +153,7 @@ Palette is currently in Sprint 1, with its initial development infrastructure an
 - Search and lookup currently support movies only.
 - Other core features are still under development.
 - Automated frontend and integration tests have not yet been implemented.
-- The application is not yet publicly deployed.
+- External distribution currently uses an Android APK connected to the deployed backend.
 
 Development progress is tracked through the [Sprint Board](https://github.com/users/ArionKennedy/projects/4).
 
@@ -168,7 +197,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5251
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
 ```
 
-Configure the PostgreSQL database, backend connection string, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
+Configure the PostgreSQL database, backend connection string, Clerk Frontend API URL, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
 
 Make sure the database is running before starting the backend.
 

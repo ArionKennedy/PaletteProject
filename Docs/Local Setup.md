@@ -116,13 +116,13 @@ Replace `your_local_password` with a password of your choice. Make sure the `.en
 
 The Docker Compose configuration uses the following settings:
 
-| Setting | Value |
-|---|---|
-| Container | `palette-postgres` |
-| Database | `palette_dev` |
-| Username | `palette` |
-| Password | Value of `POSTGRES_PASSWORD` |
-| Port | `5432` |
+| Setting   | Value                        |
+| --------- | ---------------------------- |
+| Container | `palette-postgres`           |
+| Database  | `palette_dev`                |
+| Username  | `palette`                    |
+| Password  | Value of `POSTGRES_PASSWORD` |
+| Port      | `5432`                       |
 
 ### Start PostgreSQL
 
@@ -142,13 +142,11 @@ docker compose ps
 
 The backend must use the same PostgreSQL credentials configured above.
 
-From the project root, run:
+From the `backend` directory, run:
 
 ```bash
-cd backend
 dotnet user-secrets init
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=palette_dev;Username=palette;Password=your_local_password"
-cd ..
 ```
 
 Replace `your_local_password` with the same password used in the Docker `.env` file.
@@ -157,19 +155,20 @@ Replace `your_local_password` with the same password used in the Docker `.env` f
 
 If the backend project already has a `UserSecretsId`, you can skip `dotnet user-secrets init`.
 
-### Configure the TMDB Token
 
-The backend requires a TMDB API Read Access Token to access movie information.
+### Configure the Google Books Key
 
-Obtain the token from the team's shared development resources and store it using .NET User Secrets.
+The backend requires a Google Books API key to access movie information.
+
+Obtain the key from the team's shared development resources and store it using .NET User Secrets.
 
 From the project root:
 
 ```bash
-dotnet user-secrets set "Tmdb:ReadAccessToken" "<your_token>" --project backend
+dotnet user-secrets set "GoogleBooks:ApiKey" "<your_api_key>" --project backend
 ```
 
-Replace `<your_token>` with the actual TMDB API Read Access Token.
+Replace `<your_api_key>` with the actual Google Books API key.
 
 Do not commit the token to the repository.
 
@@ -224,9 +223,43 @@ Do not create a new migration just to initialize an existing database if the rep
 
 For detailed instructions, see [Database Migrations](db-migration.md).
 
-## 7. Run the Application
+## 7. Configure Backend
 
-Make sure PostgreSQL is running and the backend connection string, TMDB token, and frontend environment variables have been configured.
+### Configure the TMDB Token
+
+The backend requires a TMDB API Read Access Token to access movie information.
+
+Obtain the token from the team's shared development resources and store it using .NET User Secrets.
+
+From the `backend` directory, run:
+
+```bash
+dotnet user-secrets set "Tmdb:ReadAccessToken" "<your_token>"
+```
+
+Replace `<your_token>` with the actual TMDB API Read Access Token.
+
+Do not commit the token to the repository.
+
+### Configure Clerk
+
+The backend uses Clerk's Frontend API URL to validate authentication tokens from users. Ensure that the Fontend publishable key and the Frontend API URL are both for the same enviromnent. 
+
+Obtain the token from the team's shared development resources and store it using .NET User Secrets.
+
+From the `backend` directory, run:
+
+```bash
+dotnet user-secrets set "Clerk:FrontendAPIURL" "<your_clerk_frontend_api_url>"
+```
+
+Replace `<your_clerk_frontend_api_url>` with the actual Frontend API URL for youy environment.
+
+Do not commit the token to the repository.
+
+## 8. Run the Application
+
+Make sure PostgreSQL is running and all backend user secrets and frontend environment variables have been configured.
 
 ### Option A: Start Frontend and Backend Together
 
@@ -296,7 +329,7 @@ Expected response:
 
 This verifies that the backend is running and responding to HTTP requests. It does not verify database connectivity or external API availability.
 
-## 8. Running Tests
+## 9. Running Tests
 
 Palette includes automated backend tests and frontend development quality checks.
 

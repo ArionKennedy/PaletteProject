@@ -21,7 +21,7 @@ public static class ShowLogEndpoints
                 return Results.BadRequest(new { message = "Page must be between 1 and 10000." });
 
             var userId = await db.Users.AsNoTracking()
-                .Where(user => user.Auth0Id == request.UserId)
+                .Where(user => user.ClerkId == request.UserId)
                 .Select(user => (Guid?)user.UserId)
                 .SingleOrDefaultAsync(cancellationToken);
             if (userId is null)
