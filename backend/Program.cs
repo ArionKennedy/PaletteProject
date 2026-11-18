@@ -22,7 +22,6 @@ builder.Services.AddDbContext<PaletteDbContext>(options =>
 
 // Configure OpenAPI
 builder.Services.AddOpenApi();
-builder.Services.AddScoped<ShowLogService>();
 
 // Register ProblemDetails and ApiExceptionHandler (required by app.UseExceptionHandler)
 builder.Services.AddApiErrorHandling();
@@ -33,6 +32,7 @@ builder.Services.AddTmdbProvider(builder.Configuration);
 builder.Services.AddGoogleBooksProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
+builder.Services.AddLoggingFeature();
 builder.Services.AddUserService();
 
 
