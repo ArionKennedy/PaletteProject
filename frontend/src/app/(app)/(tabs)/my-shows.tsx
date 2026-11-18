@@ -21,7 +21,7 @@ export default function MyShowsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const result = await getShowLogs(userId, nextPage);
+      const result = await getShowLogs(nextPage);
       if (currentVersion !== version.current) return;
       setShows(previous => nextPage === 1 ? result.items : [
         ...previous,

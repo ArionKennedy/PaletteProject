@@ -50,7 +50,7 @@ test('My Shows does not reload for a changing getToken reference; account change
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
       if (name === '@clerk/expo') return {
         // Deliberately create a new function on EVERY render, reproducing the reported trigger.
-        useAuth: () => ({ getToken: async () => { throw new Error('Logging must not request a token'); }, isLoaded: true, isSignedIn: true, userId, sessionId }),
+        useAuth: () => ({ getToken: async () => { throw new Error('The screen must use the shared authenticated service'); }, isLoaded: true, isSignedIn: true, userId, sessionId }),
       };
       if (name === 'expo-router') return { useFocusEffect(callback) {
         hooks.useEffect(() => {
@@ -60,9 +60,10 @@ test('My Shows does not reload for a changing getToken reference; account change
         }, [callback]);
       } };
       if (name === '@/components/show-list') return { ShowList: 'ShowList' };
-      if (name === '@/services/show-logs') return { getShowLogs: async requestedUserId => {
+      if (name === '@/services/show-logs') return { getShowLogs: async page => {
+        assert.equal(page, 1);
         calls++;
-        return { items: [{ mediaId: requestedUserId, title: requestedUserId }], page: 1, hasMore: false };
+        return { items: [{ mediaId: userId, title: userId }], page: 1, hasMore: false };
       } };
       throw new Error('Unexpected import: ' + name);
     },
@@ -98,32 +99,65 @@ test('My Shows does not reload for a changing getToken reference; account change
   cleanup();
 });
 
-test('history requests send Clerk userId in JSON without a bearer token', async () => {
-  const source = fs.readFileSync(path.join(__dirname, '../../frontend/src/services/show-logs.ts'), 'utf8');
-  const code = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS },
-  }).outputText;
-  const exports = {};
+function loadHistoryService({ token = 'clerk-session-token', respond } = {}) {
   let request;
-  const page = { items: [], page: 2, hasMore: false };
-  vm.runInNewContext(code, {
-    exports, AbortController, setTimeout, clearTimeout,
+  const transpile = file => ts.transpileModule(
+    fs.readFileSync(path.join(__dirname, '../../frontend/src/services', file), 'utf8'),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText;
+  const api = {};
+  vm.runInNewContext(transpile('api.ts'), {
+    exports: api, Headers,
+    process: { env: { EXPO_PUBLIC_API_URL: 'https://api.palette.test' } },
     require(name) {
-      assert.equal(name, '@/constants/logging');
-      return { LOGGING_API_URL: 'http://localhost:5251', LOGGING_REQUEST_TIMEOUT_MS: 1000 };
+      assert.equal(name, '@clerk/expo');
+      return { getClerkInstance: () => ({ session: { getToken: async () => token } }) };
     },
     fetch: async (url, options) => {
       request = { url, options };
-      return { ok: true, json: async () => page };
+      return respond ? respond(options) : { ok: true, json: async () => ({ items: [], page: 2, hasMore: false }) };
     },
   });
-  assert.equal(await exports.getShowLogs('user_test', 2), page);
-  assert.equal(request.url, 'http://localhost:5251/api/me/shows/query');
-  assert.equal(request.options.method, 'POST');
-  assert.deepEqual(JSON.parse(request.options.body), { userId: 'user_test', page: 2 });
-  assert.equal(request.options.headers.Authorization, undefined);
-  assert.equal(request.options.headers['Content-Type'], 'application/json');
-  request = undefined;
-  await assert.rejects(exports.getShowLogs(null), /Sign in/);
-  assert.equal(request, undefined, 'Missing identity must not trigger a request');
+  const service = {};
+  vm.runInNewContext(transpile('show-logs.ts'), {
+    exports: service, AbortController, setTimeout, clearTimeout,
+    require(name) {
+      if (name === '@/services/api') return api;
+      assert.equal(name, '@/constants/logging');
+      return { LOGGING_REQUEST_TIMEOUT_MS: 10 };
+    },
+  });
+  return { getShowLogs: service.getShowLogs, request: () => request };
+}
+
+test('history sends the Clerk bearer token and only the requested page', async () => {
+  const service = loadHistoryService();
+  const result = await service.getShowLogs(2);
+  const { url, options } = service.request();
+  assert.equal(result.page, 2);
+  assert.equal(url, 'https://api.palette.test/api/me/shows/query');
+  assert.equal(options.method, 'POST');
+  assert.deepEqual(JSON.parse(options.body), { page: 2 });
+  assert.equal(options.headers.get('Authorization'), 'Bearer clerk-session-token');
+  assert.equal(options.headers.get('Content-Type'), 'application/json');
+});
+
+test('an expired session produces a sign-in error', async () => {
+  const service = loadHistoryService({ respond: () => ({ ok: false, status: 401 }) });
+  await assert.rejects(service.getShowLogs(), /Sign in again/);
+});
+
+test('a signed-out client cannot manufacture an authenticated request', async () => {
+  const service = loadHistoryService({ token: null, respond: options => {
+    assert.equal(options.headers.get('Authorization'), null);
+    return { ok: false, status: 401 };
+  } });
+  await assert.rejects(service.getShowLogs(), /Sign in again/);
+});
+
+test('history downloads time out and report a useful error', async () => {
+  const service = loadHistoryService({ respond: ({ signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+  }) });
+  await assert.rejects(service.getShowLogs(), /request timed out/);
 });

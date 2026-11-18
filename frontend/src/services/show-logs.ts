@@ -1,19 +1,16 @@
-import { LOGGING_API_URL, LOGGING_REQUEST_TIMEOUT_MS } from '@/constants/logging';
+import { LOGGING_REQUEST_TIMEOUT_MS } from '@/constants/logging';
+import { fetchWithAuth } from '@/services/api';
 import type { ShowLogPage } from '@/types/show-log';
 
-// Temporary userId contract agreed with the authentication feature owner.
-export async function getShowLogs(userId: string | null | undefined, page = 1): Promise<ShowLogPage> {
-  if (!userId) throw new Error('Sign in before opening your shows.');
-  if (!LOGGING_API_URL) throw new Error('Set EXPO_PUBLIC_API_URL to connect to the backend.');
-
+export async function getShowLogs(page = 1): Promise<ShowLogPage> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LOGGING_REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${LOGGING_API_URL}/api/me/shows/query`, {
+    const response = await fetchWithAuth('/api/me/shows/query', {
       method: 'POST',
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, page }),
+      body: JSON.stringify({ page }),
     });
     if (!response.ok) {
       if (response.status === 401 || response.status === 403)

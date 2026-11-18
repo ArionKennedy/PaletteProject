@@ -4,25 +4,26 @@
 
 My Shows displays only titles the user has reviewed. Watched status alone is not enough.
 REVIEWS joined to MEDIA is the source of truth. Each title appears once, newest review first.
-History reads do not create media, reviews, profiles, or duplicate USER_MEDIA_LOGS records.
+History queries do not create media, reviews, or duplicate USER_MEDIA_LOGS records.
+The shared authentication middleware provisions a missing profile before the query runs.
 There is no demo account, sample picker, review editor, or watched-save action.
 
-## Temporary integration contract
+## Authenticated integration contract
 
-This branch is based on develop. Discarded link-develop authentication and profile-sync code
-is not part of the implementation. Sign-in screens and the app layout come from develop.
+Logging uses develop's existing Clerk JWT validation, user service, and profile-provisioning middleware.
+Sign-in screens and the app layout come from develop.
 
-POST /api/me/shows/query accepts { "userId": "<Clerk useAuth().userId>", "page": 1 }.
+POST /api/me/shows/query accepts { "page": 1 } and requires a Clerk bearer token.
 POST is used only to carry a JSON query body; the operation is read-only.
-The service maps Clerk userId to the existing USERS.Auth0Id column and filters reviews
-using that user's database UUID. A missing profile returns 404; logging never creates one.
+The endpoint gets the verified Clerk identity from UserService, maps it through USERS.ClerkId,
+and filters reviews using that user's database UUID. Missing authentication returns 401.
+A missing profile after shared provisioning returns 404.
 The response contains items, page, and hasMore (up to 50 titles).
 Items contain mediaId, title, mediaType (develop's enum name), and lastReviewedAt.
 
-IMPORTANT: userId is caller-supplied and is not yet verified by the backend.
-This is filtering, NOT access control. Changing userId can expose another user's history.
-The authentication feature owner must verify it against the signed-in identity before release.
-No bearer token, custom authentication scheme, JWT package, or Clerk issuer setting is added here.
+The frontend uses the shared fetchWithAuth helper to send the token. It does not submit userId.
+An extra userId in the JSON body cannot override the authenticated identity.
+Logging adds no separate authentication scheme or Clerk configuration.
 
 ## Frontend behavior
 
@@ -35,13 +36,16 @@ Deleting the last review removes that title on the next refresh.
 ## Verification
 
 Use develop's normal local setup. No additional profile-sync service or backend startup script is needed.
-The database must already contain the user's Clerk ID and reviews from the team's review feature.
+The database must contain reviews from the team's review feature to show a non-empty history.
 Actual sign-in testing requires local Clerk configuration.
 
 Run from frontend/: npx tsc --noEmit and npx expo lint --no-cache.
 Run from the repository root: node --test tests/frontend/my-shows.test.cjs.
-For database tests, set PALETTE_TEST_DATABASE to a local PostgreSQL database named
-palette_logging_tests and run dotnet test tests/Palette.Api.Tests/Palette.Api.Tests.csproj.
+For backend tests, run dotnet test tests/Palette.Tests.csproj (the same project used by CI).
+The existing PostgreSQL fixture starts an isolated container, or accepts the documented
+PALETTE_TEST_DB_CONNECTION override for a local palette_integration_test database.
 Tests create isolated test records and verify request validation, filtering, deduplication,
 ordering, pagination, no writes on reads, and removal after review deletion.
-They explicitly document the current lack of identity verification; they do not test real Clerk sign-in.
+Authentication tests use the shared test-only identity handler while keeping production
+authorization and profile provisioning enabled. They verify anonymous rejection and that
+supplying another user's ID cannot expose that user's history. Real Clerk sign-in still needs device testing.

@@ -1,51 +1,50 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using Palette.Api.Data;
 using Palette.Api.Logging;
 using Palette.Api.Models;
 using Palette.Api.Enums;
+using Palette.Tests.Infrastructure;
 using Xunit;
 
-namespace Palette.Api.Tests;
+namespace Palette.Tests.Integration.Api;
 
-public sealed class LoggingApiFactory : WebApplicationFactory<Program>
+[Collection("Postgres Integration Tests")]
+public sealed class ShowLogTests : IAsyncLifetime
 {
-    public string ConnectionString { get; } = GetTestConnection();
+    private readonly PaletteApplicationFactory factory;
+    private readonly List<string> identities = [];
+    private readonly List<Guid> mediaIds = [];
 
-    private static string GetTestConnection()
+    public ShowLogTests(PostgresFixture fixture)
     {
-        var value = Environment.GetEnvironmentVariable("PALETTE_TEST_DATABASE")
-            ?? throw new InvalidOperationException("Set PALETTE_TEST_DATABASE to a dedicated PostgreSQL test database.");
-        var parsed = new NpgsqlConnectionStringBuilder(value);
-        if (parsed.Database != "palette_logging_tests" || parsed.Host is not ("localhost" or "127.0.0.1"))
-            throw new InvalidOperationException("Tests only accept a local database named palette_logging_tests.");
-        return value;
+        factory = new PaletteApplicationFactory(fixture.ConnectionString);
     }
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync()
     {
-        // Avoid the generated test manifest's path parsing issue with apostrophes
-        // in directory names (for example, the user's iCloud project folder).
-        builder.UseContentRoot(Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "../../../../../backend")));
-        builder.UseEnvironment("Testing");
-        builder.UseSetting("ConnectionStrings:DefaultConnection", ConnectionString);
-        builder.UseSetting("Tmdb:ReadAccessToken", "logging-tests-no-external-access");
-        builder.UseSetting("Tmdb:BaseUrl", "http://127.0.0.1:1/");
+        try
+        {
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
+            await db.Users.Where(user => identities.Contains(user.ClerkId)).ExecuteDeleteAsync();
+            await db.Media.Where(media => mediaIds.Contains(media.MediaId)).ExecuteDeleteAsync();
+        }
+        finally { await factory.DisposeAsync(); }
     }
 
-    public async Task<TestViewer> NewUserClient()
+    private async Task<TestViewer> NewUserClient()
     {
-        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
-        using var scope = Services.CreateScope();
+        var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var subject = $"logging-{Guid.NewGuid():N}";
+        identities.Add(subject);
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.UserHeader, subject);
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
-        await db.Database.MigrateAsync();
-        var subject = $"tests|{Guid.NewGuid()}";
         db.Users.Add(new User
         {
             UserId = Guid.NewGuid(), ClerkId = subject, Username = "Test viewer",
@@ -54,17 +53,6 @@ public sealed class LoggingApiFactory : WebApplicationFactory<Program>
         await db.SaveChangesAsync();
         return new TestViewer(client, subject);
     }
-}
-
-public sealed record TestViewer(HttpClient Client, string UserId) : IDisposable
-{
-    public void Dispose() => Client.Dispose();
-}
-
-public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
-{
-    private readonly LoggingApiFactory factory;
-    public ShowLogTests(LoggingApiFactory factory) => this.factory = factory;
 
     private async Task<Guid> AddTitle(TestViewer client, MediaType type = MediaType.Movie,
         bool reviewed = true, Guid? mediaId = null, DateTime? createdAt = null)
@@ -75,7 +63,10 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
         var user = await db.Users.SingleAsync(user => user.ClerkId == subject);
         var id = mediaId ?? Guid.NewGuid();
         if (mediaId is null)
+        {
+            mediaIds.Add(id);
             db.Media.Add(new Media { MediaId = id, Title = "Review test " + id, MediaType = type });
+        }
         if (reviewed)
             db.Reviews.Add(new Review {
                 ReviewId = Guid.NewGuid(), UserId = user.UserId, MediaId = id,
@@ -93,26 +84,26 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     private static async Task<ShowLogPage> ReadHistory(TestViewer viewer, int page = 1)
     {
         using var response = await viewer.Client.PostAsJsonAsync("/api/me/shows/query",
-            new ShowLogQuery(viewer.UserId, page));
+            new ShowLogQuery(page));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ShowLogPage>())!;
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task MissingUserIdIsRejected(string? userId)
+    [Fact]
+    public async Task UnauthenticatedRequestsAreRejectedEvenWithAnotherUserId()
     {
-        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
-        Assert.Equal(HttpStatusCode.BadRequest,
-            (await client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery(userId))).StatusCode);
+        using var viewer = await NewUserClient();
+        await AddTitle(viewer);
+        using var anonymous = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        using var response = await anonymous.PostAsJsonAsync("/api/me/shows/query",
+            new { userId = viewer.UserId, page = 1 });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task EmptyHistoryDoesNotWriteRecords()
     {
-        using var client = await factory.NewUserClient();
+        using var client = await NewUserClient();
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
         var mediaCount = await db.Media.CountAsync();
@@ -129,8 +120,8 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     [Fact]
     public async Task OnlyOwnReviewedTitlesAppearAcrossMediaTypes()
     {
-        using var first = await factory.NewUserClient();
-        using var second = await factory.NewUserClient();
+        using var first = await NewUserClient();
+        using var second = await NewUserClient();
         var movie = await AddTitle(first, MediaType.Movie);
         var tv = await AddTitle(first, MediaType.TVShow);
         await AddTitle(first, reviewed: false);
@@ -146,7 +137,7 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     [Fact]
     public async Task RepeatedReviewsProduceOneTitleWithLatestDate()
     {
-        using var client = await factory.NewUserClient();
+        using var client = await NewUserClient();
         var latest = DateTime.UtcNow.AddMinutes(-1);
         var first = await AddTitle(client, createdAt: latest.AddDays(-2));
         var second = await AddTitle(client, createdAt: latest.AddDays(-1));
@@ -162,7 +153,7 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     [Fact]
     public async Task RemovingLastReviewRemovesTitleFromHistory()
     {
-        using var client = await factory.NewUserClient();
+        using var client = await NewUserClient();
         var id = await AddTitle(client);
         Assert.Single((await ReadHistory(client))!.Items);
         using var scope = factory.Services.CreateScope();
@@ -176,7 +167,7 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
     [Fact]
     public async Task PagesAreBoundedAndDoNotOverlap()
     {
-        using var client = await factory.NewUserClient();
+        using var client = await NewUserClient();
         for (var i = 0; i < 51; i++) await AddTitle(client);
         var first = await ReadHistory(client);
         var second = await ReadHistory(client, 2);
@@ -185,31 +176,43 @@ public sealed class ShowLogTests : IClassFixture<LoggingApiFactory>
         Assert.Single(second!.Items);
         Assert.False(second.HasMore);
         Assert.DoesNotContain(second.Items[0].MediaId, first.Items.Select(item => item.MediaId));
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.Client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery(client.UserId, 0))).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.Client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery(client.UserId, 10001))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.Client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery(0))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.Client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery(10001))).StatusCode);
     }
 
     [Fact]
-    public async Task UnknownProfileIsNotSilentlyCreated()
+    public async Task NewAuthenticatedUserIsProvisionedBySharedMiddleware()
     {
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
-        Assert.Equal(HttpStatusCode.NotFound,
-            (await client.PostAsJsonAsync("/api/me/shows/query",
-                new ShowLogQuery($"unprovisioned|{Guid.NewGuid()}"))).StatusCode);
+        var subject = $"logging-new-{Guid.NewGuid():N}";
+        identities.Add(subject);
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.UserHeader, subject);
+        using var response = await client.PostAsJsonAsync("/api/me/shows/query", new ShowLogQuery());
+        response.EnsureSuccessStatusCode();
+        var page = await response.Content.ReadFromJsonAsync<ShowLogPage>();
+        Assert.Empty(page!.Items);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
+        Assert.Equal(1, await db.Users.CountAsync(user => user.ClerkId == subject));
     }
 
     [Fact]
-    public async Task TemporaryContractDoesNotVerifyCallerIdentity()
+    public async Task SuppliedUserIdCannotReadAnotherUsersHistory()
     {
-        using var first = await factory.NewUserClient();
-        using var second = await factory.NewUserClient();
-        var id = await AddTitle(first);
-        // This documents a known temporary limitation, NOT a security guarantee.
-        // Shared authentication must prevent this before the endpoint is released.
+        using var first = await NewUserClient();
+        using var second = await NewUserClient();
+        var firstTitle = await AddTitle(first);
+        var secondTitle = await AddTitle(second);
         using var response = await second.Client.PostAsJsonAsync("/api/me/shows/query",
-            new ShowLogQuery(first.UserId));
+            new { userId = first.UserId, page = 1 });
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<ShowLogPage>();
-        Assert.Equal(id, Assert.Single(result!.Items).MediaId);
+        Assert.Equal(secondTitle, Assert.Single(result!.Items).MediaId);
+        Assert.DoesNotContain(result.Items, item => item.MediaId == firstTitle);
     }
+}
+
+public sealed record TestViewer(HttpClient Client, string UserId) : IDisposable
+{
+    public void Dispose() => Client.Dispose();
 }
