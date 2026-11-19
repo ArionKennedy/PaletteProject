@@ -105,6 +105,14 @@ export function ForgotPasswordForm() {
             <Button className={"w-full"} onPress={onSubmit} disabled={!emailAddress || fetchStatus === 'fetching'} >
               <Text>Reset your password</Text>
             </Button>
+            <Button
+              variant="link"
+              size="sm"
+              className="self-center h-fit px-1 py-0"
+              onPress={() => router.replace('/login')}
+            >
+              <Text>Back to Sign in</Text>
+            </Button>
           </View>
         </CardContent>
       </Card>
