@@ -1,29 +1,36 @@
+import { useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { Stack } from 'expo-router';
+import { Link, Stack, type Href } from 'expo-router';
+
+import { LibraryAction } from '@/components/library-action';
 
 import { POSTER_ASPECT_RATIO, POSTER_WIDTH, WEB_TAB_BAR_OFFSET } from '@/constants/moviesConstants';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Spacing } from '@/lib/theme';
-import type { MediaDetail } from '@/types/mediaDetail'
+import type { MediaDetail } from '@/types/mediaDetail';
+import type { LibraryMediaType } from '@/types/library';
 
 
 type MediaDetailsProps = {
-    metaText: string;
-    errorTitle: string;  // "Movie" or "TV Show"   
-    media: MediaDetail | null;        
-    error: string | null;                     
+  metaText: string;
+  errorTitle: string;
+  media: MediaDetail | null;
+  error: string | null;
+  type: LibraryMediaType;
+  backHref?: Href;
 };
 
-export default function MediaDetailsPage({metaText, errorTitle, media, error} : MediaDetailsProps) {
+export default function MediaDetailsPage({ metaText, errorTitle, media, error, type, backHref }: MediaDetailsProps) {
   const theme = useTheme();
-
+  const [libraryError, setLibraryError] = useState<string | null>(null);
 
   if (error) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <Stack.Screen options={{ title: errorTitle }} />
         <Text style={{ color: theme.textSecondary }}>{error}</Text>
+        {backHref && Platform.OS === 'web' && <Link href={backHref} style={{ color: theme.text }}>Back to list</Link>}
       </View>
     );
   }
@@ -45,6 +52,9 @@ export default function MediaDetailsPage({metaText, errorTitle, media, error} : 
         Platform.OS === 'web' && { paddingTop: WEB_TAB_BAR_OFFSET },
       ]}>
       <Stack.Screen options={{ title: media.title }} />
+      {backHref && Platform.OS === 'web' && (
+        <Link href={backHref} style={{ color: theme.text, alignSelf: 'flex-start' }}>Back to list</Link>
+      )}
 
       {media.posterUrl ? (
         <Image
@@ -59,7 +69,13 @@ export default function MediaDetailsPage({metaText, errorTitle, media, error} : 
         </View>
       )}
 
-      <Text style={[styles.title, { color: theme.text }]}>{media.title}</Text>
+      <View style={styles.titleRow}>
+        <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{media.title}</Text>
+        <LibraryAction type={type} externalId={media.externalId} initialSaved={media.saved} onError={setLibraryError} />
+      </View>
+      {libraryError && (
+        <Text accessibilityRole="alert" style={{ color: theme.textSecondary }}>{libraryError}</Text>
+      )}
 
       <Text style={[styles.meta, { color: theme.textSecondary }]}>
         {metaText}
@@ -96,10 +112,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    textAlign: 'center',
+    flexShrink: 1,
   },
   meta: {
     fontSize: 14,

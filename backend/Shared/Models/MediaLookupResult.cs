@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Backend.Shared.Models;
 
 public abstract record MediaLookupResult(
@@ -5,4 +7,8 @@ public abstract record MediaLookupResult(
     string Title,
     DateOnly? ReleaseDate,
     string? Description,
-    string? PosterUrl);
+    string? PosterUrl)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Saved { get; init; }
+}
