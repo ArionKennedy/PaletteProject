@@ -16,14 +16,16 @@ public static class GoogleBooksMapper
     MediaType: MediaConstants.MEDIA_TYPE_BOOK,
     Title: v.VolumeInfo.Title,
     ReleaseDate: ParsePublishedDate(v.VolumeInfo.PublishedDate),
-    PosterUrl: BuildPosterUrl(v.VolumeInfo.ImageLinks?.Thumbnail));
+    PosterUrl: BuildPosterUrl(v.VolumeInfo.ImageLinks?.Thumbnail)
+        ?? BuildPosterUrl(v.VolumeInfo.ImageLinks?.SmallThumbnail));
 
     public static BookLookupResult ToLookupResult(GoogleBooksVolume v) => new(
         ExternalId: v.Id,
         Title: v.VolumeInfo.Title,
         ReleaseDate: ParsePublishedDate(v.VolumeInfo.PublishedDate),
         Description: CleanDescription(v.VolumeInfo.Description),
-        PosterUrl: BuildPosterUrl(v.VolumeInfo.ImageLinks?.Thumbnail),
+        PosterUrl: BuildPosterUrl(v.VolumeInfo.ImageLinks?.Thumbnail)
+        ?? BuildPosterUrl(v.VolumeInfo.ImageLinks?.SmallThumbnail),
         ISBN: PickIsbn(v.VolumeInfo.IndustryIdentifiers));
 
     public static DateOnly? ParsePublishedDate(string? raw) =>

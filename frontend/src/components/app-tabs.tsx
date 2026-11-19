@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { MEDIA_TAB_ICONS } from '@/constants/media-tab-icons';
 import { useTheme } from '@/hooks/use-theme';
 
 
@@ -12,23 +13,17 @@ export default function AppTabs() {
       labelStyle={{ selected: { color: theme.text } }}>
       <NativeTabs.Trigger name="movies">
         <NativeTabs.Trigger.Label>Movies</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf="film" md="movie"
-        />
+        <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.movie} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name='tv'>
         <NativeTabs.Trigger.Label>Tv Shows</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon 
-          sf="tv" md="tv"
-        />
+        <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.tv} />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="books">
         <NativeTabs.Trigger.Label>Books</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf="book" md="menu_book"
-        />
+        <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.book} />
       </NativeTabs.Trigger>
 
 
@@ -38,6 +33,10 @@ export default function AppTabs() {
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="my-library">
+        <NativeTabs.Trigger.Label>My Library</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="square.stack" md="collections_bookmark" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

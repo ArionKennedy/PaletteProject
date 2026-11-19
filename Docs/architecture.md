@@ -19,7 +19,7 @@ flowchart LR
     E[Clerk Authentication]
     F[External Media APIs]
     G[TMDB API]
-    H[APIs for other Media Types - TBD]
+    H[Google Books API]
 
     A -->|HTTP / API| B
     B -->|Read / Write| C
@@ -36,7 +36,7 @@ flowchart LR
 ### Frontend
 
 - React Native with Expo for cross-platform development.
-- Provides user interfaces for searching and interacting with media.
+- Provides media search, detail screens, and My Library. The library reuses category list and detail components across media types.
 - Communicates with the backend through HTTP APIs.
 
 ### Backend
@@ -50,12 +50,13 @@ flowchart LR
 
 - PostgreSQL 17, hosted locally using Docker Compose.
 - Stores application-specific data such as users, media records,
-  and other persisted user activity.
+  and other persisted user activity. My Library uses `USER_MEDIA_LOGS` to associate saved items with each user.
 
 ### External Services
 
 - TMDB provides movie and TV show information, including
   searchable metadata and media details.
+- Google Books provides book metadata and details.
 
 ### Authentication
 
