@@ -15,6 +15,7 @@ public class MatrixFactorizationModelTests
     [InlineData(3)]
     [InlineData(8)]
     [InlineData(16)]
+    // Verifies that constructing a model with valid factor count creates a model.
     public void ConstructorValidFactorCountCreatesModel(
         int factorCount)
     {
@@ -28,6 +29,7 @@ public class MatrixFactorizationModelTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
+    // Verifies that constructing a model with invalid factor count throws ArgumentException.
     public void ConstructorInvalidFactorCountThrowsArgumentException(
         int factorCount)
     {
@@ -39,6 +41,7 @@ public class MatrixFactorizationModelTests
     // Training input validation tests
 
     [Fact]
+    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
         // Arrange
@@ -50,6 +53,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
         // Arrange
@@ -72,6 +76,7 @@ public class MatrixFactorizationModelTests
     [InlineData(100, 0.01f, float.NaN)]
     [InlineData(100, 0.01f, float.PositiveInfinity)]
     [InlineData(100, 0.01f, float.NegativeInfinity)]
+    // Verifies that training with invalid hyperparameters throws ArgumentException.
     public void TrainInvalidHyperparametersThrowsArgumentException(
         int epochs,
         float learningRate,
@@ -103,6 +108,7 @@ public class MatrixFactorizationModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that training with invalid rating throws ArgumentException.
     public void TrainInvalidRatingThrowsArgumentException(
         float rating)
     {
@@ -126,6 +132,7 @@ public class MatrixFactorizationModelTests
     [InlineData(3f)]
     [InlineData(3.5f)]
     [InlineData(5f)]
+    // Verifies that training with single observation returns the finite prediction.
     public void TrainSingleObservationReturnsFinitePrediction(
         float rating)
     {
@@ -149,6 +156,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with zero regularization returns the finite predictions.
     public void TrainZeroRegularizationReturnsFinitePredictions()
     {
         // Arrange
@@ -163,6 +171,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with single epoch returns the finite predictions.
     public void TrainSingleEpochReturnsFinitePredictions()
     {
         // Arrange
@@ -177,6 +186,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
         // Arrange
@@ -195,6 +205,7 @@ public class MatrixFactorizationModelTests
     // Prediction tests
 
     [Fact]
+    // Verifies that predicting with untrained model throws InvalidOperationException.
     public void PredictUntrainedModelThrowsInvalidOperationException()
     {
         // Arrange
@@ -206,6 +217,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown user throws InvalidOperationException.
     public void PredictUnknownUserThrowsInvalidOperationException()
     {
         // Arrange
@@ -222,6 +234,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown media throws InvalidOperationException.
     public void PredictUnknownMediaThrowsInvalidOperationException()
     {
         // Arrange
@@ -238,6 +251,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that predicting with repeated calls returns the identical prediction.
     public void PredictRepeatedCallsReturnsIdenticalPrediction()
     {
         // Arrange
@@ -260,6 +274,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that predicting with known entities with unseen pair returns the finite prediction.
     public void PredictKnownEntitiesWithUnseenPairReturnsFinitePrediction()
     {
         // Arrange
@@ -290,6 +305,7 @@ public class MatrixFactorizationModelTests
     // Learning tests
 
     [Fact]
+    // Verifies that training with identical inputs produces identical predictions.
     public void TrainIdenticalInputsProducesIdenticalPredictions()
     {
         // Arrange
@@ -312,6 +328,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with additional epochs reduces training error.
     public void TrainAdditionalEpochsReducesTrainingError()
     {
         // Arrange
@@ -342,6 +359,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies training for single observation learns expected rating.
     public void TrainSingleObservationLearnsExpectedRating()
     {
         // Arrange
@@ -368,6 +386,7 @@ public class MatrixFactorizationModelTests
     // Integration tests
 
     [Fact]
+    // Verifies that predicting with held out dataset returns the finite predictions.
     public void PredictHeldOutDatasetReturnsFinitePredictions()
     {
         // Arrange
@@ -382,6 +401,7 @@ public class MatrixFactorizationModelTests
     }
 
     [Fact]
+    // Verifies that training with valid dataset returns the finite validation rmse.
     public void TrainValidDatasetReturnsFiniteValidationRmse()
     {
         // Arrange
@@ -403,6 +423,7 @@ public class MatrixFactorizationModelTests
 
     // Helper methods
 
+    // Creates a rating set for the tests.
     private static IReadOnlyList<RatingObservation> CreateRatings()
     {
         return DataGenerator.Generate(
@@ -411,6 +432,7 @@ public class MatrixFactorizationModelTests
             ratingsPerUser: 10);
     }
 
+    // Asserts that predictions for all supplied ratings are finite.
     private static void AssertFinitePredictions(
         MatrixFactorizationModel model,
         IReadOnlyList<RatingObservation> ratings)

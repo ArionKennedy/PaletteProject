@@ -8,6 +8,7 @@ public sealed class GlobalMeanModel
     private float _globalMean;
     private bool _isTrained;
 
+    // Trains the model using the mean of all valid ratings.
     public void Train(
         IReadOnlyList<RatingObservation> ratings)
     {
@@ -24,6 +25,7 @@ public sealed class GlobalMeanModel
         _isTrained = true;
     }
 
+    // Returns the global mean for any user and media pair.
     public float Predict(Guid userId, Guid mediaId)
     {
         if (!_isTrained)
@@ -35,6 +37,7 @@ public sealed class GlobalMeanModel
         return _globalMean;
     }
 
+    // Rejects missing, empty, or out-of-range rating data.
     private static void ValidateRatings(
         IReadOnlyList<RatingObservation> ratings)
     {

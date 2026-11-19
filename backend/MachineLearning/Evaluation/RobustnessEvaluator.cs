@@ -9,6 +9,8 @@ namespace Palette.Api.MachineLearning.Evaluation;
 
 public static class RobustnessEvaluator
 {
+    // Runs seeded experiments comparing matrix factorization with baseline models,
+    // then prints per-run metrics and aggregate performance statistics.
     public static void Run(
         Hyperparameters parameters,
         int experiments = 10,
@@ -132,6 +134,7 @@ public static class RobustnessEvaluator
             $"Average improvement: {improvements.Average():F2}%");
     }
 
+    // Calculates the population standard deviation of the supplied values.
     private static double CalculateStandardDeviation(
         IReadOnlyList<double> values)
     {
@@ -144,6 +147,7 @@ public static class RobustnessEvaluator
         return Math.Sqrt(variance);
     }
 
+    // Prints aggregate error statistics for one model.
     private static void PrintStatistics(
         string name,
         IReadOnlyList<double> errors)

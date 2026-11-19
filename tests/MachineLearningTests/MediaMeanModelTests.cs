@@ -12,6 +12,7 @@ public class MediaMeanModelTests
     // Mathematical correctness
 
     [Fact]
+    // Verifies that predicting with single rating returns the same rating.
     public void PredictSingleRatingReturnsSameRating()
     {
         Guid mediaId = Guid.NewGuid();
@@ -23,6 +24,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with multiple ratings returns the correct mean.
     public void PredictMultipleRatingsReturnsCorrectMean()
     {
         Guid mediaId = Guid.NewGuid();
@@ -35,6 +37,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with fractional ratings returns the correct mean.
     public void PredictFractionalRatingsReturnsCorrectMean()
     {
         Guid mediaId = Guid.NewGuid();
@@ -47,6 +50,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with multiple media returns individual means.
     public void PredictMultipleMediaReturnsIndividualMeans()
     {
         Guid mediaA = Guid.NewGuid();
@@ -73,6 +77,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with media rated by same user returns individual means.
     public void PredictMediaRatedBySameUserReturnsIndividualMeans()
     {
         Guid userId = Guid.NewGuid();
@@ -97,6 +102,7 @@ public class MediaMeanModelTests
     [InlineData(1f)]
     [InlineData(3f)]
     [InlineData(5f)]
+    // Verifies that predicting with identical ratings returns the same rating.
     public void PredictIdenticalRatingsReturnsSameRating(float rating)
     {
         Guid mediaId = Guid.NewGuid();
@@ -109,6 +115,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with minimum and maximum ratings returns midpoint.
     public void PredictMinimumAndMaximumRatingsReturnsMidpoint()
     {
         Guid mediaId = Guid.NewGuid();
@@ -122,6 +129,7 @@ public class MediaMeanModelTests
     // Prediction consistency
 
     [Fact]
+    // Verifies that predicting with same media different users returns the same prediction.
     public void PredictSameMediaDifferentUsersReturnsSamePrediction()
     {
         Guid mediaId = Guid.NewGuid();
@@ -136,6 +144,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with known and unknown users returns the same prediction.
     public void PredictKnownAndUnknownUsersReturnsSamePrediction()
     {
         Guid mediaId = Guid.NewGuid();
@@ -155,6 +164,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with repeated calls returns the same prediction.
     public void PredictRepeatedCallsReturnsSamePrediction()
     {
         Guid userId = Guid.NewGuid();
@@ -174,6 +184,7 @@ public class MediaMeanModelTests
     // Cold start behaviour
 
     [Fact]
+    // Verifies that predicting with unknown media returns global mean.
     public void PredictUnknownMediaReturnsGlobalMean()
     {
         var ratings = CreateMediaRatings(Guid.NewGuid(), 5f, 4f)
@@ -187,6 +198,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown media uses observation weighted global mean.
     public void PredictUnknownMediaUsesObservationWeightedGlobalMean()
     {
         var ratings = CreateMediaRatings(Guid.NewGuid(), 5f, 5f, 5f)
@@ -200,6 +212,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown media items returns the same global mean.
     public void PredictUnknownMediaItemsReturnsSameGlobalMean()
     {
         _model.Train(
@@ -215,6 +228,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with known user unknown media returns global mean.
     public void PredictKnownUserUnknownMediaReturnsGlobalMean()
     {
         Guid mediaId = Guid.NewGuid();
@@ -231,6 +245,7 @@ public class MediaMeanModelTests
     // Input validation
 
     [Fact]
+    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -238,6 +253,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -253,6 +269,7 @@ public class MediaMeanModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that training with invalid rating throws ArgumentException.
     public void TrainInvalidRatingThrowsArgumentException(
         float invalidRating)
     {
@@ -266,6 +283,7 @@ public class MediaMeanModelTests
     // Model state
 
     [Fact]
+    // Verifies that predicting with before training throws InvalidOperationException.
     public void PredictBeforeTrainingThrowsInvalidOperationException()
     {
         Assert.Throws<InvalidOperationException>(() =>
@@ -273,6 +291,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies training for invalid dataset leaves model untrained.
     public void TrainInvalidDatasetLeavesModelUntrained()
     {
         Guid mediaId = Guid.NewGuid();
@@ -289,6 +308,7 @@ public class MediaMeanModelTests
     // Retraining
 
     [Fact]
+    // Verifies training for new ratings replaces previous media mean.
     public void TrainNewRatingsReplacesPreviousMediaMean()
     {
         Guid mediaId = Guid.NewGuid();
@@ -305,6 +325,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies training for new dataset removes previous media.
     public void TrainNewDatasetRemovesPreviousMedia()
     {
         Guid oldMedia = Guid.NewGuid();
@@ -326,6 +347,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies training for new dataset updates global mean fallback.
     public void TrainNewDatasetUpdatesGlobalMeanFallback()
     {
         Guid unknownMedia = Guid.NewGuid();
@@ -344,6 +366,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with same dataset produces same predictions.
     public void TrainSameDatasetProducesSamePredictions()
     {
         Guid mediaId = Guid.NewGuid();
@@ -364,6 +387,7 @@ public class MediaMeanModelTests
     // State preservation
 
     [Fact]
+    // Verifies that training with invalid dataset preserves previous media mean.
     public void TrainInvalidDatasetPreservesPreviousMediaMean()
     {
         Guid mediaId = Guid.NewGuid();
@@ -381,6 +405,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with invalid dataset preserves global mean fallback.
     public void TrainInvalidDatasetPreservesGlobalMeanFallback()
     {
         _model.Train(
@@ -399,6 +424,7 @@ public class MediaMeanModelTests
     // Data integrity
 
     [Fact]
+    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
         var ratings = CreateMediaRatings(Guid.NewGuid(), 5f, 2f)
@@ -413,6 +439,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with different rating order returns the same predictions.
     public void TrainDifferentRatingOrderReturnsSamePredictions()
     {
         Guid mediaA = Guid.NewGuid();
@@ -439,6 +466,7 @@ public class MediaMeanModelTests
     // Scalability and numerical correctness
 
     [Fact]
+    // Verifies that training with large dataset returns the correct means.
     public void TrainLargeDatasetReturnsCorrectMeans()
     {
         Guid mediaA = Guid.NewGuid();
@@ -463,6 +491,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with many media returns the correct individual means.
     public void TrainManyMediaReturnsCorrectIndividualMeans()
     {
         var ratings = new List<RatingObservation>();
@@ -491,6 +520,7 @@ public class MediaMeanModelTests
     // Recommendation ranking
 
     [Fact]
+    // Verifies predicting for higher rated media receives higher prediction.
     public void PredictHigherRatedMediaReceivesHigherPrediction()
     {
         Guid mediaA = Guid.NewGuid();
@@ -510,6 +540,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with equal media means returns equal predictions.
     public void PredictEqualMediaMeansReturnsEqualPredictions()
     {
         Guid mediaA = Guid.NewGuid();
@@ -528,6 +559,7 @@ public class MediaMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with higher mean with fewer ratings ranks higher.
     public void PredictHigherMeanWithFewerRatingsRanksHigher()
     {
         Guid mediaA = Guid.NewGuid();
@@ -549,6 +581,7 @@ public class MediaMeanModelTests
 
     // Helper method
 
+    // Creates test data for media ratings.
     private static IReadOnlyList<RatingObservation> CreateMediaRatings(
         Guid mediaId,
         params float[] values)

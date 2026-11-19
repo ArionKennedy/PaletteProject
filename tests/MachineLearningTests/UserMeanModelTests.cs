@@ -12,6 +12,7 @@ public class UserMeanModelTests
     // Mathematical correctness
 
     [Fact]
+    // Verifies that predicting with single rating returns the same rating.
     public void PredictSingleRatingReturnsSameRating()
     {
         Guid userId = Guid.NewGuid();
@@ -23,6 +24,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with multiple ratings returns the correct mean.
     public void PredictMultipleRatingsReturnsCorrectMean()
     {
         Guid userId = Guid.NewGuid();
@@ -35,6 +37,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with fractional ratings returns the correct mean.
     public void PredictFractionalRatingsReturnsCorrectMean()
     {
         Guid userId = Guid.NewGuid();
@@ -47,6 +50,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with multiple users returns individual means.
     public void PredictMultipleUsersReturnsIndividualMeans()
     {
         Guid userA = Guid.NewGuid();
@@ -73,6 +77,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with users rating same media returns individual means.
     public void PredictUsersRatingSameMediaReturnsIndividualMeans()
     {
         Guid userA = Guid.NewGuid();
@@ -97,6 +102,7 @@ public class UserMeanModelTests
     [InlineData(1f)]
     [InlineData(3f)]
     [InlineData(5f)]
+    // Verifies that predicting with identical ratings returns the same rating.
     public void PredictIdenticalRatingsReturnsSameRating(float rating)
     {
         Guid userId = Guid.NewGuid();
@@ -109,6 +115,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with minimum and maximum ratings returns midpoint.
     public void PredictMinimumAndMaximumRatingsReturnsMidpoint()
     {
         Guid userId = Guid.NewGuid();
@@ -122,6 +129,7 @@ public class UserMeanModelTests
     // Prediction consistency
 
     [Fact]
+    // Verifies that predicting with same user different media returns the same prediction.
     public void PredictSameUserDifferentMediaReturnsSamePrediction()
     {
         Guid userId = Guid.NewGuid();
@@ -136,6 +144,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with known and unknown media returns the same prediction.
     public void PredictKnownAndUnknownMediaReturnsSamePrediction()
     {
         Guid userId = Guid.NewGuid();
@@ -155,6 +164,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with repeated calls returns the same prediction.
     public void PredictRepeatedCallsReturnsSamePrediction()
     {
         Guid userId = Guid.NewGuid();
@@ -174,6 +184,7 @@ public class UserMeanModelTests
     // Cold start behaviour
 
     [Fact]
+    // Verifies that predicting with unknown user returns global mean.
     public void PredictUnknownUserReturnsGlobalMean()
     {
         var ratings = CreateUserRatings(Guid.NewGuid(), 5f, 4f)
@@ -187,6 +198,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown user uses observation weighted global mean.
     public void PredictUnknownUserUsesObservationWeightedGlobalMean()
     {
         var ratings = CreateUserRatings(Guid.NewGuid(), 5f, 5f, 5f)
@@ -200,6 +212,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown users returns the same global mean.
     public void PredictUnknownUsersReturnsSameGlobalMean()
     {
         _model.Train(
@@ -215,6 +228,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with unknown user known media returns global mean.
     public void PredictUnknownUserKnownMediaReturnsGlobalMean()
     {
         Guid userId = Guid.NewGuid();
@@ -231,6 +245,7 @@ public class UserMeanModelTests
     // Input validation
 
     [Fact]
+    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -238,6 +253,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -253,6 +269,7 @@ public class UserMeanModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that training with invalid rating throws ArgumentException.
     public void TrainInvalidRatingThrowsArgumentException(
         float invalidRating)
     {
@@ -266,6 +283,7 @@ public class UserMeanModelTests
     // Model state
 
     [Fact]
+    // Verifies that predicting with before training throws InvalidOperationException.
     public void PredictBeforeTrainingThrowsInvalidOperationException()
     {
         Assert.Throws<InvalidOperationException>(() =>
@@ -273,6 +291,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies training for invalid dataset leaves model untrained.
     public void TrainInvalidDatasetLeavesModelUntrained()
     {
         Guid userId = Guid.NewGuid();
@@ -289,6 +308,7 @@ public class UserMeanModelTests
     // Retraining
 
     [Fact]
+    // Verifies training for new ratings replaces previous user mean.
     public void TrainNewRatingsReplacesPreviousUserMean()
     {
         Guid userId = Guid.NewGuid();
@@ -305,6 +325,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies training for new dataset removes previous users.
     public void TrainNewDatasetRemovesPreviousUsers()
     {
         Guid oldUser = Guid.NewGuid();
@@ -326,6 +347,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies training for new dataset updates global mean fallback.
     public void TrainNewDatasetUpdatesGlobalMeanFallback()
     {
         Guid unknownUser = Guid.NewGuid();
@@ -344,6 +366,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with same dataset produces same predictions.
     public void TrainSameDatasetProducesSamePredictions()
     {
         Guid userId = Guid.NewGuid();
@@ -364,6 +387,7 @@ public class UserMeanModelTests
     // State preservation
 
     [Fact]
+    // Verifies that training with invalid dataset preserves previous user mean.
     public void TrainInvalidDatasetPreservesPreviousUserMean()
     {
         Guid userId = Guid.NewGuid();
@@ -381,6 +405,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with invalid dataset preserves global mean fallback.
     public void TrainInvalidDatasetPreservesGlobalMeanFallback()
     {
         _model.Train(
@@ -399,6 +424,7 @@ public class UserMeanModelTests
     // Data integrity
 
     [Fact]
+    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
         var ratings = CreateUserRatings(Guid.NewGuid(), 5f, 2f)
@@ -413,6 +439,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with different rating order returns the same predictions.
     public void TrainDifferentRatingOrderReturnsSamePredictions()
     {
         Guid userA = Guid.NewGuid();
@@ -439,6 +466,7 @@ public class UserMeanModelTests
     // Scalability and numerical correctness
 
     [Fact]
+    // Verifies that training with large dataset returns the correct means.
     public void TrainLargeDatasetReturnsCorrectMeans()
     {
         Guid userA = Guid.NewGuid();
@@ -463,6 +491,7 @@ public class UserMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with many users returns the correct individual means.
     public void TrainManyUsersReturnsCorrectIndividualMeans()
     {
         var ratings = new List<RatingObservation>();
@@ -490,6 +519,7 @@ public class UserMeanModelTests
 
     // Helper method
 
+    // Creates test data for user ratings.
     private static IReadOnlyList<RatingObservation> CreateUserRatings(
         Guid userId,
         params float[] values)

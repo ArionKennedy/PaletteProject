@@ -8,6 +8,7 @@ namespace Palette.Api.MachineLearning.Evaluation;
 
 public static class ModelComparison
 {
+    // Trains baseline and factorization models and prints their metrics.
     public static void Run()
     {
         var ratings = DataGenerator.Generate();
@@ -54,6 +55,7 @@ public static class ModelComparison
             split);
     }
 
+    // Times model training and reports training and validation RMSE.
     private static void EvaluateModel(
         string name,
         Action train,

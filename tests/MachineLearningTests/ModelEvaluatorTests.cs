@@ -6,6 +6,7 @@ namespace Palette.Tests.ModelEvaluatorTests;
 public class ModelEvaluatorTests
 {
     [Fact]
+    // Verifies that calculating RMSE with empty ratings throws ArgumentException.
     public void CalculateRmseEmptyRatingsThrowsArgumentException()
     {
         // Empty ratings list
@@ -17,6 +18,7 @@ public class ModelEvaluatorTests
     }
 
     [Fact]
+    // Verifies that calculating RMSE with inaccurate predictions returns the expected error.
     public void CalculateRmseInaccuratePredictionsReturnsExpectedError()
     {
         // Active rating list
@@ -36,6 +38,7 @@ public class ModelEvaluatorTests
     }
 
     [Fact]
+    // Verifies that calculating RMSE with perfect predictions returns zero.
     public void CalculateRmsePerfectPredictionsReturnsZero()
     {
         // Active rating list

@@ -7,6 +7,7 @@ namespace Palette.Api.MachineLearning.ContentBased;
 
 public static class CategoricalSimilarityScorer
 {
+    // Scores weighted preferences against normalized candidate features.
     public static float Score(
         IReadOnlyDictionary<string, float> preferences,
         IReadOnlyList<string> features)

@@ -12,6 +12,7 @@ public class GlobalMeanModelTests
     // Mathematical correctness
 
     [Fact]
+    // Verifies that predicting with single rating returns the same rating.
     public void PredictSingleRatingReturnsSameRating()
     {
         var ratings = CreateRatings(4f);
@@ -25,6 +26,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with multiple ratings returns the correct mean.
     public void PredictMultipleRatingsReturnsCorrectMean()
     {
         var ratings = CreateRatings(5f, 4f, 2f, 3f, 4f);
@@ -38,6 +40,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with fractional ratings returns the correct mean.
     public void PredictFractionalRatingsReturnsCorrectMean()
     {
         var ratings = CreateRatings(2.5f, 3.5f, 4.5f);
@@ -56,6 +59,7 @@ public class GlobalMeanModelTests
     [InlineData(1f)]
     [InlineData(3f)]
     [InlineData(5f)]
+    // Verifies that predicting with identical ratings returns the same rating.
     public void PredictIdenticalRatingsReturnsSameRating(
         float rating)
     {
@@ -70,6 +74,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with minimum and maximum ratings returns midpoint.
     public void PredictMinimumAndMaximumRatingsReturnsMidpoint()
     {
         var ratings = CreateRatings(1f, 5f);
@@ -85,6 +90,7 @@ public class GlobalMeanModelTests
     // Input validation
 
     [Fact]
+    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -92,6 +98,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
         var ratings = Array.Empty<RatingObservation>();
@@ -109,6 +116,7 @@ public class GlobalMeanModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that training with invalid rating throws ArgumentException.
     public void TrainInvalidRatingThrowsArgumentException(
         float invalidRating)
     {
@@ -121,6 +129,7 @@ public class GlobalMeanModelTests
     // Model state
 
     [Fact]
+    // Verifies that predicting with before training throws InvalidOperationException.
     public void PredictBeforeTrainingThrowsInvalidOperationException()
     {
         Assert.Throws<InvalidOperationException>(() =>
@@ -128,6 +137,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies training for invalid dataset leaves model untrained.
     public void TrainInvalidDatasetLeavesModelUntrained()
     {
         var ratings = CreateRatings(4f, float.NaN);
@@ -142,6 +152,7 @@ public class GlobalMeanModelTests
     // Prediction consistency
 
     [Fact]
+    // Verifies that predicting with different users returns the same prediction.
     public void PredictDifferentUsersReturnsSamePrediction()
     {
         _model.Train(CreateRatings(2f, 4f));
@@ -159,6 +170,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with different media returns the same prediction.
     public void PredictDifferentMediaReturnsSamePrediction()
     {
         _model.Train(CreateRatings(2f, 4f));
@@ -176,6 +188,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with known and unknown pairs returns the same prediction.
     public void PredictKnownAndUnknownPairsReturnsSamePrediction()
     {
         var ratings = CreateRatings(2f, 4f);
@@ -195,6 +208,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that predicting with repeated calls returns the same prediction.
     public void PredictRepeatedCallsReturnsSamePrediction()
     {
         _model.Train(CreateRatings(1f, 3f, 5f));
@@ -215,6 +229,7 @@ public class GlobalMeanModelTests
     // Retraining
 
     [Fact]
+    // Verifies training for new dataset replaces previous mean.
     public void TrainNewDatasetReplacesPreviousMean()
     {
         _model.Train(CreateRatings(1f, 2f, 3f));
@@ -232,6 +247,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with same dataset produces same mean.
     public void TrainSameDatasetProducesSameMean()
     {
         var ratings = CreateRatings(1f, 3f, 4f, 5f);
@@ -250,6 +266,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with invalid dataset preserves previous mean.
     public void TrainInvalidDatasetPreservesPreviousMean()
     {
         _model.Train(CreateRatings(2f, 4f));
@@ -268,6 +285,7 @@ public class GlobalMeanModelTests
     // Data integrity
 
     [Fact]
+    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
         var ratings = CreateRatings(5f, 2f, 4f, 1f);
@@ -280,6 +298,7 @@ public class GlobalMeanModelTests
     }
 
     [Fact]
+    // Verifies that training with different rating order returns the same mean.
     public void TrainDifferentRatingOrderReturnsSameMean()
     {
         var ratings = CreateRatings(5f, 2f, 4f, 1f);
@@ -300,6 +319,7 @@ public class GlobalMeanModelTests
     // Scalability and numerical correctness
 
     [Fact]
+    // Verifies that training with large dataset returns the correct mean.
     public void TrainLargeDatasetReturnsCorrectMean()
     {
         var values = Enumerable.Repeat(5f, 5000)
@@ -316,6 +336,7 @@ public class GlobalMeanModelTests
 
     // Helper method
 
+    // Creates a rating set for the tests.
     private static IReadOnlyList<RatingObservation> CreateRatings(
         params float[] values)
     {

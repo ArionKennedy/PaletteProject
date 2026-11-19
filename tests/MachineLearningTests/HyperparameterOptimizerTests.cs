@@ -55,12 +55,14 @@ public sealed class HyperparameterOptimizerTests
     // Configuration generation
 
     [Fact]
+    // Verifies that optimizing parameters returns all 480 configurations.
     public void OptimizeReturnsAll480Configurations()
     {
         Assert.Equal(480, Results.Count);
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns unique configurations.
     public void OptimizeReturnsUniqueConfigurations()
     {
         Assert.Equal(
@@ -70,6 +72,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for evaluates all factor counts.
     public void OptimizeEvaluatesAllFactorCounts()
     {
         int[] expected = { 1, 2, 3, 4, 8, 16 };
@@ -84,6 +87,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for evaluates all epoch counts.
     public void OptimizeEvaluatesAllEpochCounts()
     {
         int[] expected = { 25, 50, 100, 200 };
@@ -98,6 +102,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for evaluates all learning rates.
     public void OptimizeEvaluatesAllLearningRates()
     {
         float[] expected =
@@ -115,6 +120,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for evaluates all regularizations.
     public void OptimizeEvaluatesAllRegularizations()
     {
         float[] expected =
@@ -132,6 +138,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters includes original configuration.
     public void OptimizeIncludesOriginalConfiguration()
     {
         var original = new Hyperparameters(
@@ -145,6 +152,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters includes previously optimal configuration.
     public void OptimizeIncludesPreviouslyOptimalConfiguration()
     {
         var optimized = new Hyperparameters(
@@ -160,6 +168,7 @@ public sealed class HyperparameterOptimizerTests
     // Result validation
 
     [Fact]
+    // Verifies that optimizing parameters returns non negative training rmse.
     public void OptimizeReturnsNonNegativeTrainingRmse()
     {
         Assert.All(Results, result =>
@@ -167,6 +176,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns non negative validation rmse.
     public void OptimizeReturnsNonNegativeValidationRmse()
     {
         Assert.All(Results, result =>
@@ -174,6 +184,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns the finite training rmse.
     public void OptimizeReturnsFiniteTrainingRmse()
     {
         Assert.All(Results, result =>
@@ -181,6 +192,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns the finite validation rmse.
     public void OptimizeReturnsFiniteValidationRmse()
     {
         Assert.All(Results, result =>
@@ -188,6 +200,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns non negative training time.
     public void OptimizeReturnsNonNegativeTrainingTime()
     {
         Assert.All(Results, result =>
@@ -195,6 +208,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns the finite training time.
     public void OptimizeReturnsFiniteTrainingTime()
     {
         Assert.All(Results, result =>
@@ -204,6 +218,7 @@ public sealed class HyperparameterOptimizerTests
     // Model evaluation
 
     [Fact]
+    // Verifies optimizing parameters for calculates correct training rmse.
     public void OptimizeCalculatesCorrectTrainingRmse()
     {
         var result = Results.First();
@@ -219,6 +234,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for calculates correct validation rmse.
     public void OptimizeCalculatesCorrectValidationRmse()
     {
         var result = Results.First();
@@ -234,6 +250,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for trains independent models.
     public void OptimizeTrainsIndependentModels()
     {
         var configurations = new[]
@@ -259,6 +276,7 @@ public sealed class HyperparameterOptimizerTests
     // Sorting
 
     [Fact]
+    // Verifies optimizing parameters for sorts by ascending validation rmse.
     public void OptimizeSortsByAscendingValidationRmse()
     {
         for (int i = 1; i < Results.Count; i++)
@@ -271,6 +289,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters returns best configuration first.
     public void OptimizeReturnsBestConfigurationFirst()
     {
         double minimum = Results.Min(
@@ -286,6 +305,7 @@ public sealed class HyperparameterOptimizerTests
     // Reproducibility
 
     [Fact]
+    // Verifies that optimizing parameters produces consistent best configuration.
     public void OptimizeProducesConsistentBestConfiguration()
     {
         var repeated = HyperparameterOptimizer.Optimize(
@@ -299,6 +319,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters produces consistent rmse values.
     public void OptimizeProducesConsistentRmseValues()
     {
         var repeated = HyperparameterOptimizer.Optimize(
@@ -331,6 +352,7 @@ public sealed class HyperparameterOptimizerTests
     // Data integrity
 
     [Fact]
+    // Verifies that optimizing parameters does not modify training dataset.
     public void OptimizeDoesNotModifyTrainingDataset()
     {
         Assert.Equal(
@@ -340,6 +362,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters does not modify validation dataset.
     public void OptimizeDoesNotModifyValidationDataset()
     {
         Assert.Equal(
@@ -349,6 +372,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters does not modify testing dataset.
     public void OptimizeDoesNotModifyTestingDataset()
     {
         Assert.Equal(
@@ -358,6 +382,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies that optimizing parameters does not depend on testing dataset.
     public void OptimizeDoesNotDependOnTestingDataset()
     {
         var modifiedSplit = new DatasetSplit(
@@ -396,6 +421,7 @@ public sealed class HyperparameterOptimizerTests
     // Input validation
 
     [Fact]
+    // Verifies optimizing parameters for rejects null dataset split.
     public void OptimizeRejectsNullDatasetSplit()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -403,6 +429,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for rejects empty training dataset.
     public void OptimizeRejectsEmptyTrainingDataset()
     {
         var split = new DatasetSplit(
@@ -416,6 +443,7 @@ public sealed class HyperparameterOptimizerTests
     }
 
     [Fact]
+    // Verifies optimizing parameters for rejects empty validation dataset.
     public void OptimizeRejectsEmptyValidationDataset()
     {
         var split = new DatasetSplit(
@@ -430,6 +458,7 @@ public sealed class HyperparameterOptimizerTests
 
     // Helper methods
 
+    // Verifies training for model.
     private MatrixFactorizationModel TrainModel(
         Hyperparameters parameters)
     {

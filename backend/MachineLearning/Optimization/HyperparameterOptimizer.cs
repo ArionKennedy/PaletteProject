@@ -9,6 +9,8 @@ namespace Palette.Api.MachineLearning.Optimization;
 
 public static class HyperparameterOptimizer
 {
+    // Trains and evaluates each configured parameter combination, ordered by
+    // ascending validation RMSE.
     public static IReadOnlyList<OptimizationResult> Optimize(
         DatasetSplit split)
     {
@@ -31,6 +33,7 @@ public static class HyperparameterOptimizer
             .ToList();
     }
 
+    // Enumerates the configured Cartesian product of training parameters.
     private static IEnumerable<Hyperparameters>
         GenerateConfigurations()
     {
@@ -68,6 +71,7 @@ public static class HyperparameterOptimizer
         }
     }
 
+    // Trains one model and records its RMSE and training duration.
     private static OptimizationResult EvaluateConfiguration(
         Hyperparameters parameters,
         DatasetSplit split)

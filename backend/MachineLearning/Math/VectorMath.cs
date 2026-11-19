@@ -2,6 +2,7 @@ namespace Palette.Api.MachineLearning.LinearAlgebra;
 
 public static class VectorMath
 {
+    // Returns the dot product of two equally sized vectors.
     public static float DotProduct(
         ReadOnlySpan<float> factorA,
         ReadOnlySpan<float> factorB)
@@ -22,12 +23,14 @@ public static class VectorMath
         return result;
     }
 
+    // Returns the Euclidean magnitude of a vector.
     public static float Magnitude(
         ReadOnlySpan<float> vector)
     {
         return MathF.Sqrt(DotProduct(vector, vector));
     }
 
+    // Returns the cosine similarity of two vectors, or zero for a zero vector.
     public static float CosineSimilarity(
         ReadOnlySpan<float> vectorA,
         ReadOnlySpan<float> vectorB)

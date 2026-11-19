@@ -20,7 +20,7 @@ public static class ModelEvaluator
     //     return Math.Sqrt((1/actual.Length)*(result));
     // }
 
-    // Test Calculation Recommendation
+    // Calculates root mean squared error for a prediction function.
     public static double CalculateRmse(IReadOnlyList<RatingObservation> ratings, Func<Guid, Guid, float> predict)
     {
         if (ratings.Count == 0)

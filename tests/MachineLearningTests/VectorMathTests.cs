@@ -25,6 +25,7 @@ public class VectorMathTests
                 new float[] { }, 0f)]
     [InlineData(new float[] { 0.5f, 1.5f },
                 new float[] { 2, 3 }, 5.5f)]
+    // Verifies that calculating a dot product with valid vectors returns the expected result.
     public void DotProductValidVectorsReturnsExpectedResult(
         float[] a,
         float[] b,
@@ -42,6 +43,7 @@ public class VectorMathTests
     [InlineData(new float[] { 1 }, new float[] { 2, 3 })]
     [InlineData(new float[] { }, new float[] { 1 })]
     [InlineData(new float[] { 1 }, new float[] { })]
+    // Verifies that calculating a dot product with unequal lengths throws ArgumentException.
     public void DotProductUnequalLengthsThrowsArgumentException(
         float[] a,
         float[] b)
@@ -52,6 +54,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating a dot product with reversed vectors returns the same result.
     public void DotProductReversedVectorsReturnsSameResult()
     {
         // Arrange
@@ -67,6 +70,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating a dot product with valid vectors does not modify inputs.
     public void DotProductValidVectorsDoesNotModifyInputs()
     {
         // Arrange
@@ -95,6 +99,7 @@ public class VectorMathTests
     [InlineData(new float[] { -5 }, 5f)]
     [InlineData(new float[] { }, 0f)]
     [InlineData(new float[] { 0.3f, 0.4f }, 0.5f)]
+    // Verifies that calculating vector magnitude with valid vector returns the expected result.
     public void MagnitudeValidVectorReturnsExpectedResult(
         float[] vector,
         float expected)
@@ -107,6 +112,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating vector magnitude with scaled vector returns scaled magnitude.
     public void MagnitudeScaledVectorReturnsScaledMagnitude()
     {
         // Arrange
@@ -122,6 +128,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating vector magnitude does not modify input.
     public void MagnitudeDoesNotModifyInput()
     {
         // Arrange
@@ -164,6 +171,7 @@ public class VectorMathTests
                 new float[] { -1, 1 }, -0.707107f)]
     [InlineData(new float[] { 1, 1, 0 },
                 new float[] { 1, 0, 1 }, 0.5f)]
+    // Verifies that calculating cosine similarity with valid vectors returns the expected result.
     public void CosineSimilarityValidVectorsReturnsExpectedResult(
         float[] a,
         float[] b,
@@ -181,6 +189,7 @@ public class VectorMathTests
     [InlineData(new float[] { 1 }, new float[] { 1, 2 })]
     [InlineData(new float[] { }, new float[] { 1 })]
     [InlineData(new float[] { 1 }, new float[] { })]
+    // Verifies that calculating cosine similarity with unequal lengths throws ArgumentException.
     public void CosineSimilarityUnequalLengthsThrowsArgumentException(
         float[] a,
         float[] b)
@@ -191,6 +200,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating cosine similarity with reversed vectors returns the same result.
     public void CosineSimilarityReversedVectorsReturnsSameResult()
     {
         // Arrange
@@ -206,6 +216,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating cosine similarity with scaled vectors returns the same result.
     public void CosineSimilarityScaledVectorsReturnsSameResult()
     {
         // Arrange
@@ -222,6 +233,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating cosine similarity with random vectors remains in range.
     public void CosineSimilarityRandomVectorsRemainsInRange()
     {
         // Arrange
@@ -248,6 +260,7 @@ public class VectorMathTests
     }
 
     [Fact]
+    // Verifies that calculating cosine similarity does not modify inputs.
     public void CosineSimilarityDoesNotModifyInputs()
     {
         // Arrange

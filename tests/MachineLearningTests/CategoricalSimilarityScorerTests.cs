@@ -11,6 +11,7 @@ public class CategoricalSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with identical single feature returns one.
     public void ScoreIdenticalSingleFeatureReturnsOne()
     {
         var preferences = new Dictionary<string, float>
@@ -27,6 +28,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with identical multiple features returns one.
     public void ScoreIdenticalMultipleFeaturesReturnsOne()
     {
         var preferences = new Dictionary<string, float>
@@ -45,6 +47,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with unrelated features returns zero.
     public void ScoreUnrelatedFeaturesReturnsZero()
     {
         var preferences = new Dictionary<string, float>
@@ -62,6 +65,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with partially matching features returns the expected result.
     public void ScorePartiallyMatchingFeaturesReturnsExpectedResult()
     {
         var preferences = new Dictionary<string, float>
@@ -79,6 +83,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with weighted preferences returns the expected result.
     public void ScoreWeightedPreferencesReturnsExpectedResult()
     {
         var preferences = new Dictionary<string, float>
@@ -103,6 +108,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that a more heavily weighted matching feature increases similarity.
     public void ScoreHigherWeightedFeatureRanksHigher()
     {
         var preferences = new Dictionary<string, float>
@@ -121,6 +127,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with unknown candidate feature reduces similarity.
     public void ScoreUnknownCandidateFeatureReducesSimilarity()
     {
         var preferences = new Dictionary<string, float>
@@ -139,6 +146,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with unmatched preference reduces similarity.
     public void ScoreUnmatchedPreferenceReducesSimilarity()
     {
         var preferences = new Dictionary<string, float>
@@ -154,6 +162,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with fractional weights returns the expected result.
     public void ScoreFractionalWeightsReturnsExpectedResult()
     {
         var preferences = new Dictionary<string, float>
@@ -173,6 +182,7 @@ public class CategoricalSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with empty preferences returns zero.
     public void ScoreEmptyPreferencesReturnsZero()
     {
         var preferences = new Dictionary<string, float>();
@@ -184,6 +194,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with empty features returns zero.
     public void ScoreEmptyFeaturesReturnsZero()
     {
         var preferences = new Dictionary<string, float>
@@ -198,6 +209,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with both inputs empty returns zero.
     public void ScoreBothInputsEmptyReturnsZero()
     {
         float result = CategoricalSimilarityScorer.Score(
@@ -208,6 +220,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with all zero weights returns zero.
     public void ScoreAllZeroWeightsReturnsZero()
     {
         var preferences = new Dictionary<string, float>
@@ -223,6 +236,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with matching zero weight feature returns zero.
     public void ScoreMatchingZeroWeightFeatureReturnsZero()
     {
         var preferences = new Dictionary<string, float>
@@ -242,6 +256,7 @@ public class CategoricalSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with different capitalization still matches .
     public void ScoreDifferentCapitalizationStillMatches()
     {
         var preferences = new Dictionary<string, float>
@@ -256,6 +271,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with extra whitespace still matches .
     public void ScoreExtraWhitespaceStillMatches()
     {
         var preferences = new Dictionary<string, float>
@@ -270,6 +286,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with duplicate features does not increase weight.
     public void ScoreDuplicateFeaturesDoesNotIncreaseWeight()
     {
         var preferences = new Dictionary<string, float>
@@ -289,6 +306,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with duplicate normalized preferences combines weights.
     public void ScoreDuplicateNormalizedPreferencesCombinesWeights()
     {
         var preferences = new Dictionary<string, float>
@@ -317,6 +335,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that blank candidate features are ignored.
     public void ScoreBlankFeaturesAreIgnored()
     {
         var preferences = new Dictionary<string, float>
@@ -333,6 +352,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that blank preference keys are ignored.
     public void ScoreBlankPreferenceKeysAreIgnored()
     {
         var preferences = new Dictionary<string, float>
@@ -353,6 +373,7 @@ public class CategoricalSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with null preferences throws ArgumentNullException.
     public void ScoreNullPreferencesThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -361,6 +382,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with null features throws ArgumentNullException.
     public void ScoreNullFeaturesThrowsArgumentNullException()
     {
         var preferences = new Dictionary<string, float>
@@ -379,6 +401,7 @@ public class CategoricalSimilarityScorerTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that scoring with invalid weight throws ArgumentException.
     public void ScoreInvalidWeightThrowsArgumentException(
         float weight)
     {
@@ -397,6 +420,7 @@ public class CategoricalSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with scaled preferences returns the same result.
     public void ScoreScaledPreferencesReturnsSameResult()
     {
         var original = new Dictionary<string, float>
@@ -423,6 +447,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with reordered features returns the same result.
     public void ScoreReorderedFeaturesReturnsSameResult()
     {
         var preferences = new Dictionary<string, float>
@@ -442,6 +467,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with repeated calls returns the same result.
     public void ScoreRepeatedCallsReturnsSameResult()
     {
         var preferences = new Dictionary<string, float>
@@ -465,6 +491,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring does not modify inputs.
     public void ScoreDoesNotModifyInputs()
     {
         var preferences = new Dictionary<string, float>
@@ -495,6 +522,7 @@ public class CategoricalSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with random preferences remains in range.
     public void ScoreRandomPreferencesRemainsInRange()
     {
         Random random = new Random(42);

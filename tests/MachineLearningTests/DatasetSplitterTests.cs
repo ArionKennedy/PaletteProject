@@ -13,6 +13,7 @@ public class DatasetSplitterTests
     // Functional tests
 
     [Fact]
+    // Verifies that splitting ratings with default ratios returns the correct dataset sizes.
     public void SplitDefaultRatiosReturnsCorrectDatasetSizes()
     {
         // Act
@@ -28,6 +29,7 @@ public class DatasetSplitterTests
     [InlineData(0.6, 0.2, 1800, 600, 600)]
     [InlineData(0.5, 0.25, 1500, 750, 750)]
     [InlineData(0.9, 0.05, 2700, 150, 150)]
+    // Verifies that splitting ratings with custom ratios returns the correct dataset sizes.
     public void SplitCustomRatiosReturnsCorrectDatasetSizes(
         double trainingRatio,
         double validationRatio,
@@ -48,6 +50,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings returns disjoint datasets.
     public void SplitValidRatingsReturnsDisjointDatasets()
     {
         // Act
@@ -60,6 +63,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings returns disjoint user media pairs.
     public void SplitValidRatingsReturnsDisjointUserMediaPairs()
     {
         // Act
@@ -76,6 +80,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings preserves all observations.
     public void SplitValidRatingsPreservesAllObservations()
     {
         // Act
@@ -86,6 +91,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings does not modify input.
     public void SplitValidRatingsDoesNotModifyInput()
     {
         // Arrange
@@ -101,6 +107,7 @@ public class DatasetSplitterTests
     // Reproducibility tests
 
     [Fact]
+    // Verifies that splitting ratings with same seed returns the identical datasets.
     public void SplitSameSeedReturnsIdenticalDatasets()
     {
         // Act
@@ -122,6 +129,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with different seeds returns different datasets.
     public void SplitDifferentSeedsReturnsDifferentDatasets()
     {
         // Act
@@ -137,6 +145,7 @@ public class DatasetSplitterTests
     // Training coverage tests
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings guarantees user coverage.
     public void SplitValidRatingsGuaranteesUserCoverage()
     {
         // Act
@@ -152,6 +161,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with valid ratings guarantees media coverage.
     public void SplitValidRatingsGuaranteesMediaCoverage()
     {
         // Act
@@ -167,6 +177,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with rare user includes observation in training.
     public void SplitRareUserIncludesObservationInTraining()
     {
         // Arrange
@@ -189,6 +200,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with rare media includes observation in training.
     public void SplitRareMediaIncludesObservationInTraining()
     {
         // Arrange
@@ -211,6 +223,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with rare user and media includes observation in training.
     public void SplitRareUserAndMediaIncludesObservationInTraining()
     {
         // Arrange
@@ -235,6 +248,7 @@ public class DatasetSplitterTests
     // Boundary tests
 
     [Fact]
+    // Verifies that splitting ratings with uneven dataset size preserves all observations.
     public void SplitUnevenDatasetSizePreservesAllObservations()
     {
         // Arrange
@@ -252,6 +266,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with minimum default dataset returns non empty datasets.
     public void SplitMinimumDefaultDatasetReturnsNonEmptyDatasets()
     {
         // Arrange
@@ -271,6 +286,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with exact training coverage returns the valid split.
     public void SplitExactTrainingCoverageReturnsValidSplit()
     {
         // Arrange
@@ -313,6 +329,7 @@ public class DatasetSplitterTests
     // Exception tests
 
     [Fact]
+    // Verifies that splitting ratings with null ratings throws ArgumentNullException.
     public void SplitNullRatingsThrowsArgumentNullException()
     {
         // Act & Assert
@@ -321,6 +338,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with empty ratings throws ArgumentException.
     public void SplitEmptyRatingsThrowsArgumentException()
     {
         // Act & Assert
@@ -333,6 +351,7 @@ public class DatasetSplitterTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(9)]
+    // Verifies that splitting ratings with insufficient ratings throws ArgumentException.
     public void SplitInsufficientRatingsThrowsArgumentException(
         int count)
     {
@@ -345,6 +364,7 @@ public class DatasetSplitterTests
     }
 
     [Fact]
+    // Verifies that splitting ratings with insufficient training capacity throws InvalidOperationException.
     public void SplitInsufficientTrainingCapacityThrowsInvalidOperationException()
     {
         // Arrange
@@ -375,6 +395,7 @@ public class DatasetSplitterTests
     [InlineData(0.8, double.PositiveInfinity)]
     [InlineData(double.NegativeInfinity, 0.1)]
     [InlineData(0.8, double.NegativeInfinity)]
+    // Verifies that splitting ratings with invalid ratios throws ArgumentException.
     public void SplitInvalidRatiosThrowsArgumentException(
         double trainingRatio,
         double validationRatio)
@@ -390,6 +411,7 @@ public class DatasetSplitterTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    // Verifies that splitting ratings with duplicate user media pairs throws ArgumentException.
     public void SplitDuplicateUserMediaPairsThrowsArgumentException(
         bool identicalRating)
     {
@@ -430,6 +452,7 @@ public class DatasetSplitterTests
             .ToHashSet();
     }
 
+    // Creates dense user-media ratings for split tests.
     private static List<RatingObservation> CreateDenseRatings(
         int userCount,
         int movieCount)
@@ -448,6 +471,7 @@ public class DatasetSplitterTests
             .ToList();
     }
 
+    // Asserts that the split preserves every original observation.
     private static void AssertPreservedObservations(
         IReadOnlyList<RatingObservation> original,
         DatasetSplit split)

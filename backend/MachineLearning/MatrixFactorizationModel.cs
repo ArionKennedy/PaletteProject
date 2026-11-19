@@ -14,6 +14,7 @@ public sealed class MatrixFactorizationModel
 
     private readonly Random _random = new(42);
 
+    // Creates a model with the requested number of latent factors.
     public MatrixFactorizationModel(int factorCount = 8)
     {
         if (factorCount <= 0)
@@ -26,6 +27,7 @@ public sealed class MatrixFactorizationModel
         _factorCount = factorCount;
     }
 
+    // Predicts a rating from the trained user and media factor vectors.
     public float Predict(Guid userId, Guid mediaId)
     {
         if (!_userFactors.TryGetValue(userId, out var user))
@@ -43,6 +45,7 @@ public sealed class MatrixFactorizationModel
         return VectorMath.DotProduct(user, movie);
     }
 
+    // Trains with stochastic gradient descent after validating all input data.
     public void Train(
         IReadOnlyList<RatingObservation> ratings,
         int epochs = 100,
@@ -70,7 +73,7 @@ public sealed class MatrixFactorizationModel
         }
     }
 
-    // Performs one stochastic gradient descent update.
+    // Updates the latent factors for one rating observation.
     private void TrainObservation(
         RatingObservation rating,
         float learningRate,
@@ -93,7 +96,7 @@ public sealed class MatrixFactorizationModel
             regularization);
     }
 
-    // Updates both latent vectors using gradient descent.
+    // Applies one regularized gradient step to both factor vectors.
     private void UpdateFactors(
         float[] user,
         float[] movie,
@@ -114,7 +117,7 @@ public sealed class MatrixFactorizationModel
         }
     }
 
-    // Retrieves an existing latent vector or initializes a new one.
+    // Returns an entity's latent vector, initializing it when first seen.
     private float[] GetOrCreateFactors(
         Dictionary<Guid, float[]> factors,
         Guid id)
@@ -128,7 +131,7 @@ public sealed class MatrixFactorizationModel
         return vector;
     }
 
-    // Initializes a latent vector with small random values.
+    // Creates a latent vector initialized with small random values.
     private float[] CreateRandomVector()
     {
         var vector = new float[_factorCount];
@@ -141,7 +144,7 @@ public sealed class MatrixFactorizationModel
         return vector;
     }
 
-    // Validates the hyperparameters before training begins.
+    // Rejects invalid epoch, learning-rate, and regularization values.
     private static void ValidateTrainingParameters(
         int epochs,
         float learningRate,
@@ -171,7 +174,7 @@ public sealed class MatrixFactorizationModel
         }
     }
 
-    // Validates all rating observations before modifying the model.
+    // Rejects missing, empty, or out-of-range ratings before training.
     private static void ValidateRatings(
         IReadOnlyList<RatingObservation> ratings)
     {

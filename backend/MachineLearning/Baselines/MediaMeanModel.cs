@@ -11,6 +11,7 @@ public sealed class MediaMeanModel
 
     private bool _isTrained;
 
+    // Trains per-media averages and a global fallback.
     public void Train(
         IReadOnlyList<RatingObservation> ratings)
     {
@@ -23,6 +24,7 @@ public sealed class MediaMeanModel
         _isTrained = true;
     }
 
+    // Returns the media average, or the global mean if unseen.
     public float Predict(Guid userId, Guid mediaId)
     {
         if (!_isTrained)
@@ -39,7 +41,7 @@ public sealed class MediaMeanModel
         return _globalMeanModel.Predict(userId, mediaId);
     }
 
-    // Accumulates the rating sum and count for each media item.
+    // Accumulates rating sums and counts by media identifier.
     private static Dictionary<Guid, (double Sum, int Count)>
         CalculateMediaTotals(
             IReadOnlyList<RatingObservation> ratings)
@@ -60,7 +62,7 @@ public sealed class MediaMeanModel
         return totals;
     }
 
-    // Calculates the average rating for each media item.
+    // Converts accumulated media totals into averages.
     private static Dictionary<Guid, float> CalculateMediaMeans(
         Dictionary<Guid, (double Sum, int Count)> totals)
     {

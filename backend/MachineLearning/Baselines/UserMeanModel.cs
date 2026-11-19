@@ -11,6 +11,7 @@ public sealed class UserMeanModel
 
     private bool _isTrained;
 
+    // Trains per-user averages and a global fallback.
     public void Train(
         IReadOnlyList<RatingObservation> ratings)
     {
@@ -23,6 +24,7 @@ public sealed class UserMeanModel
         _isTrained = true;
     }
 
+    // Returns the user average, or the global mean if unseen.
     public float Predict(Guid userId, Guid mediaId)
     {
         if (!_isTrained)
@@ -39,7 +41,7 @@ public sealed class UserMeanModel
         return _globalMeanModel.Predict(userId, mediaId);
     }
 
-    // Accumulates the rating sum and count for each user.
+    // Accumulates rating sums and counts by user identifier.
     private static Dictionary<Guid, (double Sum, int Count)>
         CalculateUserTotals(
             IReadOnlyList<RatingObservation> ratings)
@@ -60,7 +62,7 @@ public sealed class UserMeanModel
         return totals;
     }
 
-    // Calculates the average rating for each user.
+    // Converts accumulated user totals into averages.
     private static Dictionary<Guid, float> CalculateUserMeans(
         Dictionary<Guid, (double Sum, int Count)> totals)
     {

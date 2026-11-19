@@ -5,6 +5,7 @@ namespace Palette.Api.MachineLearning.ContentBased;
 
 public static class LengthSimilarityScorer
 {
+    // Scores how closely a candidate length matches the preferred length.
     public static float Score(
         float? preferredLength,
         float? candidateLength,

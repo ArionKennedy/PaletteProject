@@ -6,6 +6,7 @@ namespace Palette.Api.MachineLearning.Evaluation;
 
 public static class DatasetAnalyzer
 {
+    // Prints dataset size, sparsity, rating, and activity statistics.
     public static void Analyze(
         IReadOnlyList<RatingObservation> ratings)
     {
@@ -79,6 +80,7 @@ public static class DatasetAnalyzer
         );
     }
 
+    // Prints the count and proportion of ratings at each star level.
     private static void PrintRatingDistribution(
         IReadOnlyList<RatingObservation> ratings)
     {
@@ -107,6 +109,7 @@ public static class DatasetAnalyzer
         }
     }
 
+    // Calculates the population standard deviation of the supplied values.
     private static double CalculateStandardDeviation(
         IReadOnlyList<double> values)
     {
@@ -119,6 +122,7 @@ public static class DatasetAnalyzer
         return Math.Sqrt(variance);
     }
 
+    // Prints the mean, standard deviation, minimum, and maximum.
     private static void PrintStatistics(
         string name,
         IReadOnlyList<double> values)

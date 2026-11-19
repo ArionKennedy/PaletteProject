@@ -18,6 +18,7 @@ public class LengthSimilarityScorerTests
     [InlineData(120f, 135f, 30f, 0.882497f)]
     [InlineData(300f, 400f, 100f, 0.606531f)]
     [InlineData(3f, 5f, 2f, 0.606531f)]
+    // Verifies that scoring with valid lengths returns the expected result.
     public void ScoreValidLengthsReturnsExpectedResult(
         float preferredLength,
         float candidateLength,
@@ -37,6 +38,7 @@ public class LengthSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with missing preferred length returns zero.
     public void ScoreMissingPreferredLengthReturnsZero()
     {
         // Act
@@ -48,6 +50,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with missing candidate length returns zero.
     public void ScoreMissingCandidateLengthReturnsZero()
     {
         // Act
@@ -59,6 +62,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with both lengths missing returns zero.
     public void ScoreBothLengthsMissingReturnsZero()
     {
         // Act
@@ -79,6 +83,7 @@ public class LengthSimilarityScorerTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that scoring with invalid preferred length throws ArgumentException.
     public void ScoreInvalidPreferredLengthThrowsArgumentException(
         float preferredLength)
     {
@@ -100,6 +105,7 @@ public class LengthSimilarityScorerTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that scoring with invalid candidate length throws ArgumentException.
     public void ScoreInvalidCandidateLengthThrowsArgumentException(
         float candidateLength)
     {
@@ -121,6 +127,7 @@ public class LengthSimilarityScorerTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
+    // Verifies that scoring with invalid tolerance throws ArgumentException.
     public void ScoreInvalidToleranceThrowsArgumentException(
         float tolerance)
     {
@@ -137,6 +144,7 @@ public class LengthSimilarityScorerTests
     // ==================================================
 
     [Fact]
+    // Verifies that scoring with closer length returns higher similarity.
     public void ScoreCloserLengthReturnsHigherSimilarity()
     {
         // Act
@@ -151,6 +159,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with equal length differences returns the same similarity.
     public void ScoreEqualLengthDifferencesReturnsSameSimilarity()
     {
         // Act
@@ -165,6 +174,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with higher tolerance returns higher similarity.
     public void ScoreHigherToleranceReturnsHigherSimilarity()
     {
         // Act
@@ -179,6 +189,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with scaled inputs returns the same similarity.
     public void ScoreScaledInputsReturnsSameSimilarity()
     {
         // Act
@@ -193,6 +204,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with extremely different lengths approaches zero.
     public void ScoreExtremelyDifferentLengthsApproachesZero()
     {
         // Act
@@ -204,6 +216,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with exact match is independent of tolerance.
     public void ScoreExactMatchIsIndependentOfTolerance()
     {
         // Act
@@ -219,6 +232,7 @@ public class LengthSimilarityScorerTests
     }
 
     [Fact]
+    // Verifies that scoring with random valid inputs remains in range.
     public void ScoreRandomValidInputsRemainsInRange()
     {
         // Arrange

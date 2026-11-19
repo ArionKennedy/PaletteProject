@@ -6,6 +6,7 @@ using Xunit;
 public class SyntheticDataGeneratorTests
 {
     [Fact]
+    // Verifies that generating ratings with default configuration returns 3000 ratings.
     public void GenerateDefaultConfigurationReturns3000Ratings()
     {
         // Act
@@ -21,6 +22,7 @@ public class SyntheticDataGeneratorTests
     [InlineData(1, 1, 1, 1)]
     [InlineData(5, 10, 10, 50)]
     [InlineData(10, 1, 1, 10)]
+    // Verifies that generating ratings with valid configuration returns the expected dataset.
     public void GenerateValidConfigurationReturnsExpectedDataset(
         int userCount,
         int movieCount,
@@ -47,6 +49,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies that generating ratings with valid configuration returns the valid ratings.
     public void GenerateValidConfigurationReturnsValidRatings()
     {
         // Act
@@ -61,6 +64,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies that generating ratings with valid configuration returns the valid identifiers.
     public void GenerateValidConfigurationReturnsValidIdentifiers()
     {
         // Act
@@ -75,6 +79,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies that generating ratings with valid configuration returns unique user media pairs.
     public void GenerateValidConfigurationReturnsUniqueUserMediaPairs()
     {
         // Act
@@ -90,6 +95,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies generating ratings for maximum ratings per user rates every movie.
     public void GenerateMaximumRatingsPerUserRatesEveryMovie()
     {
         // Arrange
@@ -113,6 +119,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies that generating ratings with same seed returns the identical rating values.
     public void GenerateSameSeedReturnsIdenticalRatingValues()
     {
         // Act
@@ -126,6 +133,7 @@ public class SyntheticDataGeneratorTests
     }
 
     [Fact]
+    // Verifies that generating ratings with different seeds returns different rating values.
     public void GenerateDifferentSeedsReturnsDifferentRatingValues()
     {
         // Act
@@ -146,6 +154,7 @@ public class SyntheticDataGeneratorTests
     [InlineData(10, 10, 0)]
     [InlineData(10, 10, -1)]
     [InlineData(10, 5, 6)]
+    // Verifies that generating ratings with invalid configuration throws ArgumentException.
     public void GenerateInvalidConfigurationThrowsArgumentException(
         int userCount,
         int movieCount,

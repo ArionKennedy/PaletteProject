@@ -7,6 +7,8 @@ namespace Palette.Api.MachineLearning.ContentBased;
 
 public static class UserProfileBuilder
 {
+    // Builds weighted categorical and length preferences from user interactions.
+    // Each media type contributes only its corresponding length preference.
     public static UserPreferenceProfile Build(
         Guid userId,
         IReadOnlyList<WeightedMediaInteraction> interactions)
@@ -99,6 +101,7 @@ public static class UserProfileBuilder
         );
     }
 
+    // Creates a preference map with case-insensitive keys.
     private static Dictionary<string, float>
         CreatePreferenceDictionary()
     {
@@ -106,6 +109,7 @@ public static class UserProfileBuilder
             StringComparer.OrdinalIgnoreCase);
     }
 
+    // Adds each distinct nonblank feature using its interaction weight.
     private static void AddPreferences(
         Dictionary<string, float> preferences,
         IReadOnlyList<string> features,
@@ -134,6 +138,7 @@ public static class UserProfileBuilder
         }
     }
 
+    // Adds a valid length and its weight to the running totals.
     private static void AccumulateLength(
         int? length,
         float weight,
@@ -149,6 +154,7 @@ public static class UserProfileBuilder
         totalWeight += weight;
     }
 
+    // Returns a weighted mean, or null when no values were accumulated.
     private static float? CalculateWeightedAverage(
         double weightedSum,
         double totalWeight)

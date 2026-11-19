@@ -3,6 +3,7 @@ namespace Palette.Api.MachineLearning;
 
 public static class DataGenerator
 {
+    // Generates seeded synthetic ratings from latent user and media preferences.
     public static List<RatingObservation> Generate(
         int userCount = 100,
         int movieCount = 200,
@@ -77,6 +78,7 @@ public static class DataGenerator
         return ratings;
     }
 
+    // Creates a normalized random preference vector.
     private static float[] CreatePreferenceVector(
         Random random,
         int factorCount)

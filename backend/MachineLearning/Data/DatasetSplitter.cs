@@ -6,6 +6,8 @@ namespace Palette.Api.MachineLearning.Data;
 
 public static class DatasetSplitter
 {
+    // Shuffles ratings into training, validation, and testing sets.
+    // Expands training as needed to cover every user and media item.
     public static DatasetSplit Split(
         IReadOnlyList<RatingObservation> ratings,
         double trainingRatio = 0.8,
@@ -45,7 +47,7 @@ public static class DatasetSplitter
             testing);
     }
 
-    // Validates the dataset and requested ratios.
+    // Validates ratings, split ratios, and unique user-media pairs.
     private static void ValidateInputs(
         IReadOnlyList<RatingObservation> ratings,
         double trainingRatio,
@@ -73,6 +75,7 @@ public static class DatasetSplitter
         ValidateUniqueUserMediaPairs(ratings);
     }
 
+    // Rejects duplicate user-media rating pairs.
     private static void ValidateUniqueUserMediaPairs(
     IReadOnlyList<RatingObservation> ratings)
     {
@@ -91,7 +94,7 @@ public static class DatasetSplitter
         }
     }
 
-    // Randomizes observations without modifying the input.
+    // Shuffles a copy of the observations using the supplied seed.
     private static RatingObservation[] ShuffleRatings(
         IReadOnlyList<RatingObservation> ratings,
         int seed)
@@ -104,7 +107,7 @@ public static class DatasetSplitter
         return shuffled;
     }
 
-    // Calculates the requested sizes of all three subsets.
+    // Calculates non-empty target sizes for all three subsets.
     private static (int Training, int Validation, int Testing)
         CalculateSplitSizes(
             int totalCount,
@@ -126,7 +129,7 @@ public static class DatasetSplitter
         return (training, validation, testing);
     }
 
-    // Ensures every user and media item appears in training.
+    // Moves observations into training until all users and media are covered.
     private static (
         List<RatingObservation> Training,
         List<RatingObservation> Remaining)
@@ -158,7 +161,7 @@ public static class DatasetSplitter
         return (training, remaining);
     }
 
-    // Fills the remaining capacity of the training subset.
+    // Fills the training target from remaining observations.
     private static void FillTrainingSet(
         List<RatingObservation> training,
         List<RatingObservation> remaining,
