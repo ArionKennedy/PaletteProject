@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Models;
 
@@ -10,7 +11,7 @@ public class PaletteDbContext : DbContext
     {
     }
 
-    // entity tables
+    // Entity tables
     public DbSet<User> Users => Set<User>();
     public DbSet<Media> Media => Set<Media>();
     public DbSet<Movie> Movies => Set<Movie>();
@@ -21,6 +22,7 @@ public class PaletteDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<CollectionItem> CollectionItems => Set<CollectionItem>();
+    public DbSet<SearchInteraction> SearchInteractions => Set<SearchInteraction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -142,6 +144,27 @@ public class PaletteDbContext : DbContext
             entity.HasOne(ci => ci.Media)
                 .WithMany()
                 .HasForeignKey(ci => ci.MediaId);
+        });
+
+        // Search Interactions
+        modelBuilder.Entity<SearchInteraction>(entity =>
+        {
+            entity.ToTable("SEARCH_INTERACTIONS");
+
+            entity.Property(interaction => interaction.Type)
+                .HasConversion<string>();
+
+            entity.HasOne(interaction => interaction.User)
+                .WithMany()
+                .HasForeignKey(interaction => interaction.UserId);
+
+            entity.HasIndex(interaction => new
+            {
+                interaction.UserId,
+                interaction.MediaType,
+                interaction.ExternalId,
+                interaction.Type
+            });
         });
     }
 }
