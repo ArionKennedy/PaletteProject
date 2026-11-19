@@ -74,11 +74,7 @@ describe('<SignInForm />', () => {
     await render(<SignInForm />);
 
     fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'notanemail');
-
-    // Find the password input (second TextInput) and type something so the button enables
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[1], 'password123');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
 
     fireEvent.press(screen.getByText('Continue'));
 
@@ -100,10 +96,8 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[0], 'user@example.com');
-    fireEvent.changeText(inputs[1], 'password123');
+    fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
     fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
@@ -130,10 +124,8 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[0], 'user@example.com');
-    fireEvent.changeText(inputs[1], 'password123');
+    fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
     fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
