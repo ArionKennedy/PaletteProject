@@ -13,6 +13,7 @@ public static class RecommendationFeatureExtensions
         services.AddScoped<ReviewStatisticsService>();
         services.AddScoped<MediaMetadataService>();
         services.AddScoped<UserInteractionService>();
+        services.AddScoped<SearchInteractionService>();
 
         return services;
     }
