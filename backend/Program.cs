@@ -3,6 +3,7 @@ using Backend.Features.Lookup;
 using Backend.Features.Search;
 using Backend.Features.Users;
 using Backend.Features.Recommendations;
+using Backend.Features.Recommendations.Endpoints;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
 using Backend.Providers.GoogleBooks;
@@ -108,6 +109,7 @@ app.MapLibrary();
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();
 app.MapLookupEndpoints();
+app.MapSearchInteractionEndpoints();
 
 app.Run();
 
