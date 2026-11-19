@@ -1,66 +1,153 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Palette.Api.MachineLearning.Data;
 
 public static class DatasetSplitter
 {
     public static DatasetSplit Split(
-    IReadOnlyList<RatingObservation> ratings,
-    double trainingRatio = 0.8,
-    double validationRatio = 0.1,
-    int seed = 42)
+        IReadOnlyList<RatingObservation> ratings,
+        double trainingRatio = 0.8,
+        double validationRatio = 0.1,
+        int seed = 42)
     {
-        // Check for empty ratings
-        if (ratings.Count == 0)
-            throw new ArgumentException("Ratings cannot be empty.");
+        ValidateInputs(
+            ratings,
+            trainingRatio,
+            validationRatio);
 
-        // Validate split ratios
+        var shuffledRatings = ShuffleRatings(ratings, seed);
+
+        var (trainingCount, validationCount, testingCount) =
+            CalculateSplitSizes(
+                ratings.Count,
+                trainingRatio,
+                validationRatio);
+
+        var (training, remaining) =
+            EnsureTrainingCoverage(shuffledRatings);
+
+        FillTrainingSet(training, remaining, trainingCount);
+
+        var validation = remaining
+            .Take(validationCount)
+            .ToList();
+
+        var testing = remaining
+            .Skip(validationCount)
+            .Take(testingCount)
+            .ToList();
+
+        return new DatasetSplit(
+            training,
+            validation,
+            testing);
+    }
+
+    // Validates the dataset and requested ratios.
+    private static void ValidateInputs(
+        IReadOnlyList<RatingObservation> ratings,
+        double trainingRatio,
+        double validationRatio)
+    {
+        ArgumentNullException.ThrowIfNull(ratings);
+
+        if (ratings.Count == 0)
+        {
+            throw new ArgumentException(
+                "Ratings cannot be empty.",
+                nameof(ratings));
+        }
+
         if (!double.IsFinite(trainingRatio) ||
             !double.IsFinite(validationRatio) ||
             trainingRatio <= 0 ||
             validationRatio <= 0 ||
             trainingRatio + validationRatio >= 1)
         {
-            throw new ArgumentException("Invalid split ratios.");
+            throw new ArgumentException(
+                "Invalid split ratios.");
         }
 
-        // Generate a random seed
+        ValidateUniqueUserMediaPairs(ratings);
+    }
+
+    private static void ValidateUniqueUserMediaPairs(
+    IReadOnlyList<RatingObservation> ratings)
+    {
+        var knownPairs = new HashSet<(Guid UserId, Guid MediaId)>();
+
+        foreach (var rating in ratings)
+        {
+            var pair = (rating.UserId, rating.MediaId);
+
+            if (!knownPairs.Add(pair))
+            {
+                throw new ArgumentException(
+                    $"Duplicate user-media pair detected: {pair}",
+                    nameof(ratings));
+            }
+        }
+    }
+
+    // Randomizes observations without modifying the input.
+    private static RatingObservation[] ShuffleRatings(
+        IReadOnlyList<RatingObservation> ratings,
+        int seed)
+    {
         var random = new Random(seed);
-        var shuffledRatings = ratings.ToArray();
+        var shuffled = ratings.ToArray();
 
-        // Shuffle the ratings
-        random.Shuffle(shuffledRatings);
+        random.Shuffle(shuffled);
 
-        // Find the counts for each split
-        int trainingCount = (int)(ratings.Count * trainingRatio);
-        int validationCount = (int)(ratings.Count * validationRatio);
-        int testingCount = ratings.Count - trainingCount - validationCount;
+        return shuffled;
+    }
 
-        // Check if there are enough ratings for the split
-        if (trainingCount == 0 ||
-            validationCount == 0 ||
-            testingCount == 0)
+    // Calculates the requested sizes of all three subsets.
+    private static (int Training, int Validation, int Testing)
+        CalculateSplitSizes(
+            int totalCount,
+            double trainingRatio,
+            double validationRatio)
+    {
+        int training = (int)(totalCount * trainingRatio);
+
+        int validation = (int)(totalCount * validationRatio);
+
+        int testing = totalCount - training - validation;
+
+        if (training == 0 || validation == 0 || testing == 0)
         {
             throw new ArgumentException(
                 "Insufficient ratings for the requested split.");
         }
 
-        // Prepare lists for the splits
+        return (training, validation, testing);
+    }
+
+    // Ensures every user and media item appears in training.
+    private static (
+        List<RatingObservation> Training,
+        List<RatingObservation> Remaining)
+        EnsureTrainingCoverage(
+            IReadOnlyList<RatingObservation> ratings)
+    {
         var training = new List<RatingObservation>();
         var remaining = new List<RatingObservation>();
 
-        // Track known users and movies to ensure coverage
         var knownUsers = new HashSet<Guid>();
-        var knownMovies = new HashSet<Guid>();
+        var knownMedia = new HashSet<Guid>();
 
-        // Guarantee user and movie coverage
-        foreach (var rating in shuffledRatings)
+        foreach (var rating in ratings)
         {
             if (!knownUsers.Contains(rating.UserId) ||
-                !knownMovies.Contains(rating.MediaId))
+                !knownMedia.Contains(rating.MediaId))
             {
                 training.Add(rating);
 
                 knownUsers.Add(rating.UserId);
-                knownMovies.Add(rating.MediaId);
+                knownMedia.Add(rating.MediaId);
             }
             else
             {
@@ -68,30 +155,25 @@ public static class DatasetSplitter
             }
         }
 
-        // Check if there is enough training data to guarantee coverage
+        return (training, remaining);
+    }
+
+    // Fills the remaining capacity of the training subset.
+    private static void FillTrainingSet(
+        List<RatingObservation> training,
+        List<RatingObservation> remaining,
+        int trainingCount)
+    {
         if (training.Count > trainingCount)
         {
             throw new InvalidOperationException(
                 "Unable to guarantee coverage with the requested training ratio.");
         }
 
-        // Fill remaining training capacity
-        int additionalTrainingCount = trainingCount - training.Count;
+        int additionalCount = trainingCount - training.Count;
 
-        training.AddRange(
-            remaining.Take(additionalTrainingCount));
+        training.AddRange(remaining.Take(additionalCount));
 
-        // Partition the remaining observations
-        var validation = remaining
-            .Skip(additionalTrainingCount)
-            .Take(validationCount)
-            .ToList();
-
-        var testing = remaining
-            .Skip(additionalTrainingCount + validationCount)
-            .ToList();
-
-        // Return the split dataset
-        return new DatasetSplit(training, validation, testing);
+        remaining.RemoveRange(0, additionalCount);
     }
 }

@@ -6,7 +6,7 @@ namespace Palette.Tests.ModelEvaluatorTests;
 public class ModelEvaluatorTests
 {
     [Fact]
-    public void CalculateRmse_EmptyRatings_ThrowsArgumentException()
+    public void CalculateRmseEmptyRatingsThrowsArgumentException()
     {
         // Empty ratings list
         var ratings = new List<RatingObservation>();
@@ -17,7 +17,7 @@ public class ModelEvaluatorTests
     }
 
     [Fact]
-    public void CalculateRmse_InaccuratePredictions_ReturnsExpectedError()
+    public void CalculateRmseInaccuratePredictionsReturnsExpectedError()
     {
         // Active rating list
         var ratings = new List<RatingObservation>
@@ -36,7 +36,7 @@ public class ModelEvaluatorTests
     }
 
     [Fact]
-    public void CalculateRmse_PerfectPredictions_ReturnsZero()
+    public void CalculateRmsePerfectPredictionsReturnsZero()
     {
         // Active rating list
         var ratings = new List<RatingObservation>

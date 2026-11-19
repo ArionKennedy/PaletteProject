@@ -1,18 +1,17 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Palette.Api.MachineLearning.LinearAlgebra;
+
 namespace Palette.Api.MachineLearning;
 
-public class MatrixFactorizationModel
+public sealed class MatrixFactorizationModel
 {
-    private const float VECTORMAX = 0.01f;
-    
-    // The count of numbers that represent each user and movie
     private readonly int _factorCount;
 
-    // Mapping User ID and Media ID to their respective vectors
     private readonly Dictionary<Guid, float[]> _userFactors = new();
     private readonly Dictionary<Guid, float[]> _movieFactors = new();
 
-    // Fixed seed for reproduced outputs
     private readonly Random _random = new(42);
 
     public MatrixFactorizationModel(int factorCount = 8)
@@ -21,141 +20,180 @@ public class MatrixFactorizationModel
         {
             throw new ArgumentOutOfRangeException(
                 nameof(factorCount),
-                "Factor count must be positive."
-            );
+                "Factor count must be greater than zero.");
         }
 
         _factorCount = factorCount;
     }
 
-    // This creates an array of randmized numbers 
-    // to avoid identical representations for each 
-    // user and movie
-    private float[] CreateRandomVector()
-    {
-        var vector = new float[_factorCount];
-
-        for (int i = 0; i < _factorCount; i++)
-        {
-            vector[i] = (float)(_random.NextDouble() * VECTORMAX);
-        }
-
-        return vector;
-    }
-
-    // This checks if a vector exists for an established user
-    // Otherwise it creates a new random one
-    private float[] GetOrCreateUserFactors(Guid userId)
-    {
-        if (!_userFactors.TryGetValue(userId, out var factors))
-        {
-            factors = CreateRandomVector();
-            _userFactors[userId] = factors;
-        }
-
-        return factors;
-    }
-
-    // This checks if a vector exists for an established movie
-    // Otherwise it creates a new random one
-    private float[] GetOrCreateMovieFactors(Guid mediaId)
-    {
-        if (!_movieFactors.TryGetValue(mediaId, out var factors))
-        {
-            factors = CreateRandomVector();
-            _movieFactors[mediaId] = factors;
-        }
-
-        return factors;
-    }
-
-    // This will attempt to predict a rating for a user and a movie
     public float Predict(Guid userId, Guid mediaId)
     {
-        // Check if the user has been trained yet.
-        if (!_userFactors.TryGetValue(userId, out var userFactors))
+        if (!_userFactors.TryGetValue(userId, out var user))
         {
             throw new InvalidOperationException(
-                "User has not been trained."
-            );
+                $"Unknown user: {userId}");
         }
 
-        // Check if the movie has been trained yet.
-        if (!_movieFactors.TryGetValue(mediaId, out var movieFactors))
+        if (!_movieFactors.TryGetValue(mediaId, out var movie))
         {
             throw new InvalidOperationException(
-                "Movie has not been trained."
-            );
+                $"Unknown media: {mediaId}");
         }
 
-        // Output the dot product as the prediction
-        return VectorMath.DotProduct(userFactors, movieFactors);
+        return VectorMath.DotProduct(user, movie);
     }
 
-    // This determines the deviation between the actual and predicted rating
-    private static float CalculateError(float actualRating, float predictedRating)
-    {
-        return actualRating - predictedRating;
-    }
-    
-    public void Train(IReadOnlyList<RatingObservation> ratings,
+    public void Train(
+        IReadOnlyList<RatingObservation> ratings,
         int epochs = 100,
         float learningRate = 0.01f,
         float regularization = 0.02f)
     {
-        if (ratings.Count == 0)
-            throw new ArgumentException("No training ratings provided.");
+        ValidateTrainingParameters(
+            epochs, learningRate, regularization);
 
-        if (epochs <= 0)
-            throw new ArgumentOutOfRangeException(nameof(epochs));
+        ValidateRatings(ratings);
 
-        if (learningRate <= 0)
-            throw new ArgumentOutOfRangeException(nameof(learningRate));
-
-        if (regularization < 0)
-            throw new ArgumentOutOfRangeException(nameof(regularization));
-
-        // Shuffle observations during each epoch.
         var shuffledRatings = ratings.ToArray();
 
-        // For every epoch, we shuffle the rating and
-        // update the user and movie factors based on the
-        // error between the actual and predicted rating
         for (int epoch = 0; epoch < epochs; epoch++)
         {
             _random.Shuffle(shuffledRatings);
 
             foreach (var rating in shuffledRatings)
             {
-                // Ratings must be within range
-                if (rating.Rating < 1 || rating.Rating > 5)
-                    throw new ArgumentOutOfRangeException(
-                        nameof(ratings), "Ratings must be between 1 and 5.");
-
-                // Get the factors for the user and moive
-                float[] user = GetOrCreateUserFactors(rating.UserId);
-                float[] movie = GetOrCreateMovieFactors(rating.MediaId);
-
-                // Get the dot product and calculate the error (Actual - Predicted)
-                float predictionProduct = VectorMath.DotProduct(user, movie);
-                float error = CalculateError(rating.Rating, predictionProduct);
-
-                // Update the user and movie factors based on the error
-                for (int k = 0; k < _factorCount; k++)
-                {
-                    // Preserve the old values for simultaneous updates.
-                    float oldUser = user[k];
-                    float oldMovie = movie[k];
-
-                    user[k] += learningRate *
-                        (error * oldMovie - regularization * oldUser);
-
-                    movie[k] += learningRate *
-                        (error * oldUser - regularization * oldMovie);
-                }
+                TrainObservation(
+                    rating,
+                    learningRate,
+                    regularization);
             }
         }
     }
 
+    // Performs one stochastic gradient descent update.
+    private void TrainObservation(
+        RatingObservation rating,
+        float learningRate,
+        float regularization)
+    {
+        var user = GetOrCreateFactors(
+            _userFactors, rating.UserId);
 
+        var movie = GetOrCreateFactors(
+            _movieFactors, rating.MediaId);
+
+        float prediction = VectorMath.DotProduct(user, movie);
+        float error = rating.Rating - prediction;
+
+        UpdateFactors(
+            user,
+            movie,
+            error,
+            learningRate,
+            regularization);
+    }
+
+    // Updates both latent vectors using gradient descent.
+    private void UpdateFactors(
+        float[] user,
+        float[] movie,
+        float error,
+        float learningRate,
+        float regularization)
+    {
+        for (int k = 0; k < _factorCount; k++)
+        {
+            float oldUser = user[k];
+            float oldMovie = movie[k];
+
+            user[k] += learningRate *
+                (error * oldMovie - regularization * oldUser);
+
+            movie[k] += learningRate *
+                (error * oldUser - regularization * oldMovie);
+        }
+    }
+
+    // Retrieves an existing latent vector or initializes a new one.
+    private float[] GetOrCreateFactors(
+        Dictionary<Guid, float[]> factors,
+        Guid id)
+    {
+        if (!factors.TryGetValue(id, out var vector))
+        {
+            vector = CreateRandomVector();
+            factors[id] = vector;
+        }
+
+        return vector;
+    }
+
+    // Initializes a latent vector with small random values.
+    private float[] CreateRandomVector()
+    {
+        var vector = new float[_factorCount];
+
+        for (int k = 0; k < _factorCount; k++)
+        {
+            vector[k] = (float)(_random.NextDouble() * 0.1);
+        }
+
+        return vector;
+    }
+
+    // Validates the hyperparameters before training begins.
+    private static void ValidateTrainingParameters(
+        int epochs,
+        float learningRate,
+        float regularization)
+    {
+        if (epochs <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(epochs),
+                "Epochs must be greater than zero.");
+        }
+
+        if (!float.IsFinite(learningRate) ||
+            learningRate <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(learningRate),
+                "Learning rate must be finite and greater than zero.");
+        }
+
+        if (!float.IsFinite(regularization) ||
+            regularization < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(regularization),
+                "Regularization must be finite and non-negative.");
+        }
+    }
+
+    // Validates all rating observations before modifying the model.
+    private static void ValidateRatings(
+        IReadOnlyList<RatingObservation> ratings)
+    {
+        ArgumentNullException.ThrowIfNull(ratings);
+
+        if (ratings.Count == 0)
+        {
+            throw new ArgumentException(
+                "Ratings cannot be empty.",
+                nameof(ratings));
+        }
+
+        foreach (var rating in ratings)
+        {
+            if (!float.IsFinite(rating.Rating) ||
+                rating.Rating < 1f ||
+                rating.Rating > 5f)
+            {
+                throw new ArgumentException(
+                    "Ratings must be finite and between 1 and 5.",
+                    nameof(ratings));
+            }
+        }
+    }
 }
