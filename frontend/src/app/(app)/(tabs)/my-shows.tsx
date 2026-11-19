@@ -15,6 +15,7 @@ export default function MyShowsScreen() {
   const [hasMore, setHasMore] = useState(false);
   const version = useRef(0);
   const focused = useRef(false);
+
   const load = useCallback(async (nextPage = 1) => {
     if (!isLoaded || !isSignedIn || !userId || !focused.current) return;
     const currentVersion = ++version.current;

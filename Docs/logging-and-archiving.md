@@ -19,7 +19,8 @@ The endpoint gets the verified Clerk identity from UserService, maps it through 
 and filters reviews using that user's database UUID. Missing authentication returns 401.
 A missing profile after shared provisioning returns 404.
 The response contains items, page, and hasMore (up to 50 titles).
-Items contain mediaId, title, mediaType (develop's enum name), and lastReviewedAt.
+Each item contains mediaId, title, mediaType, posterUrl,
+releaseDate, rating, body, and lastReviewedAt.
 
 The frontend uses the shared fetchWithAuth helper to send the token. It does not submit userId.
 An extra userId in the JSON body cannot override the authenticated identity.

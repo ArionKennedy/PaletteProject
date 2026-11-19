@@ -55,7 +55,8 @@ public sealed class ShowLogTests : IAsyncLifetime
     }
 
     private async Task<Guid> AddTitle(TestViewer client, MediaType type = MediaType.Movie,
-        bool reviewed = true, Guid? mediaId = null, DateTime? createdAt = null)
+        bool reviewed = true, Guid? mediaId = null, DateTime? createdAt = null, string? posterUrl = null,
+        int rating = 4, string? body = "Test review", DateOnly? releaseDate = null)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
@@ -65,12 +66,19 @@ public sealed class ShowLogTests : IAsyncLifetime
         if (mediaId is null)
         {
             mediaIds.Add(id);
-            db.Media.Add(new Media { MediaId = id, Title = "Review test " + id, MediaType = type });
+            db.Media.Add(new Media
+            {
+                MediaId = id,
+                Title = "Review test " + id,
+                MediaType = type,
+                PosterUrl = posterUrl,
+                ReleaseDate = releaseDate
+            });
         }
         if (reviewed)
             db.Reviews.Add(new Review {
                 ReviewId = Guid.NewGuid(), UserId = user.UserId, MediaId = id,
-                Rating = 4, Body = "Test review", CreatedAt = createdAt ?? DateTime.UtcNow
+                Rating = rating, Body = body, CreatedAt = createdAt ?? DateTime.UtcNow
             });
         else
             db.UserMediaLogs.Add(new UserMediaLog {
