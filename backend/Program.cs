@@ -102,7 +102,7 @@ app.MapGet("/api/test", () =>
     Results.Ok(new { message = "Connected to backend!" })
 ).AllowAnonymous();
 
-app.MapShowLogs();
+app.MapLibrary();
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();
 app.MapLookupEndpoints();

@@ -6,6 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
+import { LibraryBig, type LucideIcon } from 'lucide-react-native';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -31,8 +32,8 @@ export default function AppTabs() {
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
           </TabTrigger>
-          <TabTrigger name="my-shows" href="/my-shows" asChild>
-            <TabButton>My Shows</TabButton>
+          <TabTrigger name="my-library" href="/my-library" asChild>
+            <TabButton icon={LibraryBig}>My Library</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -42,9 +43,9 @@ export default function AppTabs() {
 
 // Use the native element ref rather than Expo Router's legacy View component ref.
 type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> &
-  React.RefAttributes<React.ComponentRef<typeof Pressable>>;
+  React.RefAttributes<React.ComponentRef<typeof Pressable>> & { icon?: LucideIcon };
 
-export function TabButton({ children, isFocused, ...props }: TabButtonProps) {
+export function TabButton({ children, isFocused, icon: Icon, ...props }: TabButtonProps) {
   const theme = useTheme();
 
   return (
@@ -54,6 +55,7 @@ export function TabButton({ children, isFocused, ...props }: TabButtonProps) {
           styles.tabButtonView,
           { backgroundColor: theme[isFocused ? 'backgroundSelected' : 'backgroundElement'] },
         ]}>
+        {Icon && <Icon size={16} color={theme[isFocused ? 'text' : 'textSecondary']} />}
         <Text
           style={[styles.tabLabel, { color: theme[isFocused ? 'text' : 'textSecondary'] }]}>
           {children}
@@ -115,6 +117,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   tabButtonView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,

@@ -20,5 +20,5 @@ public sealed record GoogleBooksVolumeInfo(
     List<GoogleBooksIdentifier>? IndustryIdentifiers
 );
 
-public sealed record GoogleBooksImageLinks(string? Thumbnail);
+public sealed record GoogleBooksImageLinks(string? Thumbnail, string? SmallThumbnail = null);
 public sealed record GoogleBooksIdentifier(string Type, string Identifier);
