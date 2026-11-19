@@ -19,11 +19,17 @@ The backend provides two endpoints for searching media and retrieving item detai
 | GET | `/api/search/{type}` | Search for media by title. |
 | GET | `/api/lookup/{type}/{id}` | Retrieve details of a specific media item. |
 
-Currently, only movies are supported through TMDB.
+Movies and TV shows use TMDB. Books use Google Books.
 
 For request parameters, response formats, error handling, and examples, see [Search & Lookup API Contract](search-api.md).
 
-## 3. Authentication
+## 3. My Library
+
+My Library exposes authenticated endpoints for category previews, paginated lists, and adding or removing saved media. Detail requests can include the signed-in user's saved state with `?includeLibrary=true`.
+
+See the [My Library API contract](logging-and-archiving.md#api).
+
+## 4. Authentication
 
 Clerk manages authentication for Palette and is the source of truth for user identity and profile data.
 

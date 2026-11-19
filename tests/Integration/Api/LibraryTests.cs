@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Backend.Providers;
+using Backend.Shared.Errors;
 using Backend.Shared.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -25,6 +26,8 @@ public sealed class LibraryTests : IAsyncLifetime
     private readonly List<string> identities = [];
     private readonly List<Guid> mediaIds = [];
     private const string CoverUrl = "https://covers.example.test/library.jpg";
+    private const string UnavailableVolumePrefix = "unavailable-volume-";
+    private int providerFailures;
 
     public LibraryTests(PostgresFixture fixture)
     {
@@ -36,12 +39,22 @@ public sealed class LibraryTests : IAsyncLifetime
                 {
                     services.AddScoped<IMediaProvider>(_ => new StubMediaProvider(type)
                     {
-                        LookupHandler = (id, _) => Task.FromResult<MediaLookupResult>(type switch
+                        LookupHandler = (id, _) =>
                         {
-                            "movie" => new MovieLookupResult(id, "Library Movie", null, null, CoverUrl, 120),
-                            "tv" => new TvLookupResult(id, "Library Series", null, null, CoverUrl, 2),
-                            _ => new BookLookupResult(id, "Library Book", null, null, CoverUrl, null)
-                        })
+                            if (type == "book" && id.StartsWith(UnavailableVolumePrefix, StringComparison.Ordinal))
+                            {
+                                Interlocked.Increment(ref providerFailures);
+                                throw new ProviderUnavailableException("Google Books",
+                                    new HttpRequestException("Simulated provider outage"));
+                            }
+
+                            return Task.FromResult<MediaLookupResult>(type switch
+                            {
+                                "movie" => new MovieLookupResult(id, "Library Movie", null, null, CoverUrl, 120),
+                                "tv" => new TvLookupResult(id, "Library Series", null, null, CoverUrl, 2),
+                                _ => new BookLookupResult(id, "Library Book", null, null, CoverUrl, null)
+                            });
+                        }
                     });
                 }
             }));
@@ -165,18 +178,8 @@ public sealed class LibraryTests : IAsyncLifetime
         using var viewer = await NewUserClient();
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
-        var mediaId = Guid.NewGuid();
         var externalId = $"volume-{Guid.NewGuid():N}";
-        mediaIds.Add(mediaId);
-        db.Media.Add(new Media
-        {
-            MediaId = mediaId,
-            MediaType = MediaType.Book,
-            Title = "Existing library book",
-            PosterUrl = previousCover,
-            Book = new Book { GoogleBooksId = externalId }
-        });
-        await db.SaveChangesAsync();
+        var mediaId = await SeedExistingBook(db, externalId, previousCover);
 
         using var response = await viewer.Client.PutAsync($"/api/me/library/book/{externalId}", null);
         response.EnsureSuccessStatusCode();
@@ -189,6 +192,29 @@ public sealed class LibraryTests : IAsyncLifetime
         Assert.Equal(externalId, book.ExternalId);
         Assert.Equal(expected, storedCover);
         Assert.Equal(expected, book.PosterUrl);
+    }
+
+    [Fact]
+    public async Task SavingAnExistingBookSucceedsWhenItsMissingCoverCannotBeFetched()
+    {
+        using var viewer = await NewUserClient();
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
+        var externalId = $"{UnavailableVolumePrefix}{Guid.NewGuid():N}";
+        var mediaId = await SeedExistingBook(db, externalId, posterUrl: null);
+
+        using var response = await viewer.Client.PutAsync($"/api/me/library/book/{externalId}", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True((await response.Content.ReadFromJsonAsync<LibraryMembership>())!.Saved);
+        Assert.Equal(1, providerFailures);
+        Assert.Single(await db.UserMediaLogs.Where(log =>
+            log.MediaId == mediaId && log.User.ClerkId == viewer.UserId).ToListAsync());
+
+        var previews = await viewer.Client.GetFromJsonAsync<LibraryPreviews>("/api/me/library/previews");
+        var book = Assert.Single(previews!.Book);
+        Assert.Equal(externalId, book.ExternalId);
+        Assert.Null(book.PosterUrl);
     }
 
     [Fact]
@@ -230,6 +256,22 @@ public sealed class LibraryTests : IAsyncLifetime
         Assert.Equal("Preview book 0", previews.Book[0].Title);
         Assert.Empty(previews.Movie);
         Assert.Empty(previews.Tv);
+    }
+
+    private async Task<Guid> SeedExistingBook(PaletteDbContext db, string externalId, string? posterUrl)
+    {
+        var mediaId = Guid.NewGuid();
+        mediaIds.Add(mediaId);
+        db.Media.Add(new Media
+        {
+            MediaId = mediaId,
+            MediaType = MediaType.Book,
+            Title = "Existing library book",
+            PosterUrl = posterUrl,
+            Book = new Book { GoogleBooksId = externalId }
+        });
+        await db.SaveChangesAsync();
+        return mediaId;
     }
 
     private static async Task<JsonDocument> ReadDetails(TestViewer viewer, string type, string externalId)
