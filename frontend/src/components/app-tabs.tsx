@@ -26,14 +26,6 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.book} />
       </NativeTabs.Trigger>
 
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="my-library">
         <NativeTabs.Trigger.Label>My Library</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="square.stack" md="collections_bookmark" />
