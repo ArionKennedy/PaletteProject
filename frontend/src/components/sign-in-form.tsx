@@ -20,7 +20,7 @@ import {
   Platform,
   Pressable,
   TouchableWithoutFeedback,
-  type TextInput,
+  type TextInputInstance,
   View,
 } from 'react-native';
 import { useAuth, useSignIn } from '@clerk/expo';
@@ -34,7 +34,7 @@ export function SignInForm() {
   const [password, setPassword] = useState('');
   const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
 
-  const passwordInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInputInstance>(null);
 
   function onEmailSubmitEditing() {
     passwordInputRef.current?.focus();

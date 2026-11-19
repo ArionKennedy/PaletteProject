@@ -6,25 +6,50 @@ The platform is designed around different ways people engage with media. Some us
 
 Palette brings these activities together in one place and helps users build a picture of their own media taste, or their personal “palette.”
 
+## Try Palette on Android — Testers
+
+### Download and Install
+
+1. On your Android phone, [download the Palette 1.0.0 APK](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk) (approximately 105 MiB).
+2. Open the downloaded file. If Android prompts you, allow your browser or file manager to install apps from this source, then install Palette.
+3. Open **Palette** and create an account or sign in.
+4. Open **Movies**, enter a movie title, and select a result to view its details.
+
+You do not need the source code, terminal commands, Expo Go, an Expo account, or a local development server. An internet connection is required for sign-in and movie data. This download is for Android; iOS distribution is not part of the external test build.
+
+### What You Can Try
+
+- Search for movies by title using data provided by TMDB through the deployed backend.
+- Browse matching movies and their posters.
+- Open a movie to view its description, release information, and runtime when available.
+
+Logging watched movies, collections, reviews, recommendations, social features, and analytics are still planned. External testing currently focuses on the movie search flow above.
+
+### App Updates
+
+Compatible updates to screens, application logic, styles, and resources are downloaded automatically when the app is opened online. Fully close and reopen Palette after the update downloads to apply it.
+
+**Changes to native dependencies, Expo/React Native, or native app configuration require a new APK.** In that case, the team will share a new download link and ask testers to install the updated APK. The download link above identifies this specific build and will be updated when a new APK is distributed.
+
+For developer build and publishing instructions, see [Android APK and OTA Updates](frontend/EAS.md).
+
 ## Core Features
 
-Palette is designed around six core features. Development is ongoing, with Authentication and Movie Search implemented during Sprint 1.
+Palette is designed around six core features. The current source includes authentication, media search and discovery, and My Library.
 
 - **[Authentication](https://github.com/ArionKennedy/COMP4350Project/issues/25)**
   - User account creation, sign-in, and sign-out using Clerk
   - User information stored in PostgreSQL
-  - Secure access to personal data (planned)
+  - Signed-in access to personal library data
 
 - **[Search & Discovery](https://github.com/ArionKennedy/COMP4350Project/issues/26)**
-  - Search for movies by title using TMDB
-  - View movie details, including posters, descriptions, and runtime
+  - Search and view details for movies and TV shows from TMDB and books from Google Books
   - Modular search structure designed to support additional media types and external APIs
-  - Support for books, games, music, and other media types (planned)
 
-- **[Logging & Archiving](https://github.com/ArionKennedy/COMP4350Project/issues/27)** *(Planned)*
-  - Save watched, read, played, or listened-to media
-  - Maintain a personal history of media activity
-  - Organize saved media into collections or records
+- **[Logging & Archiving](https://github.com/ArionKennedy/COMP4350Project/issues/27)**
+  - Add or remove movies, TV shows, and books from their detail pages
+  - Browse saved media in My Library by category, swipe through cover previews, and open details from a cover
+  - See [My Library documentation](Docs/logging-and-archiving.md) for the API and verification steps
 
 - **[Recommendations](https://github.com/ArionKennedy/COMP4350Project/issues/28)** *(Planned)*
   - Recommend what users may want to watch, read, play, or listen to next
@@ -68,18 +93,20 @@ For the database schema, ER diagram, relationships, and data storage strategy, s
 ### Authentication and External Services
 
 - Clerk for user authentication and session management
-- TMDB API for movie search and lookup
+- TMDB API for movie and TV show search and lookup
+- Google Books API for book search and lookup
 - Additional external media APIs planned for future media types
 
 ### Hosting
 
-- Currently running locally
-- Cloud hosting provider: TBD
-- AWS is being considered
+- Android app: standalone APK built and distributed through Expo EAS Build
+- App updates: compatible Android OTA updates through EAS Update
+- Backend: ASP.NET Core API deployed on Render
+- Database: PostgreSQL hosted on Supabase
 
-React Native with Expo is used for cross-platform development, while ASP.NET Core provides backend application logic and APIs. PostgreSQL serves as the primary database, with Entity Framework Core managing database operations and migrations. Clerk handles user authentication, and TMDB provides movie data through backend API integrations.
+React Native with Expo is used for cross-platform development, while ASP.NET Core provides backend application logic and APIs. PostgreSQL serves as the primary database, with Entity Framework Core managing database operations and migrations. Clerk handles user authentication, and the backend integrates with TMDB and Google Books for media metadata.
 
-Docker Compose is currently used for local PostgreSQL development. Additional infrastructure, including caching and cloud deployment, may be introduced in future sprints.
+Docker Compose is used for local PostgreSQL development. The external test APK connects to the deployed backend and does not require testers to run local services. Additional infrastructure, including caching, may be introduced in future sprints.
 
 For more details, see [System Architecture](Docs/architecture.md).
 
@@ -93,9 +120,11 @@ Important project documentation:
 - [System Architecture](Docs/architecture.md)
 - [Database Design](Docs/database.md)
 - [API Documentation](Docs/api.md)
+- [My Library](Docs/logging-and-archiving.md)
 - [Testing Documentation](Docs/testing.md)
 - [Process and Protocols](Docs/Process%20and%20Protocols.md)
 - [Local Setup](Docs/Local%20Setup.md)
+- [Android APK and OTA Updates](frontend/EAS.md)
 - [Database Migrations](Docs/db_migration.md)
 
 ## Team
@@ -109,22 +138,22 @@ Important project documentation:
 
 ## Project Status
 
-Palette is currently in Sprint 1, with its initial development infrastructure and first core features established.
+The status below describes the source in this checkout. The Android tester section describes the distributed build.
 
 **Implemented:**
 - User authentication using Clerk
-- Movie search and movie detail lookup using TMDB
+- Movie, TV show, and book search and detail lookup
+- Personal media lists by type in My Library
 - PostgreSQL database structure and EF Core migrations
 - Frontend and backend integration
 - Unified development startup command
-- Database unit tests using xUnit and EF Core InMemory
+- Backend unit and integration tests, plus local frontend tests for My Library
 - GitHub Actions CI for running backend tests on pull requests
 
 **Current Limitations:**
-- Search and lookup currently support movies only.
-- Other core features are still under development.
-- Automated frontend and integration tests have not yet been implemented.
-- The application is not yet publicly deployed.
+- Search, lookup, and My Library currently support movies, TV shows, and books.
+- Reviews, custom collections, recommendations, social features, and analytics remain planned.
+- External distribution currently uses an Android APK connected to the deployed backend.
 
 Development progress is tracked through the [Sprint Board](https://github.com/users/ArionKennedy/projects/4).
 
@@ -168,7 +197,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5251
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
 ```
 
-Configure the PostgreSQL database, backend connection string, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
+Configure the PostgreSQL database, backend connection string, Clerk Frontend API URL, and TMDB token according to the [Local Setup Guide](Docs/Local%20Setup.md).
 
 Make sure the database is running before starting the backend.
 

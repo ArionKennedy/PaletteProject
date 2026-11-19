@@ -1,6 +1,6 @@
 # API Contract: Media Search & Lookup
 
-This document describes the backend endpoints that let the client **search** for media and **look up** the details of one item. Both endpoints are read-only (`GET`). They proxy an external media provider. For movies, that provider is TMDB.
+This document describes the backend endpoints that let the client **search** for media and **look up** the details of one item. Both endpoints are read-only (`GET`). They fetch metadata from TMDB for movies and TV shows and from Google Books for books.
 
 | Endpoint                           | Purpose                                              |
 | ---------------------------------- | ---------------------------------------------------- |
@@ -8,7 +8,7 @@ This document describes the backend endpoints that let the client **search** for
 | `GET /api/lookup/{type}/{id}`      | Get the details of one media item by its provider id |
 
 - **Base URL (local dev):** `http://localhost:5251`
-- **Auth:** none required from the client. The backend adds the TMDB token itself.
+- **Auth:** send a Clerk session JWT as a bearer token in the `Authorization` header. The backend adds the TMDB token itself.
 - **Content type:** responses are `application/json` on success and `application/problem+json` on error.
 - **Field naming:** JSON properties are `camelCase`.
 - **OpenAPI:** in the Development environment, the generated spec is served at `GET /openapi/v1.json`.
@@ -23,9 +23,11 @@ The `{type}` path segment selects a **media provider**. Matching is case-insensi
 
 | `type`  | Provider | `id` format                                      |
 | ------- | -------- | ------------------------------------------------ |
-| `movie` | TMDB     | A positive integer (TMDB movie id), e.g. `27205` |
+| `movie` | TMDB     | A positive TMDB movie ID, e.g. `27205` |
+| `tv` | TMDB | A positive TMDB TV show ID |
+| `book` | Google Books | A Google Books volume ID |
 
-Any other value returns `400 Unknown media type`. The error message lists the supported types. To add a new type (book, TV, game), implement `IMediaProvider` and register it. The resolver picks it up automatically, so the endpoints do not change.
+Any other value returns `400 Unknown media type`. The error message lists the supported types. Register an `IMediaProvider` to add search and lookup for a new type. My Library also needs its own category and persistence mappings.
 
 ---
 
@@ -75,13 +77,15 @@ The query is validated **before** the type. A request with an unsupported type a
 
 ### Examples
 
+Set `CLERK_SESSION_TOKEN` to a current session token for the local app before running these examples.
+
 ```bash
-curl "http://localhost:5251/api/search/movie?q=inception"
+curl -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/search/movie?q=inception"
 ```
 
 ```bash
 # Empty query → 400
-curl -i "http://localhost:5251/api/search/movie?q=%20%20"
+curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/search/movie?q=%20%20"
 ```
 
 ```json
@@ -95,14 +99,14 @@ curl -i "http://localhost:5251/api/search/movie?q=%20%20"
 
 ```bash
 # Unsupported type → 400
-curl -i "http://localhost:5251/api/search/book?q=dune"
+curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/search/game?q=portal"
 ```
 
 ```json
 {
   "title": "Unknown media type",
   "status": 400,
-  "detail": "Media type 'book' is not supported. Supported: movie.",
+  "detail": "Media type 'game' is not supported. Supported: book, movie, tv.",
   "traceId": "0HN7...:00000002"
 }
 ```
@@ -116,6 +120,8 @@ GET /api/lookup/{type}/{id}
 ```
 
 Returns the full details for one item. The usual flow is to call **search**, then pass a result's `externalId` here.
+
+Pass `?includeLibrary=true` to include a boolean `saved` field for the signed-in user. Without this option, the response omits `saved`. See [My Library](logging-and-archiving.md#api).
 
 ### Inputs
 
@@ -153,12 +159,12 @@ A malformed id returns **400**, not 404. TMDB itself answers 404 for both a malf
 ### Examples
 
 ```bash
-curl "http://localhost:5251/api/lookup/movie/27205"
+curl -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/lookup/movie/27205"
 ```
 
 ```bash
 # Malformed id → 400
-curl -i "http://localhost:5251/api/lookup/movie/abc"
+curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/lookup/movie/abc"
 ```
 
 ```json
@@ -172,7 +178,7 @@ curl -i "http://localhost:5251/api/lookup/movie/abc"
 
 ```bash
 # Well-formed but non-existent id → 404
-curl -i "http://localhost:5251/api/lookup/movie/999999999"
+curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/lookup/movie/999999999"
 ```
 
 ```json
@@ -210,7 +216,7 @@ All error mapping happens in one place, `Shared/Errors/ApiExceptionHandler.cs`. 
 
 ## Configuration these endpoints depend on
 
-Both endpoints need TMDB settings under the `Tmdb` section. The backend fails at startup if any setting is missing or invalid.
+Movies and TV shows use the settings under `Tmdb`. Books use the Google Books settings in the [Local Setup Guide](Local%20Setup.md).
 
 | Key                    | Where it's set                  | Notes                                                          |
 | ---------------------- | ------------------------------- | -------------------------------------------------------------- |
@@ -229,7 +235,6 @@ dotnet user-secrets set "Tmdb:ReadAccessToken" "<your-token>"
 
 ## Known limitations
 
-- `movie` is the only supported type for now.
 - Search returns at most 10 results and has no pagination.
 - Lookup responses do **not** include a `mediaType` field. The frontend type `MovieLookupResult` (`frontend/src/types/movieLookupResult.ts`) declares one, so on the client that value is `undefined`.
 - The example values above (poster paths, trace ids, overview text) are abbreviated.

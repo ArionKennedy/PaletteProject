@@ -9,6 +9,10 @@ public static class TmdbConstants
     public const string SEARCH_MOVIE_PATH = "search/movie";
     public const string MOVIE_PATH = "movie";
 
+    public const string SEARCH_TV_PATH = "search/tv";
+
+    public const string TV_PATH = "tv";
+
     public const string BEARER_SCHEME = "Bearer";
     public const string RELEASE_DATE_FORMAT = "yyyy-MM-dd";
     public const int DEFAULT_TIMEOUT_SECONDS = 10;

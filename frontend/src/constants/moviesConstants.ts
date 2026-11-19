@@ -2,7 +2,8 @@
 export const WEB_TAB_BAR_OFFSET = 80;
 
 // Media type segment used in /api/search/{type} and /api/lookup/{type}/{id}.
-export const MEDIA_TYPE_MOVIE = 'movie';
+export const MOVIE_MEDIA_TYPE_MOVIE = 'movie';
+export const TV_MEDIA_TYPE_MOVIE = 'movie';
 
 // Poster size on the movie details page (standard 2:3 movie poster).
 export const POSTER_WIDTH = 160;

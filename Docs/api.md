@@ -19,24 +19,31 @@ The backend provides two endpoints for searching media and retrieving item detai
 | GET | `/api/search/{type}` | Search for media by title. |
 | GET | `/api/lookup/{type}/{id}` | Retrieve details of a specific media item. |
 
-Currently, only movies are supported through TMDB.
-
-These endpoints do not require user authentication.
+Movies and TV shows use TMDB. Books use Google Books.
 
 For request parameters, response formats, error handling, and examples, see [Search & Lookup API Contract](search-api.md).
 
-## 3. Authentication
+## 3. My Library
 
-Palette uses Clerk for user authentication and session management.
+My Library exposes authenticated endpoints for category previews, paginated lists, and adding or removing saved media. Detail requests can include the signed-in user's saved state with `?includeLibrary=true`.
 
-Authentication is managed through Clerk on the frontend.
+See the [My Library API contract](logging-and-archiving.md#api).
 
-**Clerk Configuration (Development):**
+## 4. Authentication
 
-- **Frontend API:** `https://crisp-ocelot-4132.clerk.accounts.dev/`
-- **Backend API:** `https://api.clerk.com/`
-- **JWKS Endpoint:** `https://crisp-ocelot-4132.clerk.accounts.dev/.well-known/jwks.json`
+Clerk manages authentication for Palette and is the source of truth for user identity and profile data.
 
-The JWKS endpoint provides public keys that can be used to verify Clerk-issued JWTs.
+The frontend calls Clerks API to authenticate/create users, obtaining a Clerk session JWT. Requests to protected backend endpoints include that token as a bearer token in the `Authorization` header. In the frontend you can use `fetchWithAuth` to inject the token in your request. The backend validates the token using the configured Clerk Frontend API URL.
 
-The current ASP.NET Core endpoint configuration does not expose a dedicated authentication endpoint. Backend token verification and user synchronization have not yet been confirmed.
+The Clerk session token is configured to include the user's `username` and `email` within the token as claims.
+
+The frontend can read these claims from `sessionClaims`. For example:
+
+```tsx
+const { sessionClaims } = useAuth();
+const username = sessionClaims?.username;
+```
+
+The backend reads these claims through `UserService`. Middleware uses these claims to create a new user record from the claims when an authenticated Clerk user has no record yet.
+
+By default all backend endpoints require authentication, rejecting requests if not authorized. You can mark public endpoints with `[AllowAnonymous]` or `.AllowAnonymous()` to not require authenticaiton.

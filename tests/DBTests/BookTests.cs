@@ -5,11 +5,13 @@ using Palette.Api.Enums;
 
 namespace Palette.Tests;
 
-public class BookTests {
+public class BookTests
+{
 
     private readonly PaletteDbContext _context;
 
-    public BookTests() {
+    public BookTests()
+    {
         var options = new DbContextOptionsBuilder<PaletteDbContext>()
               .UseInMemoryDatabase(Guid.NewGuid().ToString())
               .Options;
@@ -18,10 +20,11 @@ public class BookTests {
     }
 
     [Fact]
-    public void CanAddBook() {
+    public void CanAddBook()
+    {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book});
-        _context.Books.Add(new Book{MediaId = TestMediaId, OpenLibraryId = "0"});
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book });
+        _context.Books.Add(new Book { MediaId = TestMediaId, GoogleBooksId = "0" });
 
         _context.SaveChanges();
 
@@ -30,10 +33,11 @@ public class BookTests {
     }
 
     [Fact]
-    public void CanGetBook() {
+    public void CanGetBook()
+    {
         Guid TestMediaId = Guid.NewGuid();
-        _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book});
-        _context.Books.Add(new Book{MediaId = TestMediaId, OpenLibraryId = "0"});
+        _context.Media.Add(new Media { MediaId = TestMediaId, Title = "Rise of Zapp", MediaType = MediaType.Book });
+        _context.Books.Add(new Book { MediaId = TestMediaId, GoogleBooksId = "0" });
 
         _context.SaveChanges();
 

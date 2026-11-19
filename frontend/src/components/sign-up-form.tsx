@@ -19,7 +19,7 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  TextInput,
+  type TextInputInstance,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
@@ -35,8 +35,8 @@ export function SignUpForm() {
   const [password, setPassword] = useState('');
   const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
 
-  const usernameInputRef = useRef<TextInput>(null);
-  const passwordInputRef = useRef<TextInput>(null);
+  const usernameInputRef = useRef<TextInputInstance>(null);
+  const passwordInputRef = useRef<TextInputInstance>(null);
 
   function onEmailSubmitEditing() {
     usernameInputRef.current?.focus();

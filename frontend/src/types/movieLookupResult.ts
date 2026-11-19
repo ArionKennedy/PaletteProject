@@ -1,5 +1,6 @@
 export type MovieLookupResult = {
   externalId: string;
+  saved?: boolean;
   mediaType: string;
   title: string;
   releaseDate: string | null;   

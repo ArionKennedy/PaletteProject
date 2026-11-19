@@ -1,0 +1,1 @@
+export const LOGGING_REQUEST_TIMEOUT_MS = 15000;
