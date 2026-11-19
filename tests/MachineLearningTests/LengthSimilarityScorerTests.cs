@@ -5,10 +5,9 @@ using Xunit;
 
 public class LengthSimilarityScorerTests
 {
-    // ==================================================
-    // Mathematical Accuracy Tests
-    // ==================================================
+    // Mathematical accuracy
 
+    // Verifies that valid lengths produce the expected Gaussian similarity.
     [Theory]
     [InlineData(120f, 120f, 45f, 1f)]
     [InlineData(120f, 150f, 30f, 0.606531f)]
@@ -18,242 +17,150 @@ public class LengthSimilarityScorerTests
     [InlineData(120f, 135f, 30f, 0.882497f)]
     [InlineData(300f, 400f, 100f, 0.606531f)]
     [InlineData(3f, 5f, 2f, 0.606531f)]
-    // Verifies that scoring with valid lengths returns the expected result.
     public void ScoreValidLengthsReturnsExpectedResult(
-        float preferredLength,
-        float candidateLength,
-        float tolerance,
-        float expected)
+        float preferredLength, float candidateLength, float tolerance, float expected)
     {
-        // Act
-        float result = LengthSimilarityScorer.Score(
-            preferredLength, candidateLength, tolerance);
-
-        // Assert
-        Assert.Equal(expected, result, 6);
+        Assert.Equal(expected, LengthSimilarityScorer.Score(
+            preferredLength, candidateLength, tolerance), 6);
     }
 
-    // ==================================================
-    // Missing Length Information Tests
-    // ==================================================
+    // Missing length information
 
+    // Verifies that a missing preferred length returns zero.
     [Fact]
-    // Verifies that scoring with missing preferred length returns zero.
     public void ScoreMissingPreferredLengthReturnsZero()
     {
-        // Act
-        float result = LengthSimilarityScorer.Score(
-            null, 120f, 45f);
-
-        // Assert
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, LengthSimilarityScorer.Score(null, 120f, 45f));
     }
 
+    // Verifies that a missing candidate length returns zero.
     [Fact]
-    // Verifies that scoring with missing candidate length returns zero.
     public void ScoreMissingCandidateLengthReturnsZero()
     {
-        // Act
-        float result = LengthSimilarityScorer.Score(
-            120f, null, 45f);
-
-        // Assert
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, LengthSimilarityScorer.Score(120f, null, 45f));
     }
 
+    // Verifies that two missing lengths return zero.
     [Fact]
-    // Verifies that scoring with both lengths missing returns zero.
     public void ScoreBothLengthsMissingReturnsZero()
     {
-        // Act
-        float result = LengthSimilarityScorer.Score(
-            null, null, 45f);
-
-        // Assert
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, LengthSimilarityScorer.Score(null, null, 45f));
     }
 
-    // ==================================================
-    // Invalid Preferred Length Tests
-    // ==================================================
+    // Input validation
 
+    // Verifies that nonpositive and nonfinite preferred lengths are rejected.
     [Theory]
     [InlineData(0f)]
     [InlineData(-1f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that scoring with invalid preferred length throws ArgumentException.
-    public void ScoreInvalidPreferredLengthThrowsArgumentException(
-        float preferredLength)
+    public void ScoreInvalidPreferredLengthThrowsArgumentException(float preferredLength)
     {
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            LengthSimilarityScorer.Score(
-                preferredLength, 120f, 45f));
-
-        Assert.Equal("preferredLength", exception.ParamName);
+        Assert.Throws<ArgumentException>("preferredLength", () =>
+            LengthSimilarityScorer.Score(preferredLength, 120f, 45f));
     }
 
-    // ==================================================
-    // Invalid Candidate Length Tests
-    // ==================================================
-
+    // Verifies that nonpositive and nonfinite candidate lengths are rejected.
     [Theory]
     [InlineData(0f)]
     [InlineData(-1f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that scoring with invalid candidate length throws ArgumentException.
-    public void ScoreInvalidCandidateLengthThrowsArgumentException(
-        float candidateLength)
+    public void ScoreInvalidCandidateLengthThrowsArgumentException(float candidateLength)
     {
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            LengthSimilarityScorer.Score(
-                120f, candidateLength, 45f));
-
-        Assert.Equal("candidateLength", exception.ParamName);
+        Assert.Throws<ArgumentException>("candidateLength", () =>
+            LengthSimilarityScorer.Score(120f, candidateLength, 45f));
     }
 
-    // ==================================================
-    // Invalid Tolerance Tests
-    // ==================================================
-
+    // Verifies that nonpositive and nonfinite tolerances are rejected.
     [Theory]
     [InlineData(0f)]
     [InlineData(-1f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that scoring with invalid tolerance throws ArgumentException.
-    public void ScoreInvalidToleranceThrowsArgumentException(
-        float tolerance)
+    public void ScoreInvalidToleranceThrowsArgumentException(float tolerance)
     {
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            LengthSimilarityScorer.Score(
-                120f, 150f, tolerance));
-
-        Assert.Equal("tolerance", exception.ParamName);
+        Assert.Throws<ArgumentException>("tolerance", () =>
+            LengthSimilarityScorer.Score(120f, 150f, tolerance));
     }
 
-    // ==================================================
-    // Mathematical Property Tests
-    // ==================================================
+    // Mathematical properties
 
+    // Verifies that lengths closer to the preferred length receive higher scores.
     [Fact]
-    // Verifies that scoring with closer length returns higher similarity.
     public void ScoreCloserLengthReturnsHigherSimilarity()
     {
-        // Act
-        float closer = LengthSimilarityScorer.Score(
-            120f, 130f, 45f);
+        float closer = LengthSimilarityScorer.Score(120f, 130f, 45f);
+        float farther = LengthSimilarityScorer.Score(120f, 180f, 45f);
 
-        float farther = LengthSimilarityScorer.Score(
-            120f, 180f, 45f);
-
-        // Assert
         Assert.True(closer > farther);
     }
 
+    // Verifies that equal differences produce identical similarity scores.
     [Fact]
-    // Verifies that scoring with equal length differences returns the same similarity.
     public void ScoreEqualLengthDifferencesReturnsSameSimilarity()
     {
-        // Act
-        float shorter = LengthSimilarityScorer.Score(
-            120f, 90f, 45f);
+        float shorter = LengthSimilarityScorer.Score(120f, 90f, 45f);
+        float longer = LengthSimilarityScorer.Score(120f, 150f, 45f);
 
-        float longer = LengthSimilarityScorer.Score(
-            120f, 150f, 45f);
-
-        // Assert
         Assert.Equal(shorter, longer, 6);
     }
 
+    // Verifies that increasing tolerance increases similarity for differing lengths.
     [Fact]
-    // Verifies that scoring with higher tolerance returns higher similarity.
     public void ScoreHigherToleranceReturnsHigherSimilarity()
     {
-        // Act
-        float lowerTolerance = LengthSimilarityScorer.Score(
-            120f, 180f, 15f);
+        float lower = LengthSimilarityScorer.Score(120f, 180f, 15f);
+        float higher = LengthSimilarityScorer.Score(120f, 180f, 60f);
 
-        float higherTolerance = LengthSimilarityScorer.Score(
-            120f, 180f, 60f);
-
-        // Assert
-        Assert.True(higherTolerance > lowerTolerance);
+        Assert.True(higher > lower);
     }
 
+    // Verifies that proportionally scaling all inputs preserves similarity.
     [Fact]
-    // Verifies that scoring with scaled inputs returns the same similarity.
     public void ScoreScaledInputsReturnsSameSimilarity()
     {
-        // Act
-        float original = LengthSimilarityScorer.Score(
-            120f, 150f, 45f);
+        float original = LengthSimilarityScorer.Score(120f, 150f, 45f);
+        float scaled = LengthSimilarityScorer.Score(1200f, 1500f, 450f);
 
-        float scaled = LengthSimilarityScorer.Score(
-            1200f, 1500f, 450f);
-
-        // Assert
         Assert.Equal(original, scaled, 6);
     }
 
+    // Verifies that extremely different lengths produce near-zero similarity.
     [Fact]
-    // Verifies that scoring with extremely different lengths approaches zero.
     public void ScoreExtremelyDifferentLengthsApproachesZero()
     {
-        // Act
-        float result = LengthSimilarityScorer.Score(
-            120f, 10000f, 45f);
-
-        // Assert
-        Assert.InRange(result, 0f, 0.000001f);
+        Assert.InRange(LengthSimilarityScorer.Score(120f, 10000f, 45f),
+            0f, 0.000001f);
     }
 
+    // Verifies that exact length matches receive a score of one regardless of tolerance.
     [Fact]
-    // Verifies that scoring with exact match is independent of tolerance.
     public void ScoreExactMatchIsIndependentOfTolerance()
     {
-        // Act
-        float first = LengthSimilarityScorer.Score(
-            120f, 120f, 1f);
-
-        float second = LengthSimilarityScorer.Score(
-            120f, 120f, 1000f);
-
-        // Assert
-        Assert.Equal(1f, first);
-        Assert.Equal(1f, second);
+        Assert.Equal(1f, LengthSimilarityScorer.Score(120f, 120f, 1f));
+        Assert.Equal(1f, LengthSimilarityScorer.Score(120f, 120f, 1000f));
     }
 
+    // Verifies that 1,000 randomized inputs produce finite scores within [0, 1].
     [Fact]
-    // Verifies that scoring with random valid inputs remains in range.
     public void ScoreRandomValidInputsRemainsInRange()
     {
-        // Arrange
-        Random random = new Random(42);
+        var random = new Random(42);
 
         for (int iteration = 0; iteration < 1000; iteration++)
         {
-            float preferredLength =
-                (float)(random.NextDouble() * 1000 + 1);
+            float preferredLength = (float)(random.NextDouble() * 1000 + 1);
+            float candidateLength = (float)(random.NextDouble() * 1000 + 1);
+            float tolerance = (float)(random.NextDouble() * 100 + 1);
 
-            float candidateLength =
-                (float)(random.NextDouble() * 1000 + 1);
-
-            float tolerance =
-                (float)(random.NextDouble() * 100 + 1);
-
-            // Act
             float result = LengthSimilarityScorer.Score(
                 preferredLength, candidateLength, tolerance);
 
-            // Assert
             Assert.True(float.IsFinite(result));
             Assert.InRange(result, 0f, 1f);
         }

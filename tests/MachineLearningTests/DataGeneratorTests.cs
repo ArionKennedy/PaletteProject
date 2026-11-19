@@ -1,3 +1,4 @@
+
 using System;
 using System.Linq;
 using Palette.Api.MachineLearning;
@@ -5,147 +6,101 @@ using Xunit;
 
 public class SyntheticDataGeneratorTests
 {
+    // Verifies that the default configuration generates 3,000 ratings.
     [Fact]
-    // Verifies that generating ratings with default configuration returns 3000 ratings.
     public void GenerateDefaultConfigurationReturns3000Ratings()
     {
-        // Act
-        var ratings = DataGenerator.Generate();
-
-        // Assert
-        Assert.Equal(3000, ratings.Count);
+        Assert.Equal(3000, DataGenerator.Generate().Count);
     }
 
+    // Verifies that valid configurations produce the expected datasets.
     [Theory]
     [InlineData(100, 200, 30, 3000)]
     [InlineData(10, 20, 5, 50)]
     [InlineData(1, 1, 1, 1)]
     [InlineData(5, 10, 10, 50)]
     [InlineData(10, 1, 1, 10)]
-    // Verifies that generating ratings with valid configuration returns the expected dataset.
     public void GenerateValidConfigurationReturnsExpectedDataset(
-        int userCount,
-        int movieCount,
-        int ratingsPerUser,
-        int expectedCount)
+        int userCount, int movieCount, int ratingsPerUser, int expectedCount)
     {
-        // Act
-        var ratings = DataGenerator.Generate(
-            userCount, movieCount, ratingsPerUser);
+        var ratings = DataGenerator.Generate(userCount, movieCount, ratingsPerUser);
 
-        // Assert
         Assert.Equal(expectedCount, ratings.Count);
-
-        Assert.Equal(userCount,
-            ratings.Select(r => r.UserId).Distinct().Count());
-
-        Assert.InRange(
-            ratings.Select(r => r.MediaId).Distinct().Count(),
-            1,
-            movieCount);
+        Assert.Equal(userCount, ratings.Select(r => r.UserId).Distinct().Count());
+        Assert.InRange(ratings.Select(r => r.MediaId).Distinct().Count(), 1, movieCount);
 
         Assert.All(ratings.GroupBy(r => r.UserId), group =>
             Assert.Equal(ratingsPerUser, group.Count()));
     }
 
+    // Verifies that all generated ratings are finite and within [1, 5].
     [Fact]
-    // Verifies that generating ratings with valid configuration returns the valid ratings.
     public void GenerateValidConfigurationReturnsValidRatings()
     {
-        // Act
-        var ratings = DataGenerator.Generate();
-
-        // Assert
-        Assert.All(ratings, rating =>
+        Assert.All(DataGenerator.Generate(), rating =>
         {
             Assert.True(float.IsFinite(rating.Rating));
             Assert.InRange(rating.Rating, 1f, 5f);
         });
     }
 
+    // Verifies that generated user and media identifiers are nonempty.
     [Fact]
-    // Verifies that generating ratings with valid configuration returns the valid identifiers.
     public void GenerateValidConfigurationReturnsValidIdentifiers()
     {
-        // Act
-        var ratings = DataGenerator.Generate();
-
-        // Assert
-        Assert.All(ratings, rating =>
+        Assert.All(DataGenerator.Generate(), rating =>
         {
             Assert.NotEqual(Guid.Empty, rating.UserId);
             Assert.NotEqual(Guid.Empty, rating.MediaId);
         });
     }
 
+    // Verifies that generated user-media pairs are unique.
     [Fact]
-    // Verifies that generating ratings with valid configuration returns unique user media pairs.
     public void GenerateValidConfigurationReturnsUniqueUserMediaPairs()
     {
-        // Act
         var ratings = DataGenerator.Generate();
 
-        var uniquePairs = ratings
-            .Select(r => (r.UserId, r.MediaId))
-            .Distinct()
-            .Count();
-
-        // Assert
-        Assert.Equal(ratings.Count, uniquePairs);
+        Assert.Equal(ratings.Count,
+            ratings.Select(r => (r.UserId, r.MediaId)).Distinct().Count());
     }
 
+    // Verifies that every user rates every movie at maximum ratings per user.
     [Fact]
-    // Verifies generating ratings for maximum ratings per user rates every movie.
     public void GenerateMaximumRatingsPerUserRatesEveryMovie()
     {
-        // Arrange
         const int movieCount = 10;
+        var ratings = DataGenerator.Generate(5, movieCount, movieCount);
 
-        // Act
-        var ratings = DataGenerator.Generate(
-            userCount: 5,
-            movieCount: movieCount,
-            ratingsPerUser: movieCount);
-
-        // Assert
         Assert.All(ratings.GroupBy(r => r.UserId), group =>
-        {
-            Assert.Equal(movieCount,
-                group.Select(r => r.MediaId).Distinct().Count());
-        });
+            Assert.Equal(movieCount, group.Select(r => r.MediaId).Distinct().Count()));
 
-        Assert.Equal(movieCount,
-            ratings.Select(r => r.MediaId).Distinct().Count());
+        Assert.Equal(movieCount, ratings.Select(r => r.MediaId).Distinct().Count());
     }
 
+    // Verifies that identical seeds produce identical rating values.
     [Fact]
-    // Verifies that generating ratings with same seed returns the identical rating values.
     public void GenerateSameSeedReturnsIdenticalRatingValues()
     {
-        // Act
         var first = DataGenerator.Generate(seed: 42);
         var second = DataGenerator.Generate(seed: 42);
 
-        // Assert
-        Assert.Equal(
-            first.Select(r => r.Rating).ToArray(),
+        Assert.Equal(first.Select(r => r.Rating).ToArray(),
             second.Select(r => r.Rating).ToArray());
     }
 
+    // Verifies that different seeds produce different rating values.
     [Fact]
-    // Verifies that generating ratings with different seeds returns different rating values.
     public void GenerateDifferentSeedsReturnsDifferentRatingValues()
     {
-        // Act
         var first = DataGenerator.Generate(seed: 42);
         var second = DataGenerator.Generate(seed: 100);
 
-        // Assert
-        Assert.False(
-            first.Select(r => r.Rating)
-                .SequenceEqual(second.Select(r => r.Rating)));
+        Assert.False(first.Select(r => r.Rating)
+            .SequenceEqual(second.Select(r => r.Rating)));
     }
 
+    // Verifies that invalid generator configurations are rejected.
     [Theory]
     [InlineData(0, 10, 5)]
     [InlineData(-1, 10, 5)]
@@ -154,15 +109,10 @@ public class SyntheticDataGeneratorTests
     [InlineData(10, 10, 0)]
     [InlineData(10, 10, -1)]
     [InlineData(10, 5, 6)]
-    // Verifies that generating ratings with invalid configuration throws ArgumentException.
     public void GenerateInvalidConfigurationThrowsArgumentException(
-        int userCount,
-        int movieCount,
-        int ratingsPerUser)
+        int userCount, int movieCount, int ratingsPerUser)
     {
-        // Act & Assert
         Assert.ThrowsAny<ArgumentException>(() =>
-            DataGenerator.Generate(
-                userCount, movieCount, ratingsPerUser));
+            DataGenerator.Generate(userCount, movieCount, ratingsPerUser));
     }
 }

@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,62 +9,79 @@ using Xunit;
 
 public class MatrixFactorizationModelTests
 {
+    private readonly MatrixFactorizationModel _model = new(3);
+
+    // Creates a synthetic rating dataset for testing.
+    private static IReadOnlyList<RatingObservation> CreateRatings()
+    {
+        return DataGenerator.Generate(10, 20, 10);
+    }
+
+    // Creates an individual rating observation.
+    private static RatingObservation CreateRating(float rating)
+    {
+        return new RatingObservation(Guid.NewGuid(), Guid.NewGuid(), rating);
+    }
+
+    // Predicts a rating for the supplied observation.
+    private static float Predict(
+        MatrixFactorizationModel model, RatingObservation observation)
+    {
+        return model.Predict(observation.UserId, observation.MediaId);
+    }
+
+    // Verifies that predictions for all supplied observations are finite.
+    private static void AssertFinitePredictions(
+        MatrixFactorizationModel model, IReadOnlyList<RatingObservation> ratings)
+    {
+        Assert.All(ratings, rating =>
+            Assert.True(float.IsFinite(Predict(model, rating))));
+    }
+
     // Initialization tests
 
+    // Verifies that valid factor counts successfully initialize a model.
     [Theory]
     [InlineData(1)]
     [InlineData(3)]
     [InlineData(8)]
     [InlineData(16)]
-    // Verifies that constructing a model with valid factor count creates a model.
-    public void ConstructorValidFactorCountCreatesModel(
-        int factorCount)
+    public void ConstructorValidFactorCountCreatesModel(int factorCount)
     {
-        // Act
-        var model = new MatrixFactorizationModel(factorCount);
-
-        // Assert
-        Assert.NotNull(model);
+        Assert.NotNull(new MatrixFactorizationModel(factorCount));
     }
 
+    // Verifies that invalid factor counts are rejected.
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    // Verifies that constructing a model with invalid factor count throws ArgumentException.
-    public void ConstructorInvalidFactorCountThrowsArgumentException(
-        int factorCount)
+    public void ConstructorInvalidFactorCountThrowsArgumentException(int factorCount)
     {
-        // Act & Assert
         Assert.ThrowsAny<ArgumentException>(() =>
             new MatrixFactorizationModel(factorCount));
     }
 
-    // Training input validation tests
+    // Training input validation
 
+    // Verifies that empty training datasets are rejected.
     [Fact]
-    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
-        // Arrange
         var model = new MatrixFactorizationModel();
 
-        // Act & Assert
-        Assert.ThrowsAny<ArgumentException>(() =>
-            model.Train(Array.Empty<RatingObservation>()));
+        Assert.ThrowsAny<ArgumentException>(() => model.Train([]));
     }
 
+    // Verifies that null training datasets are rejected.
     [Fact]
-    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
-        // Arrange
         var model = new MatrixFactorizationModel();
 
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            model.Train(null!));
+        Assert.Throws<ArgumentNullException>(() => model.Train(null!));
     }
 
+    // Verifies that invalid and nonfinite hyperparameters are rejected.
     [Theory]
     [InlineData(0, 0.01f, 0.02f)]
     [InlineData(-1, 0.01f, 0.02f)]
@@ -76,29 +94,16 @@ public class MatrixFactorizationModelTests
     [InlineData(100, 0.01f, float.NaN)]
     [InlineData(100, 0.01f, float.PositiveInfinity)]
     [InlineData(100, 0.01f, float.NegativeInfinity)]
-    // Verifies that training with invalid hyperparameters throws ArgumentException.
     public void TrainInvalidHyperparametersThrowsArgumentException(
-        int epochs,
-        float learningRate,
-        float regularization)
+        int epochs, float learningRate, float regularization)
     {
-        // Arrange
         var model = new MatrixFactorizationModel();
 
-        var ratings = new List<RatingObservation>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), 4f)
-        };
-
-        // Act & Assert
         Assert.ThrowsAny<ArgumentException>(() =>
-            model.Train(
-                ratings,
-                epochs,
-                learningRate,
-                regularization));
+            model.Train([CreateRating(4f)], epochs, learningRate, regularization));
     }
 
+    // Verifies that out-of-range and nonfinite ratings are rejected.
     [Theory]
     [InlineData(0f)]
     [InlineData(-1f)]
@@ -108,249 +113,157 @@ public class MatrixFactorizationModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that training with invalid rating throws ArgumentException.
-    public void TrainInvalidRatingThrowsArgumentException(
-        float rating)
+    public void TrainInvalidRatingThrowsArgumentException(float rating)
     {
-        // Arrange
         var model = new MatrixFactorizationModel();
 
-        var ratings = new List<RatingObservation>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), rating)
-        };
-
-        // Act & Assert
         Assert.ThrowsAny<ArgumentException>(() =>
-            model.Train(ratings));
+            model.Train([CreateRating(rating)]));
     }
 
     // Training boundary tests
 
+    // Verifies that training on a single observation produces a finite prediction.
     [Theory]
     [InlineData(1f)]
     [InlineData(3f)]
     [InlineData(3.5f)]
     [InlineData(5f)]
-    // Verifies that training with single observation returns the finite prediction.
-    public void TrainSingleObservationReturnsFinitePrediction(
-        float rating)
+    public void TrainSingleObservationReturnsFinitePrediction(float rating)
     {
-        // Arrange
-        var model = new MatrixFactorizationModel(factorCount: 1);
+        var model = new MatrixFactorizationModel(1);
+        var observation = CreateRating(rating);
 
-        var observation = new RatingObservation(
-            Guid.NewGuid(), Guid.NewGuid(), rating);
+        model.Train([observation], epochs: 100);
 
-        // Act
-        model.Train(
-            new[] { observation },
-            epochs: 100);
-
-        float prediction = model.Predict(
-            observation.UserId,
-            observation.MediaId);
-
-        // Assert
-        Assert.True(float.IsFinite(prediction));
+        Assert.True(float.IsFinite(Predict(model, observation)));
     }
 
+    // Verifies that training without regularization produces finite predictions.
     [Fact]
-    // Verifies that training with zero regularization returns the finite predictions.
     public void TrainZeroRegularizationReturnsFinitePredictions()
     {
-        // Arrange
         var ratings = CreateRatings();
-        var model = new MatrixFactorizationModel(3);
 
-        // Act
-        model.Train(ratings, regularization: 0f);
+        _model.Train(ratings, regularization: 0f);
 
-        // Assert
-        AssertFinitePredictions(model, ratings);
+        AssertFinitePredictions(_model, ratings);
     }
 
+    // Verifies that training for a single epoch produces finite predictions.
     [Fact]
-    // Verifies that training with single epoch returns the finite predictions.
     public void TrainSingleEpochReturnsFinitePredictions()
     {
-        // Arrange
         var ratings = CreateRatings();
-        var model = new MatrixFactorizationModel(3);
 
-        // Act
-        model.Train(ratings, epochs: 1);
+        _model.Train(ratings, epochs: 1);
 
-        // Assert
-        AssertFinitePredictions(model, ratings);
+        AssertFinitePredictions(_model, ratings);
     }
 
+    // Verifies that training does not modify the input observations.
     [Fact]
-    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
-        // Arrange
         var ratings = CreateRatings();
         var original = ratings.ToArray();
 
-        var model = new MatrixFactorizationModel(3);
+        _model.Train(ratings);
 
-        // Act
-        model.Train(ratings);
-
-        // Assert
         Assert.Equal(original, ratings.ToArray());
     }
 
     // Prediction tests
 
+    // Verifies that predictions cannot be made before training.
     [Fact]
-    // Verifies that predicting with untrained model throws InvalidOperationException.
     public void PredictUntrainedModelThrowsInvalidOperationException()
     {
-        // Arrange
         var model = new MatrixFactorizationModel();
 
-        // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
             model.Predict(Guid.NewGuid(), Guid.NewGuid()));
     }
 
+    // Verifies that predictions for unknown users are rejected.
     [Fact]
-    // Verifies that predicting with unknown user throws InvalidOperationException.
     public void PredictUnknownUserThrowsInvalidOperationException()
     {
-        // Arrange
         var ratings = CreateRatings();
-        var model = new MatrixFactorizationModel(3);
+        _model.Train(ratings);
 
-        model.Train(ratings);
-
-        // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
-            model.Predict(
-                Guid.NewGuid(),
-                ratings[0].MediaId));
+            _model.Predict(Guid.NewGuid(), ratings[0].MediaId));
     }
 
+    // Verifies that predictions for unknown media are rejected.
     [Fact]
-    // Verifies that predicting with unknown media throws InvalidOperationException.
     public void PredictUnknownMediaThrowsInvalidOperationException()
     {
-        // Arrange
         var ratings = CreateRatings();
-        var model = new MatrixFactorizationModel(3);
+        _model.Train(ratings);
 
-        model.Train(ratings);
-
-        // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
-            model.Predict(
-                ratings[0].UserId,
-                Guid.NewGuid()));
+            _model.Predict(ratings[0].UserId, Guid.NewGuid()));
     }
 
+    // Verifies that repeated predictions produce identical results.
     [Fact]
-    // Verifies that predicting with repeated calls returns the identical prediction.
     public void PredictRepeatedCallsReturnsIdenticalPrediction()
     {
-        // Arrange
         var ratings = CreateRatings();
-        var model = new MatrixFactorizationModel(3);
+        _model.Train(ratings);
 
-        model.Train(ratings);
-
-        var rating = ratings[0];
-
-        // Act
-        float first = model.Predict(
-            rating.UserId, rating.MediaId);
-
-        float second = model.Predict(
-            rating.UserId, rating.MediaId);
-
-        // Assert
-        Assert.Equal(first, second);
+        Assert.Equal(Predict(_model, ratings[0]), Predict(_model, ratings[0]));
     }
 
+    // Verifies that known users and media produce finite predictions for unseen pairs.
     [Fact]
-    // Verifies that predicting with known entities with unseen pair returns the finite prediction.
     public void PredictKnownEntitiesWithUnseenPairReturnsFinitePrediction()
     {
-        // Arrange
-        var userA = Guid.NewGuid();
-        var userB = Guid.NewGuid();
+        Guid userA = Guid.NewGuid();
+        Guid userB = Guid.NewGuid();
+        Guid movieA = Guid.NewGuid();
+        Guid movieB = Guid.NewGuid();
 
-        var movieA = Guid.NewGuid();
-        var movieB = Guid.NewGuid();
+        _model.Train(
+        [
+            new RatingObservation(userA, movieA, 5f),
+            new RatingObservation(userB, movieA, 4f),
+            new RatingObservation(userB, movieB, 3f)
+        ]);
 
-        var ratings = new List<RatingObservation>
-        {
-            new(userA, movieA, 5f),
-            new(userB, movieA, 4f),
-            new(userB, movieB, 3f)
-        };
-
-        var model = new MatrixFactorizationModel(3);
-
-        model.Train(ratings);
-
-        // Act
-        float prediction = model.Predict(userA, movieB);
-
-        // Assert
-        Assert.True(float.IsFinite(prediction));
+        Assert.True(float.IsFinite(_model.Predict(userA, movieB)));
     }
 
     // Learning tests
 
+    // Verifies that identical training inputs produce identical predictions.
     [Fact]
-    // Verifies that training with identical inputs produces identical predictions.
     public void TrainIdenticalInputsProducesIdenticalPredictions()
     {
-        // Arrange
         var ratings = CreateRatings();
-
-        var first = new MatrixFactorizationModel(3);
         var second = new MatrixFactorizationModel(3);
 
-        // Act
-        first.Train(ratings);
+        _model.Train(ratings);
         second.Train(ratings);
 
-        // Assert
         Assert.All(ratings, rating =>
-        {
-            Assert.Equal(
-                first.Predict(rating.UserId, rating.MediaId),
-                second.Predict(rating.UserId, rating.MediaId));
-        });
+            Assert.Equal(Predict(_model, rating), Predict(second, rating)));
     }
 
-    [Fact]
     // Verifies that training with additional epochs reduces training error.
+    [Fact]
     public void TrainAdditionalEpochsReducesTrainingError()
     {
-        // Arrange
-        var ratings = DataGenerator.Generate(
-            userCount: 20,
-            movieCount: 40,
-            ratingsPerUser: 20);
+        var ratings = DataGenerator.Generate(20, 40, 20);
 
-        var model = new MatrixFactorizationModel(3);
+        _model.Train(ratings, epochs: 1);
+        double initialError = ModelEvaluator.CalculateRmse(ratings, _model.Predict);
 
-        model.Train(ratings, epochs: 1);
+        _model.Train(ratings, epochs: 100);
+        double finalError = ModelEvaluator.CalculateRmse(ratings, _model.Predict);
 
-        double initialError = ModelEvaluator.CalculateRmse(
-            ratings, model.Predict);
-
-        // Act
-        model.Train(ratings, epochs: 100);
-
-        double finalError = ModelEvaluator.CalculateRmse(
-            ratings, model.Predict);
-
-        // Assert
         Assert.True(double.IsFinite(initialError));
         Assert.True(double.IsFinite(finalError));
 
@@ -358,92 +271,41 @@ public class MatrixFactorizationModelTests
             $"Initial RMSE: {initialError}, Final RMSE: {finalError}");
     }
 
+    // Verifies that training learns the expected rating for a single observation.
     [Fact]
-    // Verifies training for single observation learns expected rating.
     public void TrainSingleObservationLearnsExpectedRating()
     {
-        // Arrange
-        var observation = new RatingObservation(
-            Guid.NewGuid(), Guid.NewGuid(), 4f);
-
+        var observation = CreateRating(4f);
         var model = new MatrixFactorizationModel(1);
 
-        // Act
-        model.Train(
-            new[] { observation },
-            epochs: 1000,
-            learningRate: 0.01f,
-            regularization: 0f);
+        model.Train([observation], epochs: 1000,
+            learningRate: 0.01f, regularization: 0f);
 
-        float prediction = model.Predict(
-            observation.UserId,
-            observation.MediaId);
-
-        // Assert
-        Assert.InRange(prediction, 3.95f, 4.05f);
+        Assert.InRange(Predict(model, observation), 3.95f, 4.05f);
     }
 
     // Integration tests
 
+    // Verifies that predictions on held-out testing observations are finite.
     [Fact]
-    // Verifies that predicting with held out dataset returns the finite predictions.
     public void PredictHeldOutDatasetReturnsFinitePredictions()
     {
-        // Arrange
-        var ratings = DataGenerator.Generate();
-        var split = DatasetSplitter.Split(ratings);
+        var split = DatasetSplitter.Split(DataGenerator.Generate());
+        _model.Train(split.Training);
 
-        var model = new MatrixFactorizationModel(3);
-        model.Train(split.Training);
-
-        // Act & Assert
-        AssertFinitePredictions(model, split.Testing);
+        AssertFinitePredictions(_model, split.Testing);
     }
 
+    // Verifies that validation RMSE is finite and nonnegative.
     [Fact]
-    // Verifies that training with valid dataset returns the finite validation rmse.
     public void TrainValidDatasetReturnsFiniteValidationRmse()
     {
-        // Arrange
-        var ratings = DataGenerator.Generate();
-        var split = DatasetSplitter.Split(ratings);
+        var split = DatasetSplitter.Split(DataGenerator.Generate());
+        _model.Train(split.Training);
 
-        var model = new MatrixFactorizationModel(3);
-        model.Train(split.Training);
+        double rmse = ModelEvaluator.CalculateRmse(split.Validation, _model.Predict);
 
-        // Act
-        double rmse = ModelEvaluator.CalculateRmse(
-            split.Validation,
-            model.Predict);
-
-        // Assert
         Assert.True(double.IsFinite(rmse));
         Assert.True(rmse >= 0);
-    }
-
-    // Helper methods
-
-    // Creates a rating set for the tests.
-    private static IReadOnlyList<RatingObservation> CreateRatings()
-    {
-        return DataGenerator.Generate(
-            userCount: 10,
-            movieCount: 20,
-            ratingsPerUser: 10);
-    }
-
-    // Asserts that predictions for all supplied ratings are finite.
-    private static void AssertFinitePredictions(
-        MatrixFactorizationModel model,
-        IReadOnlyList<RatingObservation> ratings)
-    {
-        Assert.All(ratings, rating =>
-        {
-            float prediction = model.Predict(
-                rating.UserId,
-                rating.MediaId);
-
-            Assert.True(float.IsFinite(prediction));
-        });
     }
 }

@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,104 +10,94 @@ public class GlobalMeanModelTests
 {
     private readonly GlobalMeanModel _model = new();
 
+    // Creates rating observations from the supplied values.
+    private static IReadOnlyList<RatingObservation> CreateRatings(params float[] values)
+    {
+        return values.Select(value =>
+            new RatingObservation(Guid.NewGuid(), Guid.NewGuid(), value)).ToList();
+    }
+
+    // Trains the model using the supplied rating values.
+    private void Train(params float[] values)
+    {
+        _model.Train(CreateRatings(values));
+    }
+
+    // Predicts a rating using randomly generated user and media identifiers.
+    private float Predict()
+    {
+        return _model.Predict(Guid.NewGuid(), Guid.NewGuid());
+    }
+
     // Mathematical correctness
 
+    // Verifies that a single rating produces the same prediction.
     [Fact]
-    // Verifies that predicting with single rating returns the same rating.
     public void PredictSingleRatingReturnsSameRating()
     {
-        var ratings = CreateRatings(4f);
+        Train(4f);
 
-        _model.Train(ratings);
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(4f, prediction);
+        Assert.Equal(4f, Predict());
     }
 
+    // Verifies that multiple ratings produce the correct mean.
     [Fact]
-    // Verifies that predicting with multiple ratings returns the correct mean.
     public void PredictMultipleRatingsReturnsCorrectMean()
     {
-        var ratings = CreateRatings(5f, 4f, 2f, 3f, 4f);
+        Train(5f, 4f, 2f, 3f, 4f);
 
-        _model.Train(ratings);
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(3.6f, prediction, 5);
+        Assert.Equal(3.6f, Predict(), 5);
     }
 
+    // Verifies that fractional ratings produce the correct mean.
     [Fact]
-    // Verifies that predicting with fractional ratings returns the correct mean.
     public void PredictFractionalRatingsReturnsCorrectMean()
     {
-        var ratings = CreateRatings(2.5f, 3.5f, 4.5f);
+        Train(2.5f, 3.5f, 4.5f);
 
-        _model.Train(ratings);
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(3.5f, prediction, 5);
+        Assert.Equal(3.5f, Predict(), 5);
     }
 
     // Boundary values
 
+    // Verifies that identical ratings produce the same prediction.
     [Theory]
     [InlineData(1f)]
     [InlineData(3f)]
     [InlineData(5f)]
-    // Verifies that predicting with identical ratings returns the same rating.
-    public void PredictIdenticalRatingsReturnsSameRating(
-        float rating)
+    public void PredictIdenticalRatingsReturnsSameRating(float rating)
     {
-        var ratings = CreateRatings(rating, rating, rating);
+        Train(rating, rating, rating);
 
-        _model.Train(ratings);
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(rating, prediction);
+        Assert.Equal(rating, Predict());
     }
 
+    // Verifies that minimum and maximum ratings produce their midpoint.
     [Fact]
-    // Verifies that predicting with minimum and maximum ratings returns midpoint.
     public void PredictMinimumAndMaximumRatingsReturnsMidpoint()
     {
-        var ratings = CreateRatings(1f, 5f);
+        Train(1f, 5f);
 
-        _model.Train(ratings);
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(3f, prediction);
+        Assert.Equal(3f, Predict());
     }
 
     // Input validation
 
+    // Verifies that null training datasets are rejected.
     [Fact]
-    // Verifies that training with null ratings throws ArgumentNullException.
     public void TrainNullRatingsThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() =>
-            _model.Train(null!));
+        Assert.Throws<ArgumentNullException>(() => _model.Train(null!));
     }
 
+    // Verifies that empty training datasets are rejected.
     [Fact]
-    // Verifies that training with empty ratings throws ArgumentException.
     public void TrainEmptyRatingsThrowsArgumentException()
     {
-        var ratings = Array.Empty<RatingObservation>();
-
-        Assert.Throws<ArgumentException>(() =>
-            _model.Train(ratings));
+        Assert.Throws<ArgumentException>(() => _model.Train([]));
     }
 
+    // Verifies that out-of-range and nonfinite ratings are rejected.
     [Theory]
     [InlineData(-1f)]
     [InlineData(0f)]
@@ -116,180 +107,132 @@ public class GlobalMeanModelTests
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that training with invalid rating throws ArgumentException.
-    public void TrainInvalidRatingThrowsArgumentException(
-        float invalidRating)
+    public void TrainInvalidRatingThrowsArgumentException(float invalidRating)
     {
-        var ratings = CreateRatings(3f, invalidRating, 4f);
-
-        Assert.Throws<ArgumentException>(() =>
-            _model.Train(ratings));
+        Assert.Throws<ArgumentException>(() => Train(3f, invalidRating, 4f));
     }
 
     // Model state
 
+    // Verifies that predictions cannot be made before training.
     [Fact]
-    // Verifies that predicting with before training throws InvalidOperationException.
     public void PredictBeforeTrainingThrowsInvalidOperationException()
     {
-        Assert.Throws<InvalidOperationException>(() =>
-            _model.Predict(Guid.NewGuid(), Guid.NewGuid()));
+        Assert.Throws<InvalidOperationException>(() => Predict());
     }
 
+    // Verifies that unsuccessful training leaves the model untrained.
     [Fact]
-    // Verifies training for invalid dataset leaves model untrained.
     public void TrainInvalidDatasetLeavesModelUntrained()
     {
-        var ratings = CreateRatings(4f, float.NaN);
-
-        Assert.Throws<ArgumentException>(() =>
-            _model.Train(ratings));
-
-        Assert.Throws<InvalidOperationException>(() =>
-            _model.Predict(Guid.NewGuid(), Guid.NewGuid()));
+        Assert.Throws<ArgumentException>(() => Train(4f, float.NaN));
+        Assert.Throws<InvalidOperationException>(() => Predict());
     }
 
     // Prediction consistency
 
+    // Verifies that different users receive identical predictions.
     [Fact]
-    // Verifies that predicting with different users returns the same prediction.
     public void PredictDifferentUsersReturnsSamePrediction()
     {
-        _model.Train(CreateRatings(2f, 4f));
+        Train(2f, 4f);
 
         Guid mediaId = Guid.NewGuid();
-
-        float first = _model.Predict(
-            Guid.NewGuid(), mediaId);
-
-        float second = _model.Predict(
-            Guid.NewGuid(), mediaId);
+        float first = _model.Predict(Guid.NewGuid(), mediaId);
+        float second = _model.Predict(Guid.NewGuid(), mediaId);
 
         Assert.Equal(3f, first);
         Assert.Equal(first, second);
     }
 
+    // Verifies that different media receive identical predictions.
     [Fact]
-    // Verifies that predicting with different media returns the same prediction.
     public void PredictDifferentMediaReturnsSamePrediction()
     {
-        _model.Train(CreateRatings(2f, 4f));
+        Train(2f, 4f);
 
         Guid userId = Guid.NewGuid();
-
-        float first = _model.Predict(
-            userId, Guid.NewGuid());
-
-        float second = _model.Predict(
-            userId, Guid.NewGuid());
+        float first = _model.Predict(userId, Guid.NewGuid());
+        float second = _model.Predict(userId, Guid.NewGuid());
 
         Assert.Equal(3f, first);
         Assert.Equal(first, second);
     }
 
+    // Verifies that known and unknown pairs receive identical predictions.
     [Fact]
-    // Verifies that predicting with known and unknown pairs returns the same prediction.
     public void PredictKnownAndUnknownPairsReturnsSamePrediction()
     {
         var ratings = CreateRatings(2f, 4f);
-
         _model.Train(ratings);
 
-        float known = _model.Predict(
-            ratings[0].UserId,
-            ratings[0].MediaId);
-
-        float unknown = _model.Predict(
-            Guid.NewGuid(),
-            Guid.NewGuid());
+        float known = _model.Predict(ratings[0].UserId, ratings[0].MediaId);
 
         Assert.Equal(3f, known);
-        Assert.Equal(known, unknown);
+        Assert.Equal(known, Predict());
     }
 
+    // Verifies that 100 repeated predictions produce identical results.
     [Fact]
-    // Verifies that predicting with repeated calls returns the same prediction.
     public void PredictRepeatedCallsReturnsSamePrediction()
     {
-        _model.Train(CreateRatings(1f, 3f, 5f));
+        Train(1f, 3f, 5f);
 
         Guid userId = Guid.NewGuid();
         Guid mediaId = Guid.NewGuid();
-
         float expected = _model.Predict(userId, mediaId);
 
         for (int i = 0; i < 100; i++)
-        {
-            Assert.Equal(
-                expected,
-                _model.Predict(userId, mediaId));
-        }
+            Assert.Equal(expected, _model.Predict(userId, mediaId));
     }
 
     // Retraining
 
+    // Verifies that retraining replaces the previous global mean.
     [Fact]
-    // Verifies training for new dataset replaces previous mean.
     public void TrainNewDatasetReplacesPreviousMean()
     {
-        _model.Train(CreateRatings(1f, 2f, 3f));
+        Train(1f, 2f, 3f);
+        float first = Predict();
 
-        float first = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        _model.Train(CreateRatings(3f, 4f, 5f));
-
-        float second = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
+        Train(3f, 4f, 5f);
+        float second = Predict();
 
         Assert.Equal(2f, first);
         Assert.Equal(4f, second);
     }
 
+    // Verifies that retraining with the same dataset preserves the mean.
     [Fact]
-    // Verifies that training with same dataset produces same mean.
     public void TrainSameDatasetProducesSameMean()
     {
         var ratings = CreateRatings(1f, 3f, 4f, 5f);
 
         _model.Train(ratings);
-
-        float first = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
+        float first = Predict();
 
         _model.Train(ratings);
 
-        float second = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(first, second);
+        Assert.Equal(first, Predict());
     }
 
+    // Verifies that unsuccessful retraining preserves the previous mean.
     [Fact]
-    // Verifies that training with invalid dataset preserves previous mean.
     public void TrainInvalidDatasetPreservesPreviousMean()
     {
-        _model.Train(CreateRatings(2f, 4f));
+        Train(2f, 4f);
 
-        var invalidRatings = CreateRatings(5f, float.NaN);
-
-        Assert.Throws<ArgumentException>(() =>
-            _model.Train(invalidRatings));
-
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(3f, prediction);
+        Assert.Throws<ArgumentException>(() => Train(5f, float.NaN));
+        Assert.Equal(3f, Predict());
     }
 
     // Data integrity
 
+    // Verifies that training does not modify the input ratings.
     [Fact]
-    // Verifies that training with valid ratings does not modify input.
     public void TrainValidRatingsDoesNotModifyInput()
     {
         var ratings = CreateRatings(5f, 2f, 4f, 1f);
-
         var original = ratings.ToArray();
 
         _model.Train(ratings);
@@ -297,54 +240,31 @@ public class GlobalMeanModelTests
         Assert.Equal(original, ratings.ToArray());
     }
 
+    // Verifies that training data order does not affect the global mean.
     [Fact]
-    // Verifies that training with different rating order returns the same mean.
     public void TrainDifferentRatingOrderReturnsSameMean()
     {
         var ratings = CreateRatings(5f, 2f, 4f, 1f);
 
         _model.Train(ratings);
-
-        float first = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
+        float first = Predict();
 
         _model.Train(ratings.Reverse().ToArray());
 
-        float second = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(first, second, 5);
+        Assert.Equal(first, Predict(), 5);
     }
 
     // Scalability and numerical correctness
 
+    // Verifies that training on 10,000 ratings produces the correct mean.
     [Fact]
-    // Verifies that training with large dataset returns the correct mean.
     public void TrainLargeDatasetReturnsCorrectMean()
     {
         var values = Enumerable.Repeat(5f, 5000)
-            .Concat(Enumerable.Repeat(1f, 5000))
-            .ToArray();
+            .Concat(Enumerable.Repeat(1f, 5000)).ToArray();
 
-        _model.Train(CreateRatings(values));
+        Train(values);
 
-        float prediction = _model.Predict(
-            Guid.NewGuid(), Guid.NewGuid());
-
-        Assert.Equal(3f, prediction, 5);
-    }
-
-    // Helper method
-
-    // Creates a rating set for the tests.
-    private static IReadOnlyList<RatingObservation> CreateRatings(
-        params float[] values)
-    {
-        return values.Select(value =>
-            new RatingObservation(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                value))
-            .ToList();
+        Assert.Equal(3f, Predict(), 5);
     }
 }

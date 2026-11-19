@@ -5,91 +5,63 @@ using Xunit;
 
 public class VectorMathTests
 {
-    // Dot Product Tests
-    [Theory]
-    [InlineData(new float[] { 1, 2, 3 },
-                new float[] { 4, 5, 6 }, 32f)]
-    [InlineData(new float[] { 0, 0, 0 },
-                new float[] { 1, 2, 3 }, 0f)]
-    [InlineData(new float[] { -1, -2 },
-                new float[] { 3, 4 }, -11f)]
-    [InlineData(new float[] { -1, 2 },
-                new float[] { 3, 4 }, 5f)]
-    [InlineData(new float[] { -1, -2 },
-                new float[] { -3, -4 }, 11f)]
-    [InlineData(new float[] { 1, 0 },
-                new float[] { 0, 1 }, 0f)]
-    [InlineData(new float[] { 3 },
-                new float[] { 4 }, 12f)]
-    [InlineData(new float[] { },
-                new float[] { }, 0f)]
-    [InlineData(new float[] { 0.5f, 1.5f },
-                new float[] { 2, 3 }, 5.5f)]
-    // Verifies that calculating a dot product with valid vectors returns the expected result.
-    public void DotProductValidVectorsReturnsExpectedResult(
-        float[] a,
-        float[] b,
-        float expected)
-    {
-        // Act
-        float result = VectorMath.DotProduct(a, b);
+    // Dot product
 
-        // Assert
-        Assert.Equal(expected, result, 6);
+    // Verifies that valid vectors produce the expected dot product.
+    [Theory]
+    [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 32f)]
+    [InlineData(new float[] { 0, 0, 0 }, new float[] { 1, 2, 3 }, 0f)]
+    [InlineData(new float[] { -1, -2 }, new float[] { 3, 4 }, -11f)]
+    [InlineData(new float[] { -1, 2 }, new float[] { 3, 4 }, 5f)]
+    [InlineData(new float[] { -1, -2 }, new float[] { -3, -4 }, 11f)]
+    [InlineData(new float[] { 1, 0 }, new float[] { 0, 1 }, 0f)]
+    [InlineData(new float[] { 3 }, new float[] { 4 }, 12f)]
+    [InlineData(new float[] { }, new float[] { }, 0f)]
+    [InlineData(new float[] { 0.5f, 1.5f }, new float[] { 2, 3 }, 5.5f)]
+    public void DotProductValidVectorsReturnsExpectedResult(float[] a, float[] b, float expected)
+    {
+        Assert.Equal(expected, VectorMath.DotProduct(a, b), 6);
     }
 
+    // Verifies that vectors of unequal lengths are rejected.
     [Theory]
     [InlineData(new float[] { 1, 2 }, new float[] { 3 })]
     [InlineData(new float[] { 1 }, new float[] { 2, 3 })]
     [InlineData(new float[] { }, new float[] { 1 })]
     [InlineData(new float[] { 1 }, new float[] { })]
-    // Verifies that calculating a dot product with unequal lengths throws ArgumentException.
-    public void DotProductUnequalLengthsThrowsArgumentException(
-        float[] a,
-        float[] b)
+    public void DotProductUnequalLengthsThrowsArgumentException(float[] a, float[] b)
     {
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() =>
-            VectorMath.DotProduct(a, b));
+        Assert.Throws<ArgumentException>(() => VectorMath.DotProduct(a, b));
     }
 
+    // Verifies that the dot product is commutative.
     [Fact]
-    // Verifies that calculating a dot product with reversed vectors returns the same result.
     public void DotProductReversedVectorsReturnsSameResult()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
-        float[] b = { 4f, 5f, 6f };
+        float[] a = [1f, 2f, 3f];
+        float[] b = [4f, 5f, 6f];
 
-        // Act
-        float first = VectorMath.DotProduct(a, b);
-        float second = VectorMath.DotProduct(b, a);
-
-        // Assert
-        Assert.Equal(first, second);
+        Assert.Equal(VectorMath.DotProduct(a, b), VectorMath.DotProduct(b, a));
     }
 
+    // Verifies that calculating the dot product does not modify either vector.
     [Fact]
-    // Verifies that calculating a dot product with valid vectors does not modify inputs.
     public void DotProductValidVectorsDoesNotModifyInputs()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
-        float[] b = { 4f, 5f, 6f };
-
+        float[] a = [1f, 2f, 3f];
+        float[] b = [4f, 5f, 6f];
         float[] originalA = (float[])a.Clone();
         float[] originalB = (float[])b.Clone();
 
-        // Act
         VectorMath.DotProduct(a, b);
 
-        // Assert
         Assert.Equal(originalA, a);
         Assert.Equal(originalB, b);
     }
 
-    // Magnitude Tests
+    // Magnitude
 
+    // Verifies that valid vectors produce the expected magnitude.
     [Theory]
     [InlineData(new float[] { 3, 4 }, 5f)]
     [InlineData(new float[] { -3, -4 }, 5f)]
@@ -99,145 +71,93 @@ public class VectorMathTests
     [InlineData(new float[] { -5 }, 5f)]
     [InlineData(new float[] { }, 0f)]
     [InlineData(new float[] { 0.3f, 0.4f }, 0.5f)]
-    // Verifies that calculating vector magnitude with valid vector returns the expected result.
-    public void MagnitudeValidVectorReturnsExpectedResult(
-        float[] vector,
-        float expected)
+    public void MagnitudeValidVectorReturnsExpectedResult(float[] vector, float expected)
     {
-        // Act
-        float result = VectorMath.Magnitude(vector);
-
-        // Assert
-        Assert.Equal(expected, result, 6);
+        Assert.Equal(expected, VectorMath.Magnitude(vector), 6);
     }
 
+    // Verifies that scaling a vector proportionally scales its magnitude.
     [Fact]
-    // Verifies that calculating vector magnitude with scaled vector returns scaled magnitude.
     public void MagnitudeScaledVectorReturnsScaledMagnitude()
     {
-        // Arrange
-        float[] a = { 3f, 4f };
-        float[] scaledA = { 9f, 12f };
+        float original = VectorMath.Magnitude([3f, 4f]);
+        float scaled = VectorMath.Magnitude([9f, 12f]);
 
-        // Act
-        float original = VectorMath.Magnitude(a);
-        float scaled = VectorMath.Magnitude(scaledA);
-
-        // Assert
         Assert.Equal(original * 3f, scaled, 6);
     }
 
+    // Verifies that calculating magnitude does not modify the input vector.
     [Fact]
-    // Verifies that calculating vector magnitude does not modify input.
     public void MagnitudeDoesNotModifyInput()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
+        float[] a = [1f, 2f, 3f];
         float[] original = (float[])a.Clone();
 
-        // Act
         VectorMath.Magnitude(a);
 
-        // Assert
         Assert.Equal(original, a);
     }
 
-    // Cosine Similarity Tests
+    // Cosine similarity
 
+    // Verifies that valid vectors produce the expected cosine similarity.
     [Theory]
-    [InlineData(new float[] { 1, 2, 3 },
-                new float[] { 1, 2, 3 }, 1f)]
-    [InlineData(new float[] { 1, 0 },
-                new float[] { 0, 1 }, 0f)]
-    [InlineData(new float[] { 1, 2 },
-                new float[] { -1, -2 }, -1f)]
-    [InlineData(new float[] { 1, 2 },
-                new float[] { 2, 4 }, 1f)]
-    [InlineData(new float[] { 0, 0 },
-                new float[] { 1, 2 }, 0f)]
-    [InlineData(new float[] { 1, 2 },
-                new float[] { 0, 0 }, 0f)]
-    [InlineData(new float[] { 0, 0 },
-                new float[] { 0, 0 }, 0f)]
-    [InlineData(new float[] { },
-                new float[] { }, 0f)]
-    [InlineData(new float[] { 1 },
-                new float[] { 5 }, 1f)]
-    [InlineData(new float[] { 1 },
-                new float[] { -5 }, -1f)]
-    [InlineData(new float[] { 1, 0 },
-                new float[] { 1, 1 }, 0.707107f)]
-    [InlineData(new float[] { 1, 0 },
-                new float[] { -1, 1 }, -0.707107f)]
-    [InlineData(new float[] { 1, 1, 0 },
-                new float[] { 1, 0, 1 }, 0.5f)]
-    // Verifies that calculating cosine similarity with valid vectors returns the expected result.
-    public void CosineSimilarityValidVectorsReturnsExpectedResult(
-        float[] a,
-        float[] b,
-        float expected)
+    [InlineData(new float[] { 1, 2, 3 }, new float[] { 1, 2, 3 }, 1f)]
+    [InlineData(new float[] { 1, 0 }, new float[] { 0, 1 }, 0f)]
+    [InlineData(new float[] { 1, 2 }, new float[] { -1, -2 }, -1f)]
+    [InlineData(new float[] { 1, 2 }, new float[] { 2, 4 }, 1f)]
+    [InlineData(new float[] { 0, 0 }, new float[] { 1, 2 }, 0f)]
+    [InlineData(new float[] { 1, 2 }, new float[] { 0, 0 }, 0f)]
+    [InlineData(new float[] { 0, 0 }, new float[] { 0, 0 }, 0f)]
+    [InlineData(new float[] { }, new float[] { }, 0f)]
+    [InlineData(new float[] { 1 }, new float[] { 5 }, 1f)]
+    [InlineData(new float[] { 1 }, new float[] { -5 }, -1f)]
+    [InlineData(new float[] { 1, 0 }, new float[] { 1, 1 }, 0.707107f)]
+    [InlineData(new float[] { 1, 0 }, new float[] { -1, 1 }, -0.707107f)]
+    [InlineData(new float[] { 1, 1, 0 }, new float[] { 1, 0, 1 }, 0.5f)]
+    public void CosineSimilarityValidVectorsReturnsExpectedResult(float[] a, float[] b, float expected)
     {
-        // Act
-        float result = VectorMath.CosineSimilarity(a, b);
-
-        // Assert
-        Assert.Equal(expected, result, 6);
+        Assert.Equal(expected, VectorMath.CosineSimilarity(a, b), 6);
     }
 
+    // Verifies that cosine similarity rejects vectors of unequal lengths.
     [Theory]
     [InlineData(new float[] { 1, 2 }, new float[] { 1 })]
     [InlineData(new float[] { 1 }, new float[] { 1, 2 })]
     [InlineData(new float[] { }, new float[] { 1 })]
     [InlineData(new float[] { 1 }, new float[] { })]
-    // Verifies that calculating cosine similarity with unequal lengths throws ArgumentException.
-    public void CosineSimilarityUnequalLengthsThrowsArgumentException(
-        float[] a,
-        float[] b)
+    public void CosineSimilarityUnequalLengthsThrowsArgumentException(float[] a, float[] b)
     {
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() =>
-            VectorMath.CosineSimilarity(a, b));
+        Assert.Throws<ArgumentException>(() => VectorMath.CosineSimilarity(a, b));
     }
 
+    // Verifies that cosine similarity is symmetric.
     [Fact]
-    // Verifies that calculating cosine similarity with reversed vectors returns the same result.
     public void CosineSimilarityReversedVectorsReturnsSameResult()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
-        float[] b = { 4f, 5f, 6f };
+        float[] a = [1f, 2f, 3f];
+        float[] b = [4f, 5f, 6f];
 
-        // Act
-        float first = VectorMath.CosineSimilarity(a, b);
-        float second = VectorMath.CosineSimilarity(b, a);
-
-        // Assert
-        Assert.Equal(first, second, 6);
+        Assert.Equal(VectorMath.CosineSimilarity(a, b),
+            VectorMath.CosineSimilarity(b, a), 6);
     }
 
+    // Verifies that positive vector scaling preserves cosine similarity.
     [Fact]
-    // Verifies that calculating cosine similarity with scaled vectors returns the same result.
     public void CosineSimilarityScaledVectorsReturnsSameResult()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
-        float[] b = { 4f, 5f, 6f };
-        float[] scaledA = { 10f, 20f, 30f };
+        float[] b = [4f, 5f, 6f];
+        float original = VectorMath.CosineSimilarity([1f, 2f, 3f], b);
+        float scaled = VectorMath.CosineSimilarity([10f, 20f, 30f], b);
 
-        // Act
-        float original = VectorMath.CosineSimilarity(a, b);
-        float scaled = VectorMath.CosineSimilarity(scaledA, b);
-
-        // Assert
         Assert.Equal(original, scaled, 6);
     }
 
+    // Verifies that 1,000 random vector pairs produce finite scores within [-1, 1].
     [Fact]
-    // Verifies that calculating cosine similarity with random vectors remains in range.
     public void CosineSimilarityRandomVectorsRemainsInRange()
     {
-        // Arrange
-        Random random = new Random(42);
+        var random = new Random(42);
 
         for (int iteration = 0; iteration < 1000; iteration++)
         {
@@ -250,30 +170,24 @@ public class VectorMathTests
                 b[i] = (float)(random.NextDouble() * 2 - 1);
             }
 
-            // Act
             float result = VectorMath.CosineSimilarity(a, b);
 
-            // Assert
             Assert.True(float.IsFinite(result));
             Assert.InRange(result, -1f, 1f);
         }
     }
 
+    // Verifies that cosine similarity does not modify either input vector.
     [Fact]
-    // Verifies that calculating cosine similarity does not modify inputs.
     public void CosineSimilarityDoesNotModifyInputs()
     {
-        // Arrange
-        float[] a = { 1f, 2f, 3f };
-        float[] b = { 4f, 5f, 6f };
-
+        float[] a = [1f, 2f, 3f];
+        float[] b = [4f, 5f, 6f];
         float[] originalA = (float[])a.Clone();
         float[] originalB = (float[])b.Clone();
 
-        // Act
         VectorMath.CosineSimilarity(a, b);
 
-        // Assert
         Assert.Equal(originalA, a);
         Assert.Equal(originalB, b);
     }

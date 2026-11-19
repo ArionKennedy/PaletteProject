@@ -1,6 +1,7 @@
 using Backend.Features.Health;
 using Backend.Features.Lookup;
 using Backend.Features.Search;
+using Backend.Features.Recommendations;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
 using Backend.Shared.Errors;
@@ -25,6 +26,7 @@ builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
+builder.Services.AddRecommendationFeature();
 
 builder.Services.AddCors(options =>
 {

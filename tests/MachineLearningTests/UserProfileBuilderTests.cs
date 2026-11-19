@@ -6,7 +6,7 @@ using Xunit;
 
 public class UserProfileBuilderTests
 {
-    // Creates media-feature test data.
+    // Creates configurable media features for testing.
     private static MediaFeatures CreateMedia(
         string mediaType = "movie",
         string[]? genres = null,
@@ -19,677 +19,406 @@ public class UserProfileBuilderTests
         int? seasons = null)
     {
         return new MediaFeatures(
-            MediaId: Guid.NewGuid(),
-            MediaType: mediaType,
-            Genres: genres ?? Array.Empty<string>(),
-            Authors: authors ?? Array.Empty<string>(),
-            Directors: directors ?? Array.Empty<string>(),
-            Studios: studios ?? Array.Empty<string>(),
-            Publishers: publishers ?? Array.Empty<string>(),
-            RuntimeMinutes: runtime,
-            PageCount: pageCount,
-            NumberOfSeasons: seasons
-        );
+            Guid.NewGuid(), mediaType,
+            genres ?? [], authors ?? [], directors ?? [],
+            studios ?? [], publishers ?? [],
+            runtime, pageCount, seasons);
     }
 
-    // ==================================================
-    // Profile Initialization Tests
-    // ==================================================
+    // Builds a preference profile from the supplied weighted interactions.
+    private static UserPreferenceProfile BuildProfile(
+        params WeightedMediaInteraction[] interactions)
+    {
+        return UserProfileBuilder.Build(Guid.NewGuid(), interactions);
+    }
 
+    // Profile initialization
+
+    // Verifies that the generated profile preserves the user's identifier.
     [Fact]
-    // Verifies that building a profile preserves user id.
     public void BuildPreservesUserId()
     {
         Guid userId = Guid.NewGuid();
 
-        var profile = UserProfileBuilder.Build(
-            userId, Array.Empty<WeightedMediaInteraction>());
-
-        Assert.Equal(userId, profile.UserId);
+        Assert.Equal(userId, UserProfileBuilder.Build(userId, []).UserId);
     }
 
+    // Verifies that users without interactions receive an empty profile.
     [Fact]
-    // Verifies that building a profile with empty interactions returns empty profile.
     public void BuildEmptyInteractionsReturnsEmptyProfile()
     {
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            Array.Empty<WeightedMediaInteraction>());
+        var profile = BuildProfile();
 
         Assert.Empty(profile.GenrePreferences);
         Assert.Empty(profile.AuthorPreferences);
         Assert.Empty(profile.DirectorPreferences);
         Assert.Empty(profile.StudioPreferences);
         Assert.Empty(profile.PublisherPreferences);
-
         Assert.Null(profile.PreferredRuntimeMinutes);
         Assert.Null(profile.PreferredPageCount);
         Assert.Null(profile.PreferredNumberOfSeasons);
     }
 
+    // Verifies that zero-weight interactions do not influence preferences.
     [Fact]
-    // Verifies that building a profile with zero weight interaction does not affect profile.
     public void BuildZeroWeightInteractionDoesNotAffectProfile()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action" },
-            directors: new[] { "Christopher Nolan" },
-            runtime: 120);
+        var media = CreateMedia(genres: ["Action"],
+            directors: ["Christopher Nolan"], runtime: 120);
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 0f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 0f));
 
         Assert.Empty(profile.GenrePreferences);
         Assert.Empty(profile.DirectorPreferences);
         Assert.Null(profile.PreferredRuntimeMinutes);
     }
 
-    // ==================================================
-    // Categorical Preference Accumulation Tests
-    // ==================================================
+    // Categorical preference accumulation
 
+    // Verifies that a single interaction contributes its genre weight.
     [Fact]
-    // Verifies building a profile for single interaction accumulates genre weight.
     public void BuildSingleInteractionAccumulatesGenreWeight()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action" });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action"]), 3f));
 
         Assert.Equal(3f, profile.GenrePreferences["Action"]);
     }
 
+    // Verifies that multiple interactions accumulate overlapping genre weights.
     [Fact]
-    // Verifies building a profile for multiple interactions accumulates genre weights.
     public void BuildMultipleInteractionsAccumulatesGenreWeights()
     {
-        var first = CreateMedia(
-            genres: new[] { "Action", "Adventure" });
-
-        var second = CreateMedia(
-            genres: new[] { "Action", "Drama" });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 3f),
-            new WeightedMediaInteraction(second, 2f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action", "Adventure"]), 3f),
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action", "Drama"]), 2f));
 
         Assert.Equal(5f, profile.GenrePreferences["Action"]);
         Assert.Equal(3f, profile.GenrePreferences["Adventure"]);
         Assert.Equal(2f, profile.GenrePreferences["Drama"]);
     }
 
+    // Verifies that book interactions contribute author preferences.
     [Fact]
-    // Verifies building a profile for accumulates author preferences.
     public void BuildAccumulatesAuthorPreferences()
     {
-        var media = CreateMedia(
-            mediaType: "book",
-            authors: new[] { "J.R.R. Tolkien" });
+        var media = CreateMedia("book", authors: ["J.R.R. Tolkien"]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 4f));
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 4f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
-
-        Assert.Equal(
-            4f, profile.AuthorPreferences["J.R.R. Tolkien"]);
+        Assert.Equal(4f, profile.AuthorPreferences["J.R.R. Tolkien"]);
     }
 
+    // Verifies that movie interactions contribute director preferences.
     [Fact]
-    // Verifies building a profile for accumulates director preferences.
     public void BuildAccumulatesDirectorPreferences()
     {
-        var media = CreateMedia(
-            directors: new[] { "Christopher Nolan" });
+        var media = CreateMedia(directors: ["Christopher Nolan"]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 5f));
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 5f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
-
-        Assert.Equal(
-            5f, profile.DirectorPreferences["Christopher Nolan"]);
+        Assert.Equal(5f, profile.DirectorPreferences["Christopher Nolan"]);
     }
 
+    // Verifies that media interactions contribute studio preferences.
     [Fact]
-    // Verifies building a profile for accumulates studio preferences.
     public void BuildAccumulatesStudioPreferences()
     {
-        var media = CreateMedia(
-            studios: new[] { "Warner Bros." });
+        var media = CreateMedia(studios: ["Warner Bros."]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 3f));
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
-
-        Assert.Equal(
-            3f, profile.StudioPreferences["Warner Bros."]);
+        Assert.Equal(3f, profile.StudioPreferences["Warner Bros."]);
     }
 
+    // Verifies that book interactions contribute publisher preferences.
     [Fact]
-    // Verifies building a profile for accumulates publisher preferences.
     public void BuildAccumulatesPublisherPreferences()
     {
-        var media = CreateMedia(
-            mediaType: "book",
-            publishers: new[] { "HarperCollins" });
+        var media = CreateMedia("book", publishers: ["HarperCollins"]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 2f));
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 2f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
-
-        Assert.Equal(
-            2f, profile.PublisherPreferences["HarperCollins"]);
+        Assert.Equal(2f, profile.PublisherPreferences["HarperCollins"]);
     }
 
+    // Verifies that repeated interactions with the same media accumulate weights.
     [Fact]
-    // Verifies building a profile for repeated media interactions accumulates weights.
     public void BuildRepeatedMediaInteractionsAccumulatesWeights()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action" });
+        var media = CreateMedia(genres: ["Action"]);
 
-        var interactions = new[]
-        {
+        var profile = BuildProfile(
             new WeightedMediaInteraction(media, 2f),
-            new WeightedMediaInteraction(media, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+            new WeightedMediaInteraction(media, 3f));
 
         Assert.Equal(5f, profile.GenrePreferences["Action"]);
     }
 
-    // ==================================================
-    // Feature Normalization Tests
-    // ==================================================
+    // Feature normalization
 
+    // Verifies that differently capitalized features combine their weights.
     [Fact]
-    // Verifies that building a profile with different capitalization combines preferences.
     public void BuildDifferentCapitalizationCombinesPreferences()
     {
-        var first = CreateMedia(
-            genres: new[] { "ACTION" });
-
-        var second = CreateMedia(
-            genres: new[] { "action" });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 2f),
-            new WeightedMediaInteraction(second, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["ACTION"]), 2f),
+            new WeightedMediaInteraction(CreateMedia(genres: ["action"]), 3f));
 
         Assert.Single(profile.GenrePreferences);
         Assert.Equal(5f, profile.GenrePreferences["Action"]);
     }
 
+    // Verifies that surrounding whitespace does not create separate preferences.
     [Fact]
-    // Verifies that building a profile with extra whitespace combines preferences.
     public void BuildExtraWhitespaceCombinesPreferences()
     {
-        var first = CreateMedia(
-            genres: new[] { " Action " });
-
-        var second = CreateMedia(
-            genres: new[] { "Action" });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 2f),
-            new WeightedMediaInteraction(second, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: [" Action "]), 2f),
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action"]), 3f));
 
         Assert.Single(profile.GenrePreferences);
         Assert.Equal(5f, profile.GenrePreferences["Action"]);
     }
 
+    // Verifies that duplicate features within one interaction do not inflate weights.
     [Fact]
-    // Verifies that building a profile with duplicate features does not inflate preferences.
     public void BuildDuplicateFeaturesDoesNotInflatePreferences()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action", "ACTION", " Action " });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 4f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var media = CreateMedia(genres: ["Action", "ACTION", " Action "]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 4f));
 
         Assert.Single(profile.GenrePreferences);
         Assert.Equal(4f, profile.GenrePreferences["Action"]);
     }
 
+    // Verifies that empty and whitespace-only features are ignored.
     [Fact]
-    // Verifies building a profile for blank features are ignored.
     public void BuildBlankFeaturesAreIgnored()
     {
-        var media = CreateMedia(
-            genres: new[] { "", " ", "\t", "Action" });
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 2f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var media = CreateMedia(genres: ["", " ", "\t", "Action"]);
+        var profile = BuildProfile(new WeightedMediaInteraction(media, 2f));
 
         Assert.Single(profile.GenrePreferences);
         Assert.Equal(2f, profile.GenrePreferences["Action"]);
     }
 
-    // ==================================================
-    // Weighted Length Calculation Tests
-    // ==================================================
+    // Weighted length calculations
 
+    // Verifies that a single movie establishes the preferred runtime.
     [Fact]
-    // Verifies that building a profile with single movie returns its runtime.
     public void BuildSingleMovieReturnsItsRuntime()
     {
-        var media = CreateMedia(runtime: 120);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 120), 3f));
 
         Assert.Equal(120f, profile.PreferredRuntimeMinutes);
     }
 
+    // Verifies that equally weighted runtimes produce the arithmetic mean.
     [Fact]
-    // Verifies that building a profile with equal weights returns the arithmetic mean.
     public void BuildEqualWeightsReturnsArithmeticMean()
     {
-        var first = CreateMedia(runtime: 100);
-        var second = CreateMedia(runtime: 200);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 1f),
-            new WeightedMediaInteraction(second, 1f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 100), 1f),
+            new WeightedMediaInteraction(CreateMedia(runtime: 200), 1f));
 
         Assert.Equal(150f, profile.PreferredRuntimeMinutes);
     }
 
+    // Verifies that differently weighted runtimes produce the weighted mean.
     [Fact]
-    // Verifies that building a profile with different weights returns weighted mean.
     public void BuildDifferentWeightsReturnsWeightedMean()
     {
-        var first = CreateMedia(runtime: 100);
-        var second = CreateMedia(runtime: 200);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 3f),
-            new WeightedMediaInteraction(second, 1f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 100), 3f),
+            new WeightedMediaInteraction(CreateMedia(runtime: 200), 1f));
 
         Assert.Equal(125f, profile.PreferredRuntimeMinutes);
     }
 
+    // Verifies that book interactions produce a weighted preferred page count.
     [Fact]
-    // Verifies that building a profile with books returns weighted page count.
     public void BuildBooksReturnsWeightedPageCount()
     {
-        var first = CreateMedia(
-            mediaType: "book", pageCount: 200);
-
-        var second = CreateMedia(
-            mediaType: "book", pageCount: 400);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 1f),
-            new WeightedMediaInteraction(second, 3f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia("book", pageCount: 200), 1f),
+            new WeightedMediaInteraction(CreateMedia("book", pageCount: 400), 3f));
 
         Assert.Equal(350f, profile.PreferredPageCount);
     }
 
+    // Verifies that TV interactions produce a weighted preferred season count.
     [Fact]
-    // Verifies that building a profile with tv shows returns weighted season count.
     public void BuildTvShowsReturnsWeightedSeasonCount()
     {
-        var first = CreateMedia(
-            mediaType: "tv", seasons: 2);
-
-        var second = CreateMedia(
-            mediaType: "tv", seasons: 6);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 3f),
-            new WeightedMediaInteraction(second, 1f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia("tv", seasons: 2), 3f),
+            new WeightedMediaInteraction(CreateMedia("tv", seasons: 6), 1f));
 
         Assert.Equal(3f, profile.PreferredNumberOfSeasons);
     }
 
+    // Verifies that different media types maintain independent length preferences.
     [Fact]
-    // Verifies that building a profile with mixed media keeps length preferences separate.
     public void BuildMixedMediaKeepsLengthPreferencesSeparate()
     {
-        var movie = CreateMedia(runtime: 150);
-
-        var book = CreateMedia(
-            mediaType: "book", pageCount: 350);
-
-        var tv = CreateMedia(
-            mediaType: "tv", seasons: 5);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(movie, 3f),
-            new WeightedMediaInteraction(book, 2f),
-            new WeightedMediaInteraction(tv, 4f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 150), 3f),
+            new WeightedMediaInteraction(CreateMedia("book", pageCount: 350), 2f),
+            new WeightedMediaInteraction(CreateMedia("tv", seasons: 5), 4f));
 
         Assert.Equal(150f, profile.PreferredRuntimeMinutes);
         Assert.Equal(350f, profile.PreferredPageCount);
         Assert.Equal(5f, profile.PreferredNumberOfSeasons);
     }
 
+    // Verifies that missing lengths do not influence the weighted mean.
     [Fact]
-    // Verifies that building a profile with missing lengths does not affect weighted mean.
     public void BuildMissingLengthsDoesNotAffectWeightedMean()
     {
-        var first = CreateMedia(runtime: 120);
-        var second = CreateMedia(runtime: null);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 1f),
-            new WeightedMediaInteraction(second, 5f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 120), 1f),
+            new WeightedMediaInteraction(CreateMedia(runtime: null), 5f));
 
         Assert.Equal(120f, profile.PreferredRuntimeMinutes);
     }
 
+    // Verifies that zero and negative lengths are ignored.
     [Fact]
-    // Verifies building a profile for non positive lengths are ignored.
     public void BuildNonPositiveLengthsAreIgnored()
     {
-        var first = CreateMedia(runtime: 0);
-        var second = CreateMedia(runtime: -100);
-        var third = CreateMedia(runtime: 150);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(first, 5f),
-            new WeightedMediaInteraction(second, 5f),
-            new WeightedMediaInteraction(third, 1f)
-        };
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(), interactions);
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(runtime: 0), 5f),
+            new WeightedMediaInteraction(CreateMedia(runtime: -100), 5f),
+            new WeightedMediaInteraction(CreateMedia(runtime: 150), 1f));
 
         Assert.Equal(150f, profile.PreferredRuntimeMinutes);
     }
 
-    // ==================================================
-    // Invalid Input Tests
-    // ==================================================
+    // Input validation
 
+    // Verifies that a null interaction collection is rejected.
     [Fact]
-    // Verifies that building a profile with null interactions throws ArgumentNullException.
     public void BuildNullInteractionsThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
             UserProfileBuilder.Build(Guid.NewGuid(), null!));
     }
 
+    // Verifies that null interactions within a collection are rejected.
     [Fact]
-    // Verifies that building a profile with null interaction throws ArgumentNullException.
     public void BuildNullInteractionThrowsArgumentNullException()
     {
-        var interactions = new WeightedMediaInteraction[]
-        {
-            null!
-        };
-
         Assert.Throws<ArgumentNullException>(() =>
-            UserProfileBuilder.Build(Guid.NewGuid(), interactions));
+            UserProfileBuilder.Build(Guid.NewGuid(), [null!]));
     }
 
+    // Verifies that interactions containing null media are rejected.
     [Fact]
-    // Verifies that building a profile with null media throws ArgumentNullException.
     public void BuildNullMediaThrowsArgumentNullException()
     {
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(null!, 1f)
-        };
-
         Assert.Throws<ArgumentNullException>(() =>
-            UserProfileBuilder.Build(Guid.NewGuid(), interactions));
+            BuildProfile(new WeightedMediaInteraction(null!, 1f)));
     }
 
+    // Verifies that negative and nonfinite interaction weights are rejected.
     [Theory]
     [InlineData(-1f)]
     [InlineData(-0.01f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that building a profile with invalid weight throws ArgumentException.
-    public void BuildInvalidWeightThrowsArgumentException(
-        float weight)
+    public void BuildInvalidWeightThrowsArgumentException(float weight)
     {
         var media = CreateMedia();
 
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, weight)
-        };
-
         Assert.Throws<ArgumentException>(() =>
-            UserProfileBuilder.Build(Guid.NewGuid(), interactions));
+            BuildProfile(new WeightedMediaInteraction(media, weight)));
     }
 
+    // Verifies that overflowing accumulated preference weights are rejected.
     [Fact]
-    // Verifies that building a profile with accumulated weight overflow throws an exception.
     public void BuildAccumulatedWeightOverflowThrowsException()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action" });
+        var media = CreateMedia(genres: ["Action"]);
 
-        var interactions = new[]
-        {
+        Assert.Throws<OverflowException>(() => BuildProfile(
             new WeightedMediaInteraction(media, float.MaxValue),
-            new WeightedMediaInteraction(media, float.MaxValue)
-        };
-
-        Assert.Throws<OverflowException>(() =>
-            UserProfileBuilder.Build(Guid.NewGuid(), interactions));
+            new WeightedMediaInteraction(media, float.MaxValue)));
     }
 
-    // ==================================================
-    // Algorithm Property Tests
-    // ==================================================
+    // Algorithm properties
 
+    // Verifies that separate users maintain independent preference profiles.
     [Fact]
-    // Verifies that building a profile with separate users produces independent profiles.
     public void BuildSeparateUsersProducesIndependentProfiles()
     {
-        var firstMedia = CreateMedia(
-            genres: new[] { "Action" });
-
-        var secondMedia = CreateMedia(
-            genres: new[] { "Romance" });
-
-        var first = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            new[] { new WeightedMediaInteraction(firstMedia, 3f) });
-
-        var second = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            new[] { new WeightedMediaInteraction(secondMedia, 2f) });
+        var first = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action"]), 3f));
+        var second = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["Romance"]), 2f));
 
         Assert.True(first.GenrePreferences.ContainsKey("Action"));
         Assert.False(first.GenrePreferences.ContainsKey("Romance"));
-
         Assert.True(second.GenrePreferences.ContainsKey("Romance"));
         Assert.False(second.GenrePreferences.ContainsKey("Action"));
     }
 
+    // Verifies that interaction ordering does not influence preferences.
     [Fact]
-    // Verifies that building a profile with reordered interactions returns the same preferences.
     public void BuildReorderedInteractionsReturnsSamePreferences()
     {
         var first = new WeightedMediaInteraction(
-            CreateMedia(
-                genres: new[] { "Action" },
-                runtime: 100), 3f);
-
+            CreateMedia(genres: ["Action"], runtime: 100), 3f);
         var second = new WeightedMediaInteraction(
-            CreateMedia(
-                genres: new[] { "Action", "Drama" },
-                runtime: 200), 2f);
+            CreateMedia(genres: ["Action", "Drama"], runtime: 200), 2f);
 
         Guid userId = Guid.NewGuid();
 
-        var original = UserProfileBuilder.Build(
-            userId, new[] { first, second });
+        var original = UserProfileBuilder.Build(userId, [first, second]);
+        var reordered = UserProfileBuilder.Build(userId, [second, first]);
 
-        var reordered = UserProfileBuilder.Build(
-            userId, new[] { second, first });
-
-        Assert.Equal(
-            original.GenrePreferences.Count,
-            reordered.GenrePreferences.Count);
+        Assert.Equal(original.GenrePreferences.Count, reordered.GenrePreferences.Count);
 
         foreach (var preference in original.GenrePreferences)
-        {
-            Assert.Equal(
-                preference.Value,
-                reordered.GenrePreferences[preference.Key], 6);
-        }
+            Assert.Equal(preference.Value, reordered.GenrePreferences[preference.Key], 6);
 
-        Assert.Equal(
-            original.PreferredRuntimeMinutes,
-            reordered.PreferredRuntimeMinutes);
+        Assert.Equal(original.PreferredRuntimeMinutes, reordered.PreferredRuntimeMinutes);
     }
 
+    // Verifies that proportionally scaling weights preserves preferred length.
     [Fact]
-    // Verifies that building a profile with scaled weights preserves preferred length.
     public void BuildScaledWeightsPreservesPreferredLength()
     {
         var first = CreateMedia(runtime: 100);
         var second = CreateMedia(runtime: 200);
 
-        var original = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            new[]
-            {
-                new WeightedMediaInteraction(first, 3f),
-                new WeightedMediaInteraction(second, 1f)
-            });
+        var original = BuildProfile(
+            new WeightedMediaInteraction(first, 3f),
+            new WeightedMediaInteraction(second, 1f));
 
-        var scaled = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            new[]
-            {
-                new WeightedMediaInteraction(first, 30f),
-                new WeightedMediaInteraction(second, 10f)
-            });
+        var scaled = BuildProfile(
+            new WeightedMediaInteraction(first, 30f),
+            new WeightedMediaInteraction(second, 10f));
 
-        Assert.Equal(
-            original.PreferredRuntimeMinutes,
-            scaled.PreferredRuntimeMinutes);
+        Assert.Equal(original.PreferredRuntimeMinutes, scaled.PreferredRuntimeMinutes);
     }
 
+    // Verifies that building a profile does not modify the input media features.
     [Fact]
-    // Verifies that building a profile does not modify input features.
     public void BuildDoesNotModifyInputFeatures()
     {
-        string[] genres = { " ACTION ", "Drama" };
+        string[] genres = [" ACTION ", "Drama"];
         string[] original = (string[])genres.Clone();
 
-        var media = CreateMedia(genres: genres);
-
-        var interactions = new[]
-        {
-            new WeightedMediaInteraction(media, 3f)
-        };
-
-        UserProfileBuilder.Build(Guid.NewGuid(), interactions);
+        BuildProfile(new WeightedMediaInteraction(CreateMedia(genres: genres), 3f));
 
         Assert.Equal(original, genres);
     }
 
+    // Verifies that every preference dictionary is read-only.
     [Fact]
-    // Verifies that building a profile returns read only preference dictionaries.
     public void BuildReturnsReadOnlyPreferenceDictionaries()
     {
-        var media = CreateMedia(
-            genres: new[] { "Action" });
-
-        var profile = UserProfileBuilder.Build(
-            Guid.NewGuid(),
-            new[] { new WeightedMediaInteraction(media, 3f) });
+        var profile = BuildProfile(
+            new WeightedMediaInteraction(CreateMedia(genres: ["Action"]), 3f));
 
         var dictionaries = new[]
         {
@@ -702,12 +431,9 @@ public class UserProfileBuilderTests
 
         foreach (var preferences in dictionaries)
         {
-            var dictionary =
-                Assert.IsAssignableFrom<IDictionary<string, float>>(
-                    preferences);
+            var dictionary = Assert.IsAssignableFrom<IDictionary<string, float>>(preferences);
 
-            Assert.Throws<NotSupportedException>(() =>
-                dictionary.Add("New Feature", 5f));
+            Assert.Throws<NotSupportedException>(() => dictionary.Add("New Feature", 5f));
         }
     }
 }

@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,254 +11,210 @@ public class DatasetSplitterTests
     private readonly List<RatingObservation> _ratings =
         DataGenerator.Generate().ToList();
 
+    // Splits the default dataset using configurable ratios and seed.
+    private DatasetSplit Split(
+        double trainingRatio = 0.8,
+        double validationRatio = 0.1,
+        int seed = 42)
+    {
+        return DatasetSplitter.Split(_ratings, trainingRatio, validationRatio, seed);
+    }
+
+    // Extracts unique user-media pairs from rating observations.
+    private static HashSet<(Guid UserId, Guid MediaId)> GetUserMediaPairs(
+        IEnumerable<RatingObservation> ratings)
+    {
+        return ratings.Select(r => (r.UserId, r.MediaId)).ToHashSet();
+    }
+
+    // Creates a dense dataset where every user rates every movie.
+    private static List<RatingObservation> CreateDenseRatings(int userCount, int movieCount)
+    {
+        var users = Enumerable.Range(0, userCount)
+            .Select(_ => Guid.NewGuid()).ToArray();
+
+        var movies = Enumerable.Range(0, movieCount)
+            .Select(_ => Guid.NewGuid()).ToArray();
+
+        return users.SelectMany(user => movies.Select(movie =>
+            new RatingObservation(user, movie, 4f))).ToList();
+    }
+
+    // Verifies that every original observation is preserved exactly once.
+    private static void AssertPreservedObservations(
+        IReadOnlyList<RatingObservation> original, DatasetSplit split)
+    {
+        var combined = split.Training
+            .Concat(split.Validation).Concat(split.Testing).ToList();
+
+        Assert.Equal(original.Count, combined.Count);
+        Assert.True(original.ToHashSet().SetEquals(combined));
+        Assert.Equal(original.Count, combined.Distinct().Count());
+    }
+
+    // Verifies that a rare observation appears exclusively in training.
+    private void AssertTrainingOnly(RatingObservation observation)
+    {
+        var ratings = _ratings.ToList();
+        ratings.Add(observation);
+
+        var split = DatasetSplitter.Split(ratings);
+
+        Assert.Contains(observation, split.Training);
+        Assert.DoesNotContain(observation, split.Validation);
+        Assert.DoesNotContain(observation, split.Testing);
+    }
+
     // Functional tests
 
+    // Verifies that the default ratios produce the correct dataset sizes.
     [Fact]
-    // Verifies that splitting ratings with default ratios returns the correct dataset sizes.
     public void SplitDefaultRatiosReturnsCorrectDatasetSizes()
     {
-        // Act
         var split = DatasetSplitter.Split(_ratings);
 
-        // Assert
         Assert.Equal(2400, split.Training.Count);
         Assert.Equal(300, split.Validation.Count);
         Assert.Equal(300, split.Testing.Count);
     }
 
+    // Verifies that custom ratios produce the expected dataset sizes.
     [Theory]
     [InlineData(0.6, 0.2, 1800, 600, 600)]
     [InlineData(0.5, 0.25, 1500, 750, 750)]
     [InlineData(0.9, 0.05, 2700, 150, 150)]
-    // Verifies that splitting ratings with custom ratios returns the correct dataset sizes.
     public void SplitCustomRatiosReturnsCorrectDatasetSizes(
-        double trainingRatio,
-        double validationRatio,
-        int expectedTraining,
-        int expectedValidation,
-        int expectedTesting)
+        double trainingRatio, double validationRatio,
+        int expectedTraining, int expectedValidation, int expectedTesting)
     {
-        // Act
-        var split = DatasetSplitter.Split(
-            _ratings,
-            trainingRatio,
-            validationRatio);
+        var split = Split(trainingRatio, validationRatio);
 
-        // Assert
         Assert.Equal(expectedTraining, split.Training.Count);
         Assert.Equal(expectedValidation, split.Validation.Count);
         Assert.Equal(expectedTesting, split.Testing.Count);
     }
 
+    // Verifies that observations do not overlap between datasets.
     [Fact]
-    // Verifies that splitting ratings with valid ratings returns disjoint datasets.
     public void SplitValidRatingsReturnsDisjointDatasets()
     {
-        // Act
-        var split = DatasetSplitter.Split(_ratings);
+        var split = Split();
 
-        // Assert
         Assert.Empty(split.Training.Intersect(split.Validation));
         Assert.Empty(split.Training.Intersect(split.Testing));
         Assert.Empty(split.Validation.Intersect(split.Testing));
     }
 
+    // Verifies that user-media pairs do not overlap between datasets.
     [Fact]
-    // Verifies that splitting ratings with valid ratings returns disjoint user media pairs.
     public void SplitValidRatingsReturnsDisjointUserMediaPairs()
     {
-        // Act
-        var split = DatasetSplitter.Split(_ratings);
+        var split = Split();
 
         var training = GetUserMediaPairs(split.Training);
         var validation = GetUserMediaPairs(split.Validation);
         var testing = GetUserMediaPairs(split.Testing);
 
-        // Assert
         Assert.Empty(training.Intersect(validation));
         Assert.Empty(training.Intersect(testing));
         Assert.Empty(validation.Intersect(testing));
     }
 
+    // Verifies that splitting preserves every original observation.
     [Fact]
-    // Verifies that splitting ratings with valid ratings preserves all observations.
     public void SplitValidRatingsPreservesAllObservations()
     {
-        // Act
-        var split = DatasetSplitter.Split(_ratings);
-
-        // Assert
-        AssertPreservedObservations(_ratings, split);
+        AssertPreservedObservations(_ratings, Split());
     }
 
+    // Verifies that splitting does not modify the input dataset.
     [Fact]
-    // Verifies that splitting ratings with valid ratings does not modify input.
     public void SplitValidRatingsDoesNotModifyInput()
     {
-        // Arrange
         var original = _ratings.ToArray();
 
-        // Act
-        DatasetSplitter.Split(_ratings);
+        Split();
 
-        // Assert
         Assert.Equal(original, _ratings.ToArray());
     }
 
     // Reproducibility tests
 
+    // Verifies that identical seeds produce identical datasets.
     [Fact]
-    // Verifies that splitting ratings with same seed returns the identical datasets.
     public void SplitSameSeedReturnsIdenticalDatasets()
     {
-        // Act
-        var first = DatasetSplitter.Split(_ratings, seed: 42);
-        var second = DatasetSplitter.Split(_ratings, seed: 42);
+        var first = Split(seed: 42);
+        var second = Split(seed: 42);
 
-        // Assert
-        Assert.Equal(
-            first.Training.ToArray(),
-            second.Training.ToArray());
-
-        Assert.Equal(
-            first.Validation.ToArray(),
-            second.Validation.ToArray());
-
-        Assert.Equal(
-            first.Testing.ToArray(),
-            second.Testing.ToArray());
+        Assert.Equal(first.Training.ToArray(), second.Training.ToArray());
+        Assert.Equal(first.Validation.ToArray(), second.Validation.ToArray());
+        Assert.Equal(first.Testing.ToArray(), second.Testing.ToArray());
     }
 
+    // Verifies that different seeds produce different training datasets.
     [Fact]
-    // Verifies that splitting ratings with different seeds returns different datasets.
     public void SplitDifferentSeedsReturnsDifferentDatasets()
     {
-        // Act
-        var first = DatasetSplitter.Split(_ratings, seed: 42);
-        var second = DatasetSplitter.Split(_ratings, seed: 100);
+        var first = Split(seed: 42);
+        var second = Split(seed: 100);
 
-        // Assert
-        Assert.False(first.Training
-            .ToHashSet()
-            .SetEquals(second.Training));
+        Assert.False(first.Training.ToHashSet().SetEquals(second.Training));
     }
 
     // Training coverage tests
 
+    // Verifies that every user appears in the training dataset.
     [Fact]
-    // Verifies that splitting ratings with valid ratings guarantees user coverage.
     public void SplitValidRatingsGuaranteesUserCoverage()
     {
-        // Act
-        var split = DatasetSplitter.Split(_ratings);
+        var knownUsers = Split().Training.Select(r => r.UserId).ToHashSet();
 
-        var knownUsers = split.Training
-            .Select(r => r.UserId)
-            .ToHashSet();
-
-        // Assert
-        Assert.All(_ratings, rating =>
-            Assert.Contains(rating.UserId, knownUsers));
+        Assert.All(_ratings, rating => Assert.Contains(rating.UserId, knownUsers));
     }
 
+    // Verifies that every media item appears in the training dataset.
     [Fact]
-    // Verifies that splitting ratings with valid ratings guarantees media coverage.
     public void SplitValidRatingsGuaranteesMediaCoverage()
     {
-        // Act
-        var split = DatasetSplitter.Split(_ratings);
+        var knownMedia = Split().Training.Select(r => r.MediaId).ToHashSet();
 
-        var knownMedia = split.Training
-            .Select(r => r.MediaId)
-            .ToHashSet();
-
-        // Assert
-        Assert.All(_ratings, rating =>
-            Assert.Contains(rating.MediaId, knownMedia));
+        Assert.All(_ratings, rating => Assert.Contains(rating.MediaId, knownMedia));
     }
 
+    // Verifies that the only observation for a rare user is included in training.
     [Fact]
-    // Verifies that splitting ratings with rare user includes observation in training.
     public void SplitRareUserIncludesObservationInTraining()
     {
-        // Arrange
-        var ratings = _ratings.ToList();
-
-        var rareRating = new RatingObservation(
-            Guid.NewGuid(),
-            ratings[0].MediaId,
-            5f);
-
-        ratings.Add(rareRating);
-
-        // Act
-        var split = DatasetSplitter.Split(ratings);
-
-        // Assert
-        Assert.Contains(rareRating, split.Training);
-        Assert.DoesNotContain(rareRating, split.Validation);
-        Assert.DoesNotContain(rareRating, split.Testing);
+        AssertTrainingOnly(new RatingObservation(
+            Guid.NewGuid(), _ratings[0].MediaId, 5f));
     }
 
+    // Verifies that the only observation for rare media is included in training.
     [Fact]
-    // Verifies that splitting ratings with rare media includes observation in training.
     public void SplitRareMediaIncludesObservationInTraining()
     {
-        // Arrange
-        var ratings = _ratings.ToList();
-
-        var rareRating = new RatingObservation(
-            ratings[0].UserId,
-            Guid.NewGuid(),
-            5f);
-
-        ratings.Add(rareRating);
-
-        // Act
-        var split = DatasetSplitter.Split(ratings);
-
-        // Assert
-        Assert.Contains(rareRating, split.Training);
-        Assert.DoesNotContain(rareRating, split.Validation);
-        Assert.DoesNotContain(rareRating, split.Testing);
+        AssertTrainingOnly(new RatingObservation(
+            _ratings[0].UserId, Guid.NewGuid(), 5f));
     }
 
+    // Verifies that an observation with a rare user and media is included in training.
     [Fact]
-    // Verifies that splitting ratings with rare user and media includes observation in training.
     public void SplitRareUserAndMediaIncludesObservationInTraining()
     {
-        // Arrange
-        var ratings = _ratings.ToList();
-
-        var rareRating = new RatingObservation(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            5f);
-
-        ratings.Add(rareRating);
-
-        // Act
-        var split = DatasetSplitter.Split(ratings);
-
-        // Assert
-        Assert.Contains(rareRating, split.Training);
-        Assert.DoesNotContain(rareRating, split.Validation);
-        Assert.DoesNotContain(rareRating, split.Testing);
+        AssertTrainingOnly(new RatingObservation(
+            Guid.NewGuid(), Guid.NewGuid(), 5f));
     }
 
     // Boundary tests
 
+    // Verifies that uneven dataset sizes preserve every observation.
     [Fact]
-    // Verifies that splitting ratings with uneven dataset size preserves all observations.
     public void SplitUnevenDatasetSizePreservesAllObservations()
     {
-        // Arrange
         var ratings = _ratings.Take(2999).ToList();
-
-        // Act
         var split = DatasetSplitter.Split(ratings);
 
-        // Assert
         Assert.Equal(2399, split.Training.Count);
         Assert.Equal(299, split.Validation.Count);
         Assert.Equal(301, split.Testing.Count);
@@ -265,19 +222,13 @@ public class DatasetSplitterTests
         AssertPreservedObservations(ratings, split);
     }
 
+    // Verifies that the minimum default dataset produces nonempty partitions.
     [Fact]
-    // Verifies that splitting ratings with minimum default dataset returns non empty datasets.
     public void SplitMinimumDefaultDatasetReturnsNonEmptyDatasets()
     {
-        // Arrange
-        var ratings = CreateDenseRatings(
-            userCount: 5,
-            movieCount: 2);
-
-        // Act
+        var ratings = CreateDenseRatings(5, 2);
         var split = DatasetSplitter.Split(ratings);
 
-        // Assert
         Assert.Equal(8, split.Training.Count);
         Assert.Single(split.Validation);
         Assert.Single(split.Testing);
@@ -285,101 +236,70 @@ public class DatasetSplitterTests
         AssertPreservedObservations(ratings, split);
     }
 
+    // Verifies that exact training capacity still produces a valid split.
     [Fact]
-    // Verifies that splitting ratings with exact training coverage returns the valid split.
     public void SplitExactTrainingCoverageReturnsValidSplit()
     {
-        // Arrange
-        var movieA = Guid.NewGuid();
-        var movieB = Guid.NewGuid();
+        Guid movieA = Guid.NewGuid();
+        Guid movieB = Guid.NewGuid();
 
         var users = Enumerable.Range(0, 8)
-            .Select(_ => Guid.NewGuid())
-            .ToArray();
+            .Select(_ => Guid.NewGuid()).ToArray();
 
-        var ratings = users
-            .Select((user, index) => new RatingObservation(
-                user,
-                index < 4 ? movieA : movieB,
-                4f))
-            .ToList();
+        var ratings = users.Select((user, index) =>
+            new RatingObservation(user, index < 4 ? movieA : movieB, 4f)).ToList();
 
-        ratings.Add(new RatingObservation(
-            users[0], movieB, 3f));
+        ratings.Add(new RatingObservation(users[0], movieB, 3f));
+        ratings.Add(new RatingObservation(users[4], movieA, 5f));
 
-        ratings.Add(new RatingObservation(
-            users[4], movieA, 5f));
-
-        // Act
         var split = DatasetSplitter.Split(ratings);
 
-        // Assert
         Assert.Equal(8, split.Training.Count);
         Assert.Single(split.Validation);
         Assert.Single(split.Testing);
-
-        Assert.Equal(8, split.Training
-            .Select(r => r.UserId)
-            .Distinct()
-            .Count());
+        Assert.Equal(8, split.Training.Select(r => r.UserId).Distinct().Count());
 
         AssertPreservedObservations(ratings, split);
     }
 
-    // Exception tests
+    // Input validation
 
+    // Verifies that null datasets are rejected.
     [Fact]
-    // Verifies that splitting ratings with null ratings throws ArgumentNullException.
     public void SplitNullRatingsThrowsArgumentNullException()
     {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            DatasetSplitter.Split(null!));
+        Assert.Throws<ArgumentNullException>(() => DatasetSplitter.Split(null!));
     }
 
+    // Verifies that empty datasets are rejected.
     [Fact]
-    // Verifies that splitting ratings with empty ratings throws ArgumentException.
     public void SplitEmptyRatingsThrowsArgumentException()
     {
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() =>
-            DatasetSplitter.Split(
-                Array.Empty<RatingObservation>()));
+        Assert.Throws<ArgumentException>(() => DatasetSplitter.Split([]));
     }
 
+    // Verifies that insufficient observations are rejected.
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(9)]
-    // Verifies that splitting ratings with insufficient ratings throws ArgumentException.
-    public void SplitInsufficientRatingsThrowsArgumentException(
-        int count)
+    public void SplitInsufficientRatingsThrowsArgumentException(int count)
     {
-        // Arrange
-        var ratings = _ratings.Take(count).ToList();
-
-        // Act & Assert
         Assert.Throws<ArgumentException>(() =>
-            DatasetSplitter.Split(ratings));
+            DatasetSplitter.Split(_ratings.Take(count).ToList()));
     }
 
+    // Verifies that insufficient training capacity is rejected.
     [Fact]
-    // Verifies that splitting ratings with insufficient training capacity throws InvalidOperationException.
     public void SplitInsufficientTrainingCapacityThrowsInvalidOperationException()
     {
-        // Arrange
-        var ratings = Enumerable.Range(0, 10)
-            .Select(_ => new RatingObservation(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                4f))
-            .ToList();
+        var ratings = Enumerable.Range(0, 10).Select(_ =>
+            new RatingObservation(Guid.NewGuid(), Guid.NewGuid(), 4f)).ToList();
 
-        // Act & Assert
-        Assert.Throws<InvalidOperationException>(() =>
-            DatasetSplitter.Split(ratings));
+        Assert.Throws<InvalidOperationException>(() => DatasetSplitter.Split(ratings));
     }
 
+    // Verifies that invalid, nonfinite and incompatible split ratios are rejected.
     [Theory]
     [InlineData(0.0, 0.1)]
     [InlineData(-0.5, 0.1)]
@@ -395,27 +315,18 @@ public class DatasetSplitterTests
     [InlineData(0.8, double.PositiveInfinity)]
     [InlineData(double.NegativeInfinity, 0.1)]
     [InlineData(0.8, double.NegativeInfinity)]
-    // Verifies that splitting ratings with invalid ratios throws ArgumentException.
     public void SplitInvalidRatiosThrowsArgumentException(
-        double trainingRatio,
-        double validationRatio)
+        double trainingRatio, double validationRatio)
     {
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() =>
-            DatasetSplitter.Split(
-                _ratings,
-                trainingRatio,
-                validationRatio));
+        Assert.Throws<ArgumentException>(() => Split(trainingRatio, validationRatio));
     }
 
+    // Verifies that duplicate user-media pairs are rejected regardless of rating.
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    // Verifies that splitting ratings with duplicate user media pairs throws ArgumentException.
-    public void SplitDuplicateUserMediaPairsThrowsArgumentException(
-        bool identicalRating)
+    public void SplitDuplicateUserMediaPairsThrowsArgumentException(bool identicalRating)
     {
-        // Arrange
         Guid userId = Guid.NewGuid();
         Guid mediaId = Guid.NewGuid();
 
@@ -425,72 +336,13 @@ public class DatasetSplitterTests
             new(userId, mediaId, identicalRating ? 4f : 5f)
         };
 
-        // Verify identifiers
         Assert.Equal(ratings[0].UserId, ratings[1].UserId);
         Assert.Equal(ratings[0].MediaId, ratings[1].MediaId);
+        Assert.Single(GetUserMediaPairs(ratings));
 
-        // Verify duplicate relationship
-        Assert.Single(ratings
-            .Select(r => (r.UserId, r.MediaId))
-            .Distinct());
-
-        // Act
         var exception = Assert.Throws<ArgumentException>(() =>
             DatasetSplitter.Split(ratings));
 
-        // Assert
         Assert.Contains("Duplicate", exception.Message);
     }
-
-    // Helper methods
-
-    private static HashSet<(Guid UserId, Guid MediaId)>
-        GetUserMediaPairs(IEnumerable<RatingObservation> ratings)
-    {
-        return ratings
-            .Select(r => (r.UserId, r.MediaId))
-            .ToHashSet();
-    }
-
-    // Creates dense user-media ratings for split tests.
-    private static List<RatingObservation> CreateDenseRatings(
-        int userCount,
-        int movieCount)
-    {
-        var users = Enumerable.Range(0, userCount)
-            .Select(_ => Guid.NewGuid())
-            .ToArray();
-
-        var movies = Enumerable.Range(0, movieCount)
-            .Select(_ => Guid.NewGuid())
-            .ToArray();
-
-        return users.SelectMany(user =>
-            movies.Select(movie =>
-                new RatingObservation(user, movie, 4f)))
-            .ToList();
-    }
-
-    // Asserts that the split preserves every original observation.
-    private static void AssertPreservedObservations(
-        IReadOnlyList<RatingObservation> original,
-        DatasetSplit split)
-    {
-        var combined = split.Training
-            .Concat(split.Validation)
-            .Concat(split.Testing)
-            .ToList();
-
-        Assert.Equal(original.Count, combined.Count);
-
-        Assert.True(original
-            .ToHashSet()
-            .SetEquals(combined));
-
-        Assert.Equal(
-            original.Count,
-            combined.Distinct().Count());
-    }
-
-    
 }

@@ -6,505 +6,311 @@ using Xunit;
 
 public class CategoricalSimilarityScorerTests
 {
-    // ==================================================
-    // Mathematical Accuracy Tests
-    // ==================================================
+    // Creates a dictionary containing the specified feature weights.
+    private static Dictionary<string, float> CreatePreferences(
+        params (string Feature, float Weight)[] entries)
+    {
+        var preferences = new Dictionary<string, float>();
 
+        foreach (var (feature, weight) in entries)
+            preferences.Add(feature, weight);
+
+        return preferences;
+    }
+
+    // Mathematical accuracy
+
+    // Verifies that identical single features produce a score of one.
     [Fact]
-    // Verifies that scoring with identical single feature returns one.
     public void ScoreIdenticalSingleFeatureReturnsOne()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f));
 
-        string[] features = { "Action" };
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(preferences, ["Action"]), 6);
     }
 
+    // Verifies that identical sets of features produce a score of one.
     [Fact]
-    // Verifies that scoring with identical multiple features returns one.
     public void ScoreIdenticalMultipleFeaturesReturnsOne()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            ["Adventure"] = 1f,
-            ["Drama"] = 1f
-        };
+        var preferences = CreatePreferences(
+            ("Action", 1f), ("Adventure", 1f), ("Drama", 1f));
 
-        string[] features = { "Action", "Adventure", "Drama" };
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(
+            preferences, ["Action", "Adventure", "Drama"]), 6);
     }
 
+    // Verifies that unrelated features produce a score of zero.
     [Fact]
-    // Verifies that scoring with unrelated features returns zero.
     public void ScoreUnrelatedFeaturesReturnsZero()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 3f,
-            ["Adventure"] = 2f
-        };
+        var preferences = CreatePreferences(("Action", 3f), ("Adventure", 2f));
 
-        string[] features = { "Romance", "Drama" };
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(0f, result, 6);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(
+            preferences, ["Romance", "Drama"]), 6);
     }
 
+    // Verifies that partially matching features produce the expected similarity.
     [Fact]
-    // Verifies that scoring with partially matching features returns the expected result.
     public void ScorePartiallyMatchingFeaturesReturnsExpectedResult()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            ["Drama"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f), ("Drama", 1f));
 
-        string[] features = { "Action", "Adventure" };
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(0.5f, result, 6);
+        Assert.Equal(0.5f, CategoricalSimilarityScorer.Score(
+            preferences, ["Action", "Adventure"]), 6);
     }
 
+    // Verifies that weighted preferences produce the expected cosine similarity.
     [Fact]
-    // Verifies that scoring with weighted preferences returns the expected result.
     public void ScoreWeightedPreferencesReturnsExpectedResult()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Science Fiction"] = 2f,
-            ["Adventure"] = 2f,
-            ["Action"] = 1f,
-            ["Drama"] = 1f
-        };
+        var preferences = CreatePreferences(
+            ("Science Fiction", 2f), ("Adventure", 2f),
+            ("Action", 1f), ("Drama", 1f));
 
-        string[] features =
-        {
-            "Science Fiction", "Adventure", "Action"
-        };
-
-        float expected = 5f / MathF.Sqrt(30f);
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(expected, result, 6);
+        Assert.Equal(5f / MathF.Sqrt(30f), CategoricalSimilarityScorer.Score(
+            preferences, ["Science Fiction", "Adventure", "Action"]), 6);
     }
 
+    // Verifies that more heavily weighted matching features rank higher.
     [Fact]
-    // Verifies that a more heavily weighted matching feature increases similarity.
     public void ScoreHigherWeightedFeatureRanksHigher()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 5f,
-            ["Romance"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 5f), ("Romance", 1f));
 
-        float action = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action" });
-
-        float romance = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Romance" });
+        float action = CategoricalSimilarityScorer.Score(preferences, ["Action"]);
+        float romance = CategoricalSimilarityScorer.Score(preferences, ["Romance"]);
 
         Assert.True(action > romance);
     }
 
+    // Verifies that additional unmatched candidate features reduce similarity.
     [Fact]
-    // Verifies that scoring with unknown candidate feature reduces similarity.
     public void ScoreUnknownCandidateFeatureReducesSimilarity()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f));
 
-        float exact = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action" });
-
+        float exact = CategoricalSimilarityScorer.Score(preferences, ["Action"]);
         float partial = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action", "Romance" });
+            preferences, ["Action", "Romance"]);
 
         Assert.True(exact > partial);
         Assert.Equal(1f / MathF.Sqrt(2f), partial, 6);
     }
 
+    // Verifies that unmatched user preferences reduce similarity.
     [Fact]
-    // Verifies that scoring with unmatched preference reduces similarity.
     public void ScoreUnmatchedPreferenceReducesSimilarity()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            ["Adventure"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f), ("Adventure", 1f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action" });
-
-        Assert.Equal(1f / MathF.Sqrt(2f), result, 6);
+        Assert.Equal(1f / MathF.Sqrt(2f), CategoricalSimilarityScorer.Score(
+            preferences, ["Action"]), 6);
     }
 
+    // Verifies that fractional preference weights are supported.
     [Fact]
-    // Verifies that scoring with fractional weights returns the expected result.
     public void ScoreFractionalWeightsReturnsExpectedResult()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 0.3f,
-            ["Drama"] = 0.4f
-        };
+        var preferences = CreatePreferences(("Action", 0.3f), ("Drama", 0.4f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Drama" });
-
-        Assert.Equal(0.8f, result, 6);
+        Assert.Equal(0.8f, CategoricalSimilarityScorer.Score(preferences, ["Drama"]), 6);
     }
 
-    // ==================================================
-    // Empty Inputs and Zero Weights
-    // ==================================================
+    // Empty inputs and zero weights
 
+    // Verifies that empty preferences produce a score of zero.
     [Fact]
-    // Verifies that scoring with empty preferences returns zero.
     public void ScoreEmptyPreferencesReturnsZero()
     {
-        var preferences = new Dictionary<string, float>();
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action" });
-
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(
+            CreatePreferences(), ["Action"]));
     }
 
+    // Verifies that empty candidate features produce a score of zero.
     [Fact]
-    // Verifies that scoring with empty features returns zero.
     public void ScoreEmptyFeaturesReturnsZero()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, Array.Empty<string>());
-
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(preferences, []));
     }
 
+    // Verifies that two empty inputs produce a score of zero.
     [Fact]
-    // Verifies that scoring with both inputs empty returns zero.
     public void ScoreBothInputsEmptyReturnsZero()
     {
-        float result = CategoricalSimilarityScorer.Score(
-            new Dictionary<string, float>(),
-            Array.Empty<string>());
-
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(CreatePreferences(), []));
     }
 
+    // Verifies that exclusively zero-weight preferences produce a score of zero.
     [Fact]
-    // Verifies that scoring with all zero weights returns zero.
     public void ScoreAllZeroWeightsReturnsZero()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 0f,
-            ["Drama"] = 0f
-        };
+        var preferences = CreatePreferences(("Action", 0f), ("Drama", 0f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action", "Drama" });
-
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(
+            preferences, ["Action", "Drama"]));
     }
 
+    // Verifies that matching a zero-weight preference produces a score of zero.
     [Fact]
-    // Verifies that scoring with matching zero weight feature returns zero.
     public void ScoreMatchingZeroWeightFeatureReturnsZero()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 5f,
-            ["Drama"] = 0f
-        };
+        var preferences = CreatePreferences(("Action", 5f), ("Drama", 0f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Drama" });
-
-        Assert.Equal(0f, result);
+        Assert.Equal(0f, CategoricalSimilarityScorer.Score(preferences, ["Drama"]));
     }
 
-    // ==================================================
-    // Feature Normalization Tests
-    // ==================================================
+    // Feature normalization
 
+    // Verifies that feature matching is case insensitive.
     [Fact]
-    // Verifies that scoring with different capitalization still matches .
     public void ScoreDifferentCapitalizationStillMatches()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["ACTION"] = 1f
-        };
+        var preferences = CreatePreferences(("ACTION", 1f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "action" });
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(preferences, ["action"]), 6);
     }
 
+    // Verifies that surrounding whitespace does not affect feature matching.
     [Fact]
-    // Verifies that scoring with extra whitespace still matches .
     public void ScoreExtraWhitespaceStillMatches()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["  Action  "] = 1f
-        };
+        var preferences = CreatePreferences(("  Action  ", 1f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { " Action " });
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(preferences, [" Action "]), 6);
     }
 
+    // Verifies that duplicate candidate features do not increase their weight.
     [Fact]
-    // Verifies that scoring with duplicate features does not increase weight.
     public void ScoreDuplicateFeaturesDoesNotIncreaseWeight()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            ["Drama"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f), ("Drama", 1f));
 
         float original = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action", "Drama" });
-
+            preferences, ["Action", "Drama"]);
         float duplicate = CategoricalSimilarityScorer.Score(
-            preferences,
-            new[] { "Action", "Action", "ACTION", "Drama" });
+            preferences, ["Action", "Action", "ACTION", "Drama"]);
 
         Assert.Equal(original, duplicate, 6);
     }
 
+    // Verifies that equivalent normalized preferences combine their weights.
     [Fact]
-    // Verifies that scoring with duplicate normalized preferences combines weights.
     public void ScoreDuplicateNormalizedPreferencesCombinesWeights()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            ["ACTION"] = 2f,
-            [" Action "] = 3f,
-            ["Drama"] = 2f
-        };
+        var preferences = CreatePreferences(
+            ("Action", 1f), ("ACTION", 2f), (" Action ", 3f), ("Drama", 2f));
+        var combined = CreatePreferences(("Action", 6f), ("Drama", 2f));
 
-        var combined = new Dictionary<string, float>
-        {
-            ["Action"] = 6f,
-            ["Drama"] = 2f
-        };
-
-        string[] features = { "Action" };
-
-        float first = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        float second = CategoricalSimilarityScorer.Score(
-            combined, features);
+        float first = CategoricalSimilarityScorer.Score(preferences, ["Action"]);
+        float second = CategoricalSimilarityScorer.Score(combined, ["Action"]);
 
         Assert.Equal(second, first, 6);
     }
 
-    [Fact]
     // Verifies that blank candidate features are ignored.
+    [Fact]
     public void ScoreBlankFeaturesAreIgnored()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f));
 
-        string[] features = { "Action", "", " ", "\t" };
-
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, features);
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(
+            preferences, ["Action", "", " ", "\t"]), 6);
     }
 
-    [Fact]
     // Verifies that blank preference keys are ignored.
+    [Fact]
     public void ScoreBlankPreferenceKeysAreIgnored()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f,
-            [""] = 3f,
-            [" "] = 4f
-        };
+        var preferences = CreatePreferences(("Action", 1f), ("", 3f), (" ", 4f));
 
-        float result = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action" });
-
-        Assert.Equal(1f, result, 6);
+        Assert.Equal(1f, CategoricalSimilarityScorer.Score(preferences, ["Action"]), 6);
     }
 
-    // ==================================================
-    // Invalid Input Tests
-    // ==================================================
+    // Input validation
 
+    // Verifies that null preferences are rejected.
     [Fact]
-    // Verifies that scoring with null preferences throws ArgumentNullException.
     public void ScoreNullPreferencesThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            CategoricalSimilarityScorer.Score(
-                null!, new[] { "Action" }));
+            CategoricalSimilarityScorer.Score(null!, ["Action"]));
     }
 
+    // Verifies that null candidate features are rejected.
     [Fact]
-    // Verifies that scoring with null features throws ArgumentNullException.
     public void ScoreNullFeaturesThrowsArgumentNullException()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 1f
-        };
+        var preferences = CreatePreferences(("Action", 1f));
 
         Assert.Throws<ArgumentNullException>(() =>
-            CategoricalSimilarityScorer.Score(
-                preferences, null!));
+            CategoricalSimilarityScorer.Score(preferences, null!));
     }
 
+    // Verifies that negative and nonfinite preference weights are rejected.
     [Theory]
     [InlineData(-1f)]
     [InlineData(-0.01f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that scoring with invalid weight throws ArgumentException.
-    public void ScoreInvalidWeightThrowsArgumentException(
-        float weight)
+    public void ScoreInvalidWeightThrowsArgumentException(float weight)
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = weight
-        };
+        var preferences = CreatePreferences(("Action", weight));
 
         Assert.Throws<ArgumentException>(() =>
-            CategoricalSimilarityScorer.Score(
-                preferences, new[] { "Action" }));
+            CategoricalSimilarityScorer.Score(preferences, ["Action"]));
     }
 
-    // ==================================================
-    // Algorithm Property Tests
-    // ==================================================
+    // Algorithm properties
 
+    // Verifies that proportionally scaling preferences preserves similarity.
     [Fact]
-    // Verifies that scoring with scaled preferences returns the same result.
     public void ScoreScaledPreferencesReturnsSameResult()
     {
-        var original = new Dictionary<string, float>
-        {
-            ["Action"] = 2f,
-            ["Drama"] = 3f
-        };
+        var original = CreatePreferences(("Action", 2f), ("Drama", 3f));
+        var scaled = CreatePreferences(("Action", 20f), ("Drama", 30f));
 
-        var scaled = new Dictionary<string, float>
-        {
-            ["Action"] = 20f,
-            ["Drama"] = 30f
-        };
-
-        string[] features = { "Action" };
-
-        float first = CategoricalSimilarityScorer.Score(
-            original, features);
-
-        float second = CategoricalSimilarityScorer.Score(
-            scaled, features);
-
-        Assert.Equal(first, second, 6);
+        Assert.Equal(
+            CategoricalSimilarityScorer.Score(original, ["Action"]),
+            CategoricalSimilarityScorer.Score(scaled, ["Action"]), 6);
     }
 
+    // Verifies that candidate feature ordering does not affect similarity.
     [Fact]
-    // Verifies that scoring with reordered features returns the same result.
     public void ScoreReorderedFeaturesReturnsSameResult()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 3f,
-            ["Drama"] = 2f,
-            ["Adventure"] = 1f
-        };
+        var preferences = CreatePreferences(
+            ("Action", 3f), ("Drama", 2f), ("Adventure", 1f));
 
-        float first = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Action", "Drama", "Adventure" });
-
-        float second = CategoricalSimilarityScorer.Score(
-            preferences, new[] { "Adventure", "Action", "Drama" });
-
-        Assert.Equal(first, second, 6);
+        Assert.Equal(
+            CategoricalSimilarityScorer.Score(preferences, ["Action", "Drama", "Adventure"]),
+            CategoricalSimilarityScorer.Score(preferences, ["Adventure", "Action", "Drama"]), 6);
     }
 
+    // Verifies that 100 repeated calls produce identical scores.
     [Fact]
-    // Verifies that scoring with repeated calls returns the same result.
     public void ScoreRepeatedCallsReturnsSameResult()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            ["Action"] = 3f,
-            ["Drama"] = 2f
-        };
+        var preferences = CreatePreferences(("Action", 3f), ("Drama", 2f));
+        string[] features = ["Action", "Adventure"];
 
-        string[] features = { "Action", "Adventure" };
-
-        float first = CategoricalSimilarityScorer.Score(
-            preferences, features);
+        float expected = CategoricalSimilarityScorer.Score(preferences, features);
 
         for (int i = 0; i < 100; i++)
-        {
-            float result = CategoricalSimilarityScorer.Score(
-                preferences, features);
-
-            Assert.Equal(first, result);
-        }
+            Assert.Equal(expected, CategoricalSimilarityScorer.Score(preferences, features));
     }
 
+    // Verifies that scoring does not modify preferences or candidate features.
     [Fact]
-    // Verifies that scoring does not modify inputs.
     public void ScoreDoesNotModifyInputs()
     {
-        var preferences = new Dictionary<string, float>
-        {
-            [" Action "] = 3f,
-            ["DRAMA"] = 2f
-        };
+        var preferences = CreatePreferences((" Action ", 3f), ("DRAMA", 2f));
+        string[] features = ["action", "Drama"];
 
-        string[] features = { "action", "Drama" };
-
-        var originalPreferences =
-            new Dictionary<string, float>(preferences);
-
+        var originalPreferences = new Dictionary<string, float>(preferences);
         string[] originalFeatures = (string[])features.Clone();
 
         CategoricalSimilarityScorer.Score(preferences, features);
@@ -514,24 +320,23 @@ public class CategoricalSimilarityScorerTests
         foreach (var preference in originalPreferences)
         {
             Assert.True(preferences.ContainsKey(preference.Key));
-            Assert.Equal(
-                preference.Value, preferences[preference.Key]);
+            Assert.Equal(preference.Value, preferences[preference.Key]);
         }
 
         Assert.Equal(originalFeatures, features);
     }
 
+    // Verifies that 1,000 randomized inputs produce finite scores within [0, 1].
     [Fact]
-    // Verifies that scoring with random preferences remains in range.
     public void ScoreRandomPreferencesRemainsInRange()
     {
-        Random random = new Random(42);
+        var random = new Random(42);
 
         string[] vocabulary =
-        {
+        [
             "Action", "Drama", "Adventure", "Romance",
             "Comedy", "Horror", "Science Fiction", "Fantasy"
-        };
+        ];
 
         for (int iteration = 0; iteration < 1000; iteration++)
         {
@@ -540,17 +345,13 @@ public class CategoricalSimilarityScorerTests
 
             foreach (string feature in vocabulary)
             {
-                preferences[feature] =
-                    (float)(random.NextDouble() * 10);
+                preferences[feature] = (float)(random.NextDouble() * 10);
 
                 if (random.NextDouble() > 0.5)
-                {
                     features.Add(feature);
-                }
             }
 
-            float result = CategoricalSimilarityScorer.Score(
-                preferences, features);
+            float result = CategoricalSimilarityScorer.Score(preferences, features);
 
             Assert.True(float.IsFinite(result));
             Assert.InRange(result, 0f, 1f);

@@ -8,70 +8,55 @@ using Xunit;
 
 public class InteractionScorerTests
 {
-    // Creates a user-interaction fixture.
+    private readonly InteractionScorer _scorer = new();
+    private readonly Guid _userId = Guid.NewGuid();
+    private readonly Guid _mediaId = Guid.NewGuid();
+
+    // Creates a configurable user interaction.
     private static UserInteraction CreateInteraction(
-        Guid userId,
-        Guid mediaId,
-        InteractionType type,
+        Guid userId, Guid mediaId, InteractionType type,
         DateTimeOffset? occurredAt = null)
     {
         return new UserInteraction(
-            UserId: userId,
-            MediaId: mediaId,
-            Type: type,
-            OccurredAt: occurredAt ?? DateTimeOffset.UnixEpoch
-        );
+            userId, mediaId, type, occurredAt ?? DateTimeOffset.UnixEpoch);
     }
 
-    // Creates media-feature test data.
+    // Creates interactions for the default user and media.
+    private UserInteraction[] CreateInteractions(params InteractionType[] types)
+    {
+        return types.Select(type =>
+            CreateInteraction(_userId, _mediaId, type)).ToArray();
+    }
+
+    // Creates configurable movie features for testing.
     private static MediaFeatures CreateMedia(
-        Guid mediaId,
-        string[]? genres = null,
-        int? runtime = null)
+        Guid mediaId, string[]? genres = null, int? runtime = null)
     {
         return new MediaFeatures(
-            MediaId: mediaId,
-            MediaType: "movie",
-            Genres: genres ?? Array.Empty<string>(),
-            Authors: Array.Empty<string>(),
-            Directors: Array.Empty<string>(),
-            Studios: Array.Empty<string>(),
-            Publishers: Array.Empty<string>(),
-            RuntimeMinutes: runtime
-        );
+            mediaId, "movie", genres ?? [], [], [], [], [], runtime);
     }
 
-    // ==================================================
-    // Interaction Weight Retrieval Tests (7)
-    // ==================================================
+    // Interaction weight retrieval
 
+    // Verifies that each interaction type has the correct default weight.
     [Theory]
     [InlineData(InteractionType.Search, 0.5f)]
     [InlineData(InteractionType.SearchSelection, 1f)]
     [InlineData(InteractionType.Stored, 2f)]
     [InlineData(InteractionType.Completed, 3f)]
     [InlineData(InteractionType.PositiveReview, 5f)]
-    // Verifies that looking up interaction weight returns default interaction weight.
-    public void GetWeightReturnsDefaultInteractionWeight(
-        InteractionType type,
-        float expected)
+    public void GetWeightReturnsDefaultInteractionWeight(InteractionType type, float expected)
     {
-        var scorer = new InteractionScorer();
-
-        Assert.Equal(expected, scorer.GetWeight(type));
+        Assert.Equal(expected, _scorer.GetWeight(type));
     }
 
+    // Verifies that custom interaction weights are respected.
     [Fact]
-    // Verifies that looking up interaction weight returns custom interaction weights.
     public void GetWeightReturnsCustomInteractionWeights()
     {
-        var scorer = new InteractionScorer(
-            new InteractionWeights(
-                Search: 1f,
-                SearchSelection: 2f,
-                Stored: 4f,
-                Completed: 6f,
-                PositiveReview: 10f));
+        var scorer = new InteractionScorer(new InteractionWeights(
+            Search: 1f, SearchSelection: 2f, Stored: 4f,
+            Completed: 6f, PositiveReview: 10f));
 
         Assert.Equal(1f, scorer.GetWeight(InteractionType.Search));
         Assert.Equal(2f, scorer.GetWeight(InteractionType.SearchSelection));
@@ -80,323 +65,170 @@ public class InteractionScorerTests
         Assert.Equal(10f, scorer.GetWeight(InteractionType.PositiveReview));
     }
 
+    // Verifies that unknown interaction types are rejected.
     [Fact]
-    // Verifies that looking up interaction weight with unknown interaction type throws an exception.
     public void GetWeightUnknownInteractionTypeThrowsException()
     {
-        var scorer = new InteractionScorer();
-
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            scorer.GetWeight((InteractionType)999));
+            _scorer.GetWeight((InteractionType)999));
     }
 
-    // ==================================================
-    // Interaction Scoring Tests (8)
-    // ==================================================
+    // Interaction scoring
 
+    // Verifies that empty interactions produce an empty score dictionary.
     [Fact]
-    // Verifies that scoring with empty interactions returns empty dictionary.
     public void ScoreEmptyInteractionsReturnsEmptyDictionary()
     {
-        var scorer = new InteractionScorer();
-
-        var result = scorer.Score(
-            Guid.NewGuid(),
-            Array.Empty<UserInteraction>());
-
-        Assert.Empty(result);
+        Assert.Empty(_scorer.Score(_userId, []));
     }
 
+    // Verifies that a single interaction contributes its correct weight.
     [Fact]
-    // Verifies that scoring with single interaction returns the correct weight.
     public void ScoreSingleInteractionReturnsCorrectWeight()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored)
-        };
-
-        var result = scorer.Score(userId, interactions);
+        var result = _scorer.Score(_userId,
+            CreateInteractions(InteractionType.Stored));
 
         Assert.Single(result);
-        Assert.Equal(2f, result[mediaId]);
+        Assert.Equal(2f, result[_mediaId]);
     }
 
-    [Fact]
     // Verifies that different interaction types accumulate their weights.
+    [Fact]
     public void ScoreDifferentInteractionTypesAccumulatesWeights()
     {
-        var scorer = new InteractionScorer();
+        var result = _scorer.Score(_userId,
+            CreateInteractions(InteractionType.Stored, InteractionType.Completed));
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Completed)
-        };
-
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Equal(5f, result[mediaId]);
+        Assert.Equal(5f, result[_mediaId]);
     }
 
+    // Verifies that all interaction types produce the maximum default weight.
     [Fact]
-    // Verifies that scoring with all interaction types returns maximum default weight.
     public void ScoreAllInteractionTypesReturnsMaximumDefaultWeight()
     {
-        var scorer = new InteractionScorer();
+        var result = _scorer.Score(_userId,
+            CreateInteractions(Enum.GetValues<InteractionType>()));
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = Enum.GetValues<InteractionType>()
-            .Select(type =>
-                CreateInteraction(userId, mediaId, type))
-            .ToArray();
-
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Equal(11.5f, result[mediaId]);
+        Assert.Equal(11.5f, result[_mediaId]);
     }
 
+    // Verifies that interaction weights remain separate for different media.
     [Fact]
-    // Verifies that scores are kept separate for different media items.
     public void ScoreMultipleMediaSeparatesWeights()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid firstMedia = Guid.NewGuid();
         Guid secondMedia = Guid.NewGuid();
 
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Completed),
-
-            CreateInteraction(
-                userId, secondMedia, InteractionType.Search)
-        };
-
-        var result = scorer.Score(userId, interactions);
+        var result = _scorer.Score(_userId,
+        [
+            CreateInteraction(_userId, _mediaId, InteractionType.Stored),
+            CreateInteraction(_userId, _mediaId, InteractionType.Completed),
+            CreateInteraction(_userId, secondMedia, InteractionType.Search)
+        ]);
 
         Assert.Equal(2, result.Count);
-        Assert.Equal(5f, result[firstMedia]);
+        Assert.Equal(5f, result[_mediaId]);
         Assert.Equal(0.5f, result[secondMedia]);
     }
 
+    // Verifies that interactions belonging to other users are ignored.
     [Fact]
-    // Verifies that scoring ignores interactions from other users.
     public void ScoreIgnoresInteractionsFromOtherUsers()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid otherUser = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                otherUser, mediaId, InteractionType.PositiveReview)
-        };
-
-        var result = scorer.Score(userId, interactions);
+        var result = _scorer.Score(_userId,
+        [
+            CreateInteraction(_userId, _mediaId, InteractionType.Stored),
+            CreateInteraction(Guid.NewGuid(), _mediaId, InteractionType.PositiveReview)
+        ]);
 
         Assert.Single(result);
-        Assert.Equal(2f, result[mediaId]);
+        Assert.Equal(2f, result[_mediaId]);
     }
 
+    // Verifies that users without matching interactions receive no scores.
     [Fact]
-    // Verifies that scoring with unknown user returns empty dictionary.
     public void ScoreUnknownUserReturnsEmptyDictionary()
     {
-        var scorer = new InteractionScorer();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                InteractionType.Completed)
-        };
-
-        var result = scorer.Score(
-            Guid.NewGuid(), interactions);
-
-        Assert.Empty(result);
+        Assert.Empty(_scorer.Score(Guid.NewGuid(),
+            CreateInteractions(InteractionType.Completed)));
     }
 
+    // Verifies that zero-weight interactions are excluded.
     [Fact]
-    // Verifies that scoring with zero weighted interaction is excluded.
     public void ScoreZeroWeightedInteractionIsExcluded()
     {
-        var scorer = new InteractionScorer(
-            new InteractionWeights(Search: 0f));
+        var scorer = new InteractionScorer(new InteractionWeights(Search: 0f));
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Search)
-        };
-
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Empty(result);
+        Assert.Empty(scorer.Score(_userId,
+            CreateInteractions(InteractionType.Search)));
     }
 
-    // ==================================================
-    // Duplicate Interaction Handling Tests (4)
-    // ==================================================
+    // Duplicate interaction handling
 
+    // Verifies that identical interactions contribute their weight only once.
     [Fact]
-    // Verifies that duplicate interactions contribute their weight only once.
     public void ScoreDuplicateInteractionsAreCountedOnce()
     {
-        var scorer = new InteractionScorer();
+        var interaction = CreateInteraction(_userId, _mediaId, InteractionType.Stored);
+        var result = _scorer.Score(_userId, [interaction, interaction, interaction]);
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interaction = CreateInteraction(
-            userId, mediaId, InteractionType.Stored);
-
-        var interactions = new[]
-        {
-            interaction,
-            interaction,
-            interaction
-        };
-
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Equal(2f, result[mediaId]);
+        Assert.Equal(2f, result[_mediaId]);
     }
 
+    // Verifies that 100 searches at different times do not inflate weights.
     [Fact]
-    // Verifies that repeated searches do not inflate the interaction weight.
     public void ScoreRepeatedSearchesDoNotInflateWeight()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
         var interactions = Enumerable.Range(0, 100)
             .Select(index => CreateInteraction(
-                userId,
-                mediaId,
-                InteractionType.Search,
+                _userId, _mediaId, InteractionType.Search,
                 DateTimeOffset.UnixEpoch.AddMinutes(index)))
             .ToArray();
 
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Equal(0.5f, result[mediaId]);
+        Assert.Equal(0.5f, _scorer.Score(_userId, interactions)[_mediaId]);
     }
 
+    // Verifies that identical interaction types count separately across media.
     [Fact]
-    // Verifies that the same interaction type is counted separately for each media item.
     public void ScoreSameInteractionTypeForDifferentMediaCountsSeparately()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid firstMedia = Guid.NewGuid();
         Guid secondMedia = Guid.NewGuid();
 
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, secondMedia, InteractionType.Stored)
-        };
-
-        var result = scorer.Score(userId, interactions);
+        var result = _scorer.Score(_userId,
+        [
+            CreateInteraction(_userId, _mediaId, InteractionType.Stored),
+            CreateInteraction(_userId, secondMedia, InteractionType.Stored)
+        ]);
 
         Assert.Equal(2, result.Count);
-        Assert.Equal(2f, result[firstMedia]);
+        Assert.Equal(2f, result[_mediaId]);
         Assert.Equal(2f, result[secondMedia]);
     }
 
+    // Verifies that repeated mixed interactions remain capped per media.
     [Fact]
-    // Verifies that repeated mixed interactions remain capped per media and type.
     public void ScoreRepeatedMixedInteractionsRemainCapped()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
         var interactions = new List<UserInteraction>();
 
         for (int i = 0; i < 100; i++)
-        {
-            foreach (var type in Enum.GetValues<InteractionType>())
-            {
-                interactions.Add(
-                    CreateInteraction(userId, mediaId, type));
-            }
-        }
+            interactions.AddRange(CreateInteractions(Enum.GetValues<InteractionType>()));
 
-        var result = scorer.Score(userId, interactions);
-
-        Assert.Equal(11.5f, result[mediaId]);
+        Assert.Equal(11.5f, _scorer.Score(_userId, interactions)[_mediaId]);
     }
 
-    // ==================================================
-    // Weighted Media Interaction Generation Tests (7)
-    // ==================================================
+    // Weighted media interaction generation
 
+    // Verifies that weighted interactions preserve media references and weights.
     [Fact]
-    // Verifies that building weighted interactions returns the correct media and weight.
     public void BuildWeightedInteractionsReturnsCorrectMediaAndWeight()
     {
-        var scorer = new InteractionScorer();
+        var media = CreateMedia(_mediaId);
+        var features = new Dictionary<Guid, MediaFeatures> { [_mediaId] = media };
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var media = CreateMedia(mediaId);
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Completed)
-        };
-
-        var features = new Dictionary<Guid, MediaFeatures>
-        {
-            [mediaId] = media
-        };
-
-        var result = scorer.BuildWeightedInteractions(
-            userId, interactions, features);
+        var result = _scorer.BuildWeightedInteractions(_userId,
+            CreateInteractions(InteractionType.Stored, InteractionType.Completed),
+            features);
 
         var entry = Assert.Single(result);
 
@@ -404,212 +236,129 @@ public class InteractionScorerTests
         Assert.Equal(5f, entry.Weight);
     }
 
+    // Verifies that interactions without corresponding metadata are ignored.
     [Fact]
-    // Verifies that building weighted interactions with missing metadata is ignored.
     public void BuildWeightedInteractionsMissingMetadataIsIgnored()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId,
-                Guid.NewGuid(),
-                InteractionType.Stored)
-        };
-
-        var result = scorer.BuildWeightedInteractions(
-            userId,
-            interactions,
+        var result = _scorer.BuildWeightedInteractions(_userId,
+            CreateInteractions(InteractionType.Stored),
             new Dictionary<Guid, MediaFeatures>());
 
         Assert.Empty(result);
     }
 
+    // Verifies that only interactions with available metadata are included.
     [Fact]
-    // Verifies that building weighted interactions with partially missing metadata is ignored.
     public void BuildWeightedInteractionsPartiallyMissingMetadataIsIgnored()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid knownMedia = Guid.NewGuid();
-        Guid unknownMedia = Guid.NewGuid();
-
         var interactions = new[]
         {
-            CreateInteraction(
-                userId, knownMedia, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, unknownMedia, InteractionType.Completed)
+            CreateInteraction(_userId, _mediaId, InteractionType.Stored),
+            CreateInteraction(_userId, Guid.NewGuid(), InteractionType.Completed)
         };
 
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [knownMedia] = CreateMedia(knownMedia)
+            [_mediaId] = CreateMedia(_mediaId)
         };
 
-        var result = scorer.BuildWeightedInteractions(
-            userId, interactions, features);
+        var entry = Assert.Single(
+            _scorer.BuildWeightedInteractions(_userId, interactions, features));
 
-        var entry = Assert.Single(result);
-
-        Assert.Equal(knownMedia, entry.Media.MediaId);
+        Assert.Equal(_mediaId, entry.Media.MediaId);
         Assert.Equal(2f, entry.Weight);
     }
 
+    // Verifies that metadata without corresponding interactions is ignored.
     [Fact]
-    // Verifies that building weighted interactions with unused metadata is ignored.
     public void BuildWeightedInteractionsUnusedMetadataIsIgnored()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [mediaId] = CreateMedia(mediaId)
+            [_mediaId] = CreateMedia(_mediaId)
         };
 
-        var result = scorer.BuildWeightedInteractions(
-            userId,
-            Array.Empty<UserInteraction>(),
-            features);
-
-        Assert.Empty(result);
+        Assert.Empty(_scorer.BuildWeightedInteractions(_userId, [], features));
     }
 
+    // Verifies that weighted interactions include multiple distinct media.
     [Fact]
-    // Verifies that building weighted interactions combines multiple media.
     public void BuildWeightedInteractionsCombinesMultipleMedia()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid firstMedia = Guid.NewGuid();
         Guid secondMedia = Guid.NewGuid();
 
         var interactions = new[]
         {
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, secondMedia, InteractionType.Completed)
+            CreateInteraction(_userId, _mediaId, InteractionType.Stored),
+            CreateInteraction(_userId, secondMedia, InteractionType.Completed)
         };
 
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [firstMedia] = CreateMedia(firstMedia),
+            [_mediaId] = CreateMedia(_mediaId),
             [secondMedia] = CreateMedia(secondMedia)
         };
 
-        var result = scorer.BuildWeightedInteractions(
-            userId, interactions, features);
+        var result = _scorer.BuildWeightedInteractions(_userId, interactions, features);
 
         Assert.Equal(2, result.Count);
-
-        Assert.Equal(
-            2f,
-            result.Single(
-                entry => entry.Media.MediaId == firstMedia).Weight);
-
-        Assert.Equal(
-            3f,
-            result.Single(
-                entry => entry.Media.MediaId == secondMedia).Weight);
+        Assert.Equal(2f, result.Single(entry => entry.Media.MediaId == _mediaId).Weight);
+        Assert.Equal(3f, result.Single(entry => entry.Media.MediaId == secondMedia).Weight);
     }
 
+    // Verifies that mismatched metadata identifiers are rejected.
     [Fact]
-    // Verifies that building weighted interactions with mismatched media id throws an exception.
     public void BuildWeightedInteractionsMismatchedMediaIdThrowsException()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored)
-        };
-
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [mediaId] = CreateMedia(Guid.NewGuid())
+            [_mediaId] = CreateMedia(Guid.NewGuid())
         };
 
         Assert.Throws<ArgumentException>(() =>
-            scorer.BuildWeightedInteractions(
-                userId, interactions, features));
+            _scorer.BuildWeightedInteractions(_userId,
+                CreateInteractions(InteractionType.Stored), features));
     }
 
+    // Verifies that null media metadata is rejected.
     [Fact]
-    // Verifies that building weighted interactions with null media throws an exception.
     public void BuildWeightedInteractionsNullMediaThrowsException()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored)
-        };
-
-        var features = new Dictionary<Guid, MediaFeatures>
-        {
-            [mediaId] = null!
-        };
+        var features = new Dictionary<Guid, MediaFeatures> { [_mediaId] = null! };
 
         Assert.Throws<ArgumentNullException>(() =>
-            scorer.BuildWeightedInteractions(
-                userId, interactions, features));
+            _scorer.BuildWeightedInteractions(_userId,
+                CreateInteractions(InteractionType.Stored), features));
     }
 
-    // ==================================================
-    // Configuration Validation Tests (7)
-    // ==================================================
+    // Configuration validation
 
+    // Verifies that negative and nonfinite interaction weights are rejected.
     [Theory]
     [InlineData(-1f)]
     [InlineData(-0.01f)]
     [InlineData(float.NaN)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NegativeInfinity)]
-    // Verifies that constructing a model with invalid interaction weight throws an exception.
-    public void ConstructorInvalidInteractionWeightThrowsException(
-        float weight)
+    public void ConstructorInvalidInteractionWeightThrowsException(float weight)
     {
         Assert.Throws<ArgumentException>(() =>
-            new InteractionScorer(
-                new InteractionWeights(Search: weight)));
+            new InteractionScorer(new InteractionWeights(Search: weight)));
     }
 
+    // Verifies that at least one interaction type must have a positive weight.
     [Fact]
-    // Verifies that constructing a model with all zero weights throws an exception.
     public void ConstructorAllZeroWeightsThrowsException()
     {
         var weights = new InteractionWeights(
-            Search: 0f,
-            SearchSelection: 0f,
-            Stored: 0f,
-            Completed: 0f,
-            PositiveReview: 0f);
+            Search: 0f, SearchSelection: 0f, Stored: 0f,
+            Completed: 0f, PositiveReview: 0f);
 
-        Assert.Throws<ArgumentException>(() =>
-            new InteractionScorer(weights));
+        Assert.Throws<ArgumentException>(() => new InteractionScorer(weights));
     }
 
+    // Verifies that every interaction weight is independently validated.
     [Fact]
-    // Verifies that constructing a model validates all interaction weights.
     public void ConstructorValidatesAllInteractionWeights()
     {
         var configurations = new[]
@@ -621,204 +370,113 @@ public class InteractionScorerTests
         };
 
         foreach (var configuration in configurations)
-        {
-            Assert.Throws<ArgumentException>(() =>
-                new InteractionScorer(configuration));
-        }
+            Assert.Throws<ArgumentException>(() => new InteractionScorer(configuration));
     }
 
-    // ==================================================
-    // Invalid Input Tests (4)
-    // ==================================================
+    // Input validation
 
+    // Verifies that a null interaction collection is rejected.
     [Fact]
-    // Verifies that scoring with null interactions throws an exception.
     public void ScoreNullInteractionsThrowsException()
     {
-        var scorer = new InteractionScorer();
-
-        Assert.Throws<ArgumentNullException>(() =>
-            scorer.Score(Guid.NewGuid(), null!));
+        Assert.Throws<ArgumentNullException>(() => _scorer.Score(_userId, null!));
     }
 
+    // Verifies that null interactions within a collection are rejected.
     [Fact]
-    // Verifies that scoring with null interaction throws an exception.
     public void ScoreNullInteractionThrowsException()
     {
-        var scorer = new InteractionScorer();
-
-        var interactions = new UserInteraction[]
-        {
-            null!
-        };
-
-        Assert.Throws<ArgumentNullException>(() =>
-            scorer.Score(Guid.NewGuid(), interactions));
+        Assert.Throws<ArgumentNullException>(() => _scorer.Score(_userId, [null!]));
     }
 
+    // Verifies that a null metadata dictionary is rejected.
     [Fact]
-    // Verifies that building weighted interactions with null metadata throws an exception.
     public void BuildWeightedInteractionsNullMetadataThrowsException()
     {
-        var scorer = new InteractionScorer();
-
         Assert.Throws<ArgumentNullException>(() =>
-            scorer.BuildWeightedInteractions(
-                Guid.NewGuid(),
-                Array.Empty<UserInteraction>(),
-                null!));
+            _scorer.BuildWeightedInteractions(_userId, [], null!));
     }
 
+    // Verifies that overflowing accumulated interaction weights are rejected.
     [Fact]
-    // Verifies that scoring with accumulated weight overflow throws an exception.
     public void ScoreAccumulatedWeightOverflowThrowsException()
     {
-        var scorer = new InteractionScorer(
-            new InteractionWeights(
-                Stored: float.MaxValue,
-                Completed: float.MaxValue));
+        var scorer = new InteractionScorer(new InteractionWeights(
+            Stored: float.MaxValue, Completed: float.MaxValue));
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Completed)
-        };
-
-        Assert.Throws<OverflowException>(() =>
-            scorer.Score(userId, interactions));
+        Assert.Throws<OverflowException>(() => scorer.Score(_userId,
+            CreateInteractions(InteractionType.Stored, InteractionType.Completed)));
     }
 
-    // ==================================================
-    // Algorithm Property Tests (5)
-    // ==================================================
+    // Algorithm properties
 
+    // Verifies that interaction ordering does not influence accumulated weights.
     [Fact]
-    // Verifies that scoring with reordered interactions produces same weights.
     public void ScoreReorderedInteractionsProducesSameWeights()
     {
-        var scorer = new InteractionScorer();
+        var interactions = CreateInteractions(
+            InteractionType.Search, InteractionType.Stored, InteractionType.Completed);
 
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
+        var original = _scorer.Score(_userId, interactions);
+        var reordered = _scorer.Score(_userId, interactions.Reverse().ToArray());
 
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Search),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Completed)
-        };
-
-        var original = scorer.Score(userId, interactions);
-
-        var reordered = scorer.Score(
-            userId, interactions.Reverse().ToArray());
-
-        Assert.Equal(original[mediaId], reordered[mediaId]);
+        Assert.Equal(original[_mediaId], reordered[_mediaId]);
     }
 
+    // Verifies that 100 repeated scoring calls do not accumulate state.
     [Fact]
-    // Verifies that repeated scoring calls do not accumulate state.
     public void ScoreRepeatedCallsDoNotAccumulateState()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Completed)
-        };
+        var interactions = CreateInteractions(InteractionType.Completed);
 
         for (int i = 0; i < 100; i++)
-        {
-            var result = scorer.Score(userId, interactions);
-
-            Assert.Equal(3f, result[mediaId]);
-        }
+            Assert.Equal(3f, _scorer.Score(_userId, interactions)[_mediaId]);
     }
 
+    // Verifies that scoring does not modify the input interactions.
     [Fact]
-    // Verifies that scoring does not modify input interactions.
     public void ScoreDoesNotModifyInputInteractions()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid mediaId = Guid.NewGuid();
-
-        var interactions = new[]
-        {
-            CreateInteraction(
-                userId, mediaId, InteractionType.Stored),
-
-            CreateInteraction(
-                userId, mediaId, InteractionType.Search)
-        };
+        var interactions = CreateInteractions(
+            InteractionType.Stored, InteractionType.Search);
 
         var original = interactions.ToArray();
 
-        scorer.Score(userId, interactions);
+        _scorer.Score(_userId, interactions);
 
         Assert.Equal(original, interactions);
     }
 
+    // Verifies that the returned score dictionary is read-only.
     [Fact]
-    // Verifies that scoring returns read only dictionary.
     public void ScoreReturnsReadOnlyDictionary()
     {
-        var scorer = new InteractionScorer();
-
-        var result = scorer.Score(
-            Guid.NewGuid(),
-            Array.Empty<UserInteraction>());
-
-        var dictionary =
-            Assert.IsAssignableFrom<IDictionary<Guid, float>>(
-                result);
+        var result = _scorer.Score(_userId, []);
+        var dictionary = Assert.IsAssignableFrom<IDictionary<Guid, float>>(result);
 
         Assert.Throws<NotSupportedException>(() =>
             dictionary.Add(Guid.NewGuid(), 5f));
     }
 
+    // Verifies that 10,000 random interactions remain within default weight bounds.
     [Fact]
-    // Verifies that random interactions stay within the default weight bounds.
     public void ScoreRandomInteractionsRemainWithinDefaultBounds()
     {
-        var scorer = new InteractionScorer();
         var random = new Random(42);
-
-        Guid userId = Guid.NewGuid();
-
         var mediaIds = Enumerable.Range(0, 100)
-            .Select(_ => Guid.NewGuid())
-            .ToArray();
+            .Select(_ => Guid.NewGuid()).ToArray();
 
         var types = Enum.GetValues<InteractionType>();
-
         var interactions = new List<UserInteraction>();
 
         for (int i = 0; i < 10000; i++)
         {
-            interactions.Add(CreateInteraction(
-                userId,
+            interactions.Add(CreateInteraction(_userId,
                 mediaIds[random.Next(mediaIds.Length)],
                 types[random.Next(types.Length)]));
         }
 
-        var result = scorer.Score(userId, interactions);
+        var result = _scorer.Score(_userId, interactions);
 
         Assert.NotEmpty(result);
         Assert.InRange(result.Count, 1, 100);
@@ -830,112 +488,62 @@ public class InteractionScorerTests
         }
     }
 
-    // ==================================================
-    // System Integration Tests (2)
-    // ==================================================
+    // System integration
 
+    // Verifies that weighted interactions generate the expected preference profile.
     [Fact]
-    // Verifies building weighted interactions for generates expected user profile.
     public void BuildWeightedInteractionsGeneratesExpectedUserProfile()
     {
-        var scorer = new InteractionScorer();
-
-        Guid userId = Guid.NewGuid();
-        Guid firstMedia = Guid.NewGuid();
         Guid secondMedia = Guid.NewGuid();
 
         var interactions = new[]
         {
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Completed),
-
-            CreateInteraction(
-                userId, firstMedia, InteractionType.PositiveReview),
-
-            CreateInteraction(
-                userId, secondMedia, InteractionType.Stored)
+            CreateInteraction(_userId, _mediaId, InteractionType.Completed),
+            CreateInteraction(_userId, _mediaId, InteractionType.PositiveReview),
+            CreateInteraction(_userId, secondMedia, InteractionType.Stored)
         };
 
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [firstMedia] = CreateMedia(
-                firstMedia,
-                new[] { "Action" },
-                runtime: 100),
-
-            [secondMedia] = CreateMedia(
-                secondMedia,
-                new[] { "Drama" },
-                runtime: 200)
+            [_mediaId] = CreateMedia(_mediaId, ["Action"], runtime: 100),
+            [secondMedia] = CreateMedia(secondMedia, ["Drama"], runtime: 200)
         };
 
-        var weightedInteractions =
-            scorer.BuildWeightedInteractions(
-                userId, interactions, features);
-
-        var profile = UserProfileBuilder.Build(
-            userId, weightedInteractions);
+        var weighted = _scorer.BuildWeightedInteractions(_userId, interactions, features);
+        var profile = UserProfileBuilder.Build(_userId, weighted);
 
         Assert.Equal(8f, profile.GenrePreferences["Action"]);
         Assert.Equal(2f, profile.GenrePreferences["Drama"]);
         Assert.Equal(120f, profile.PreferredRuntimeMinutes);
     }
 
+    // Verifies that weighted interactions produce personalized media predictions.
     [Fact]
-    // Verifies that building weighted interactions produces personalized predictions.
     public void BuildWeightedInteractionsProducesPersonalizedPredictions()
     {
-        var scorer = new InteractionScorer();
         var model = new ContentBasedModel();
-
-        Guid userId = Guid.NewGuid();
-        Guid firstMedia = Guid.NewGuid();
         Guid secondMedia = Guid.NewGuid();
 
         var interactions = new[]
         {
-            CreateInteraction(
-                userId, firstMedia, InteractionType.Completed),
-
-            CreateInteraction(
-                userId, firstMedia, InteractionType.PositiveReview),
-
-            CreateInteraction(
-                userId, secondMedia, InteractionType.Search)
+            CreateInteraction(_userId, _mediaId, InteractionType.Completed),
+            CreateInteraction(_userId, _mediaId, InteractionType.PositiveReview),
+            CreateInteraction(_userId, secondMedia, InteractionType.Search)
         };
 
         var features = new Dictionary<Guid, MediaFeatures>
         {
-            [firstMedia] = CreateMedia(
-                firstMedia,
-                new[] { "Action" },
-                runtime: 150),
-
-            [secondMedia] = CreateMedia(
-                secondMedia,
-                new[] { "Romance" },
-                runtime: 150)
+            [_mediaId] = CreateMedia(_mediaId, ["Action"], runtime: 150),
+            [secondMedia] = CreateMedia(secondMedia, ["Romance"], runtime: 150)
         };
 
-        var weightedInteractions =
-            scorer.BuildWeightedInteractions(
-                userId, interactions, features);
+        var weighted = _scorer.BuildWeightedInteractions(_userId, interactions, features);
+        var profile = UserProfileBuilder.Build(_userId, weighted);
 
-        var profile = UserProfileBuilder.Build(
-            userId, weightedInteractions);
+        var relevant = CreateMedia(Guid.NewGuid(), ["Action"], runtime: 150);
+        var lessRelevant = CreateMedia(Guid.NewGuid(), ["Romance"], runtime: 150);
 
-        var relevant = CreateMedia(
-            Guid.NewGuid(),
-            new[] { "Action" },
-            runtime: 150);
-
-        var lessRelevant = CreateMedia(
-            Guid.NewGuid(),
-            new[] { "Romance" },
-            runtime: 150);
-
-        Assert.True(
-            model.Predict(profile, relevant) >
+        Assert.True(model.Predict(profile, relevant) >
             model.Predict(profile, lessRelevant));
     }
 }

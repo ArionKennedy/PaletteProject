@@ -1,3 +1,4 @@
+
 using Palette.Api.MachineLearning;
 using Palette.Api.MachineLearning.Evaluation;
 
@@ -5,60 +6,41 @@ namespace Palette.Tests.ModelEvaluatorTests;
 
 public class ModelEvaluatorTests
 {
-    [Fact]
-    // Verifies that calculating RMSE with empty ratings throws ArgumentException.
-    public void CalculateRmseEmptyRatingsThrowsArgumentException()
+    // Creates rating observations from the supplied values.
+    private static List<RatingObservation> CreateRatings(params float[] values)
     {
-        // Empty ratings list
-        var ratings = new List<RatingObservation>();
-
-        // Act & Assert if 
-        Assert.Throws<ArgumentException>(() =>
-            ModelEvaluator.CalculateRmse(ratings, (_, _) => 3f));
+        return values.Select(value =>
+            new RatingObservation(Guid.NewGuid(), Guid.NewGuid(), value)).ToList();
     }
 
+    // Verifies that empty rating datasets are rejected.
     [Fact]
-    // Verifies that calculating RMSE with inaccurate predictions returns the expected error.
+    public void CalculateRmseEmptyRatingsThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            ModelEvaluator.CalculateRmse([], (_, _) => 3f));
+    }
+
+    // Verifies that inaccurate predictions produce the expected RMSE.
+    [Fact]
     public void CalculateRmseInaccuratePredictionsReturnsExpectedError()
     {
-        // Active rating list
-        var ratings = new List<RatingObservation>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), 4f),
-            new(Guid.NewGuid(), Guid.NewGuid(), 2f),
-            new(Guid.NewGuid(), Guid.NewGuid(), 5f)
-        };
-
-        // Inaccurate prediction function that always returns 3
         double rmse = ModelEvaluator.CalculateRmse(
-            ratings, (_, _) => 3f);
+            CreateRatings(4f, 2f, 5f), (_, _) => 3f);
 
-        // Assert if the RMSE is approximately equal to sqrt(2) for the given ratings and predictions
         Assert.Equal(Math.Sqrt(2), rmse, 6);
     }
 
+    // Verifies that perfect predictions produce zero RMSE.
     [Fact]
-    // Verifies that calculating RMSE with perfect predictions returns zero.
     public void CalculateRmsePerfectPredictionsReturnsZero()
     {
-        // Active rating list
-        var ratings = new List<RatingObservation>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), 4f),
-            new(Guid.NewGuid(), Guid.NewGuid(), 2f),
-            new(Guid.NewGuid(), Guid.NewGuid(), 5f)
-        };
+        var ratings = CreateRatings(4f, 2f, 5f);
 
-        // Prediction function that returns the actual rating for each observation
-        Func<Guid, Guid, float> predict = (userId, mediaId) =>
-            ratings.Single(r =>
-                r.UserId == userId &&
-                r.MediaId == mediaId).Rating;
+        double rmse = ModelEvaluator.CalculateRmse(ratings, (userId, mediaId) =>
+            ratings.Single(r => r.UserId == userId &&
+                r.MediaId == mediaId).Rating);
 
-        // Accumulate RMSE using the ModelEvaluator
-        double rmse = ModelEvaluator.CalculateRmse(ratings, predict);
-
-        // Assert if the RMSE is zero for perfect predictions
         Assert.Equal(0.0, rmse);
     }
 }
