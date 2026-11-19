@@ -28,8 +28,8 @@ const baseMovie: MediaSearchResult = {
 describe('<Movie />', () => {
 
 
-  test('renders the title, media type, and release date', () => {
-    render(<Movie movie={baseMovie} />);
+  test('renders the title, media type, and release date', async () => {
+    await render(<Movie movie={baseMovie} />);
 
     expect(screen.getByText('Inception')).toBeTruthy();
     expect(screen.getByText('movie')).toBeTruthy();
@@ -38,24 +38,24 @@ describe('<Movie />', () => {
 
 
 
-  test('shows "Release date unknown" when releaseDate is null', () => {
-    render(<Movie movie={{ ...baseMovie, releaseDate: null }} />);
+  test('shows "Release date unknown" when releaseDate is null', async () => {
+    await render(<Movie movie={{ ...baseMovie, releaseDate: null }} />);
 
     expect(screen.getByText('Release date unknown')).toBeTruthy();
   });
 
 
 
-  test('shows a "No poster" placeholder when posterUrl is null', () => {
-    render(<Movie movie={{ ...baseMovie, posterUrl: null }} />);
+  test('shows a "No poster" placeholder when posterUrl is null', async () => {
+    await render(<Movie movie={{ ...baseMovie, posterUrl: null }} />);
 
     expect(screen.getByText('No poster')).toBeTruthy();
   });
 
-  
 
-  test('does not show "No poster" when a posterUrl is provided', () => {
-    render(<Movie movie={baseMovie} />);
+
+  test('does not show "No poster" when a posterUrl is provided', async () => {
+    await render(<Movie movie={baseMovie} />);
 
     expect(screen.queryByText('No poster')).toBeNull();
   });

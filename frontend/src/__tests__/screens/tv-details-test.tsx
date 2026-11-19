@@ -55,7 +55,7 @@ describe('<TvDetailsPage />', () => {
   test('renders the TV show title and description after the data loads', async () => {
     (tvLookup as jest.Mock).mockResolvedValue(mockTv);
 
-    render(<TvDetailsPage />);
+    await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Breaking Bad')).toBeTruthy();
@@ -68,7 +68,7 @@ describe('<TvDetailsPage />', () => {
   test('renders the first air year and season count in the meta line', async () => {
     (tvLookup as jest.Mock).mockResolvedValue(mockTv);
 
-    render(<TvDetailsPage />);
+    await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('First Air: 2008 · 5 Seasons')).toBeTruthy();
@@ -80,7 +80,7 @@ describe('<TvDetailsPage />', () => {
   test('uses singular "Season" when numberOfSeasons is 1', async () => {
     (tvLookup as jest.Mock).mockResolvedValue({ ...mockTv, numberOfSeasons: 1 });
 
-    render(<TvDetailsPage />);
+    await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('First Air: 2008 · 1 Season')).toBeTruthy();
@@ -92,7 +92,7 @@ describe('<TvDetailsPage />', () => {
   test('shows an error message when the lookup fails', async () => {
     (tvLookup as jest.Mock).mockRejectedValue(new Error('TV show not found'));
 
-    render(<TvDetailsPage />);
+    await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('TV show not found')).toBeTruthy();
@@ -104,12 +104,12 @@ describe('<TvDetailsPage />', () => {
   test('shows "No poster" placeholder when posterUrl is null', async () => {
     (tvLookup as jest.Mock).mockResolvedValue({ ...mockTv, posterUrl: null });
 
-    render(<TvDetailsPage />);
+    await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('No poster')).toBeTruthy();
     });
   });
 
-  
+
 });

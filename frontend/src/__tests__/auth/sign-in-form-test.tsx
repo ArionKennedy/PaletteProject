@@ -40,8 +40,8 @@ describe('<SignInForm />', () => {
 
 
 
-  test('renders the form title, inputs, and Continue button', () => {
-    render(<SignInForm />);
+  test('renders the form title, inputs, and Continue button', async () => {
+    await render(<SignInForm />);
 
     expect(screen.getByText('Palette Sign In')).toBeTruthy();
     expect(screen.getByPlaceholderText('m@example.com')).toBeTruthy();
@@ -50,10 +50,10 @@ describe('<SignInForm />', () => {
 
 
 
-  test('shows a loading spinner while Clerk is initialising', () => {
+  test('shows a loading spinner while Clerk is initialising', async () => {
     (useAuth as jest.Mock).mockReturnValue({ isLoaded: false });
 
-    render(<SignInForm />);
+    await render(<SignInForm />);
 
     // The form itself should not appear
     expect(screen.queryByText('Palette Sign In')).toBeNull();
@@ -61,8 +61,8 @@ describe('<SignInForm />', () => {
 
 
 
-  test('Continue button is disabled when fields are empty', () => {
-    render(<SignInForm />);
+  test('Continue button is disabled when fields are empty', async () => {
+    await render(<SignInForm />);
 
     const button = screen.getByText('Continue');
     expect(button).toBeDisabled();
@@ -142,9 +142,9 @@ describe('<SignInForm />', () => {
   });
 
 
-  
-  test('pressing "Sign up" navigates to the signup screen', () => {
-    render(<SignInForm />);
+
+  test('pressing "Sign up" navigates to the signup screen', async () => {
+    await render(<SignInForm />);
 
     fireEvent.press(screen.getByText('Sign up'));
 

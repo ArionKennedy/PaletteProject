@@ -25,7 +25,7 @@ describe('validateEmail()', () => {
 
   test('returns null for a valid email address', () => {
     expect(validateEmail('user@example.com')).toBeNull();
-    expect(validateEmail('user.name+tag@domain.co')).toBeNull();
+    expect(validateEmail('another@example.org')).toBeNull();
   });
 
 

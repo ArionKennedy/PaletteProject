@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { ActivityIndicator } from 'react-native';
 import { mediaSearch } from '@/services/search';
 import MediaSearchPage from '@/components/media-search-page';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
@@ -74,16 +75,18 @@ describe('<MediaSearchPage />', () => {
 
 
 
-  test('does not show results while the search is in progress', async () => {
+  test('shows a loading indicator while the search is in progress', async () => {
     // Never resolves so the loading state stays visible
     (mediaSearch as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
-    const input = renderPage();
+    
+    const input = screen.getByPlaceholderText('Search...');
     fireEvent.changeText(input, 'batman');
     fireEvent(input, 'submitEditing');
 
-    expect(screen.queryByText('Zapps trap')).toBeNull();
-    expect(screen.queryByText('The lowly CS major')).toBeNull();
+    await waitFor(() => {
+      expect((screen as any).UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    });
   });
 
 

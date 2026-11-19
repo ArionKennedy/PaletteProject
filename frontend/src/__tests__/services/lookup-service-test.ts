@@ -1,6 +1,10 @@
 import { movieLookup, tvLookup } from '@/services/lookup';
 
-process.env.EXPO_PUBLIC_API_URL = 'http://localhost:3000';
+// Bypass Clerk and the API_URL env-var check — just forward to fetch
+jest.mock('@/services/api', () => ({
+  fetchWithAuth: (path: string, options: RequestInit = {}) =>
+    globalThis.fetch(`http://localhost:3000${path}`, options),
+}));
 
 beforeEach(() => {
   globalThis.fetch = jest.fn();
@@ -62,7 +66,7 @@ describe('movieLookup()', () => {
   });
 
 
-  
+
   test('throws an error message on a failed response', async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -120,5 +124,5 @@ describe('tvLookup()', () => {
     await expect(tvLookup('99999')).rejects.toThrow('TV show not found');
   });
 
-  
+
 });

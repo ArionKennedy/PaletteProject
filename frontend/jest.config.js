@@ -3,6 +3,11 @@ module.exports = {
   setupFilesAfterEnv: ['./jest.setup.ts'],
   clearMocks: true,
   moduleNameMapper: {
+    '\\.css$': '<rootDir>/src/__mocks__/fileMock.js',
+    '^react$': '<rootDir>/node_modules/react',
+    '^react/(.*)$': '<rootDir>/node_modules/react/$1',
+    '^react-native-css-interop/jsx-runtime$': '<rootDir>/src/__mocks__/react-native-css-interop-jsx-runtime.js',
+    '^react-native-css-interop$': '<rootDir>/src/__mocks__/react-native-css-interop.js',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [

@@ -1,7 +1,10 @@
 import { mediaSearch } from '@/services/search';
 
-// client.ts reads this at module load time
-process.env.EXPO_PUBLIC_API_URL = 'http://localhost:3000';
+// Bypass Clerk and the API_URL env-var check — just forward to fetch
+jest.mock('@/services/api', () => ({
+  fetchWithAuth: (path: string, options: RequestInit = {}) =>
+    globalThis.fetch(`http://localhost:3000${path}`, options),
+}));
 
 // Replace the globalThis fetch so tests never hit a real server
 beforeEach(() => {
@@ -79,5 +82,5 @@ describe('mediaSearch()', () => {
     await expect(mediaSearch('movie', 'batman')).rejects.toThrow('API request failed: 500');
   });
 
-  
+
 });

@@ -39,8 +39,8 @@ describe('<SignUpForm />', () => {
 
 
 
-  test('renders the form title, inputs, and Continue button', () => {
-    render(<SignUpForm />);
+  test('renders the form title, inputs, and Continue button', async () => {
+    await render(<SignUpForm />);
 
     expect(screen.getByText('Create Your Palette Account')).toBeTruthy();
     expect(screen.getByPlaceholderText('m@example.com')).toBeTruthy();
@@ -49,18 +49,18 @@ describe('<SignUpForm />', () => {
 
 
 
-  test('shows a loading spinner while Clerk is initialising', () => {
+  test('shows a loading spinner while Clerk is initialising', async () => {
     (useAuth as jest.Mock).mockReturnValue({ isLoaded: false });
 
-    render(<SignUpForm />);
+    await render(<SignUpForm />);
 
     expect(screen.queryByText('Create Your Palette Account')).toBeNull();
   });
 
 
 
-  test('Continue button is disabled when fields are empty', () => {
-    render(<SignUpForm />);
+  test('Continue button is disabled when fields are empty', async () => {
+    await render(<SignUpForm />);
 
     expect(screen.getByText('Continue')).toBeDisabled();
   });
@@ -141,9 +141,9 @@ describe('<SignUpForm />', () => {
   });
 
 
-  
-  test('pressing "Sign in" navigates to the login screen', () => {
-    render(<SignUpForm />);
+
+  test('pressing "Sign in" navigates to the login screen', async () => {
+    await render(<SignUpForm />);
 
     fireEvent.press(screen.getByText('Sign in'));
 

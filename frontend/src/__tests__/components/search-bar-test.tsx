@@ -5,17 +5,17 @@ import SearchBar from '@/components/searchBar';
 describe('<SearchBar />', () => {
 
 
-  test('renders the search input', () => {
-    render(<SearchBar onSubmitSearch={jest.fn()} />);
+  test('renders the search input', async () => {
+    await render(<SearchBar onSubmitSearch={jest.fn()} />);
 
     expect(screen.getByPlaceholderText('Search...')).toBeTruthy();
   });
 
 
 
-  test('calls onSubmitSearch with the query when submitted', () => {
+  test('calls onSubmitSearch with the query when submitted', async () => {
     const onSubmitSearch = jest.fn();
-    render(<SearchBar onSubmitSearch={onSubmitSearch} />);
+    await render(<SearchBar onSubmitSearch={onSubmitSearch} />);
 
     const input = screen.getByPlaceholderText('Search...');
     fireEvent.changeText(input, 'batman');
@@ -27,9 +27,9 @@ describe('<SearchBar />', () => {
 
 
 
-  test('does not call onSubmitSearch when the query is empty', () => {
+  test('does not call onSubmitSearch when the query is empty', async () => {
     const onSubmitSearch = jest.fn();
-    render(<SearchBar onSubmitSearch={onSubmitSearch} />);
+    await render(<SearchBar onSubmitSearch={onSubmitSearch} />);
 
     const input = screen.getByPlaceholderText('Search...');
     fireEvent(input, 'submitEditing');
@@ -37,5 +37,5 @@ describe('<SearchBar />', () => {
     expect(onSubmitSearch).not.toHaveBeenCalled();
   });
 
-  
+
 });

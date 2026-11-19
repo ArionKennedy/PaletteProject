@@ -55,7 +55,7 @@ describe('<MovieDetailsPage />', () => {
   test('renders the movie title and description after the data loads', async () => {
     (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
 
-    render(<MovieDetailsPage />);
+    await render(<MovieDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Inception')).toBeTruthy();
@@ -68,7 +68,7 @@ describe('<MovieDetailsPage />', () => {
   test('renders the release year and runtime in the meta line', async () => {
     (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
 
-    render(<MovieDetailsPage />);
+    await render(<MovieDetailsPage />);
 
     await waitFor(() => {
       // formatRuntime(148) = "2h 28m"
@@ -81,7 +81,7 @@ describe('<MovieDetailsPage />', () => {
   test('shows an error message when the lookup fails', async () => {
     (movieLookup as jest.Mock).mockRejectedValue(new Error('Movie not found'));
 
-    render(<MovieDetailsPage />);
+    await render(<MovieDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Movie not found')).toBeTruthy();
@@ -93,12 +93,12 @@ describe('<MovieDetailsPage />', () => {
   test('shows "No poster" placeholder when posterUrl is null', async () => {
     (movieLookup as jest.Mock).mockResolvedValue({ ...mockMovie, posterUrl: null });
 
-    render(<MovieDetailsPage />);
+    await render(<MovieDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('No poster')).toBeTruthy();
     });
   });
 
-  
+
 });

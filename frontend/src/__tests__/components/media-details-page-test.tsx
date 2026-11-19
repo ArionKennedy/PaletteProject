@@ -43,8 +43,8 @@ describe('<MediaDetailsPage />', () => {
 
 
 
-  test('shows an error message when there is an error', () => {
-    render(
+  test('shows an error message when there is an error', async () => {
+    await render(
       <MediaDetailsPage
         media={null}
         error="Something went wrong"
@@ -58,8 +58,8 @@ describe('<MediaDetailsPage />', () => {
 
 
 
-  test('renders the media title and description when loaded', () => {
-    render(
+  test('renders the media title and description when loaded', async () => {
+    await render(
       <MediaDetailsPage media={mockMedia} error={null} metaText="2010 · 2h 28m" errorTitle="Movie" />
     );
 
@@ -70,8 +70,8 @@ describe('<MediaDetailsPage />', () => {
 
 
 
-  test('shows "No description available." when description is null', () => {
-    render(
+  test('shows "No description available." when description is null', async () => {
+    await render(
       <MediaDetailsPage
         media={{ ...mockMedia, description: null }}
         error={null}
@@ -83,10 +83,10 @@ describe('<MediaDetailsPage />', () => {
     expect(screen.getByText('No description available.')).toBeTruthy();
   });
 
-  
 
-  test('shows a "No poster" placeholder when posterUrl is null', () => {
-    render(
+
+  test('shows a "No poster" placeholder when posterUrl is null', async () => {
+    await render(
       <MediaDetailsPage
         media={{ ...mockMedia, posterUrl: null }}
         error={null}
