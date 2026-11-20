@@ -154,8 +154,9 @@ export default function RecommendationList() {
           renderItem={({ item }) => (
             <Link
               href={{
-                pathname: '/movies/[id]',
+                pathname: '/explore/[type]/[id]',
                 params: {
+                  type: 'movie',
                   id: item.externalId,
                 },
               }}
