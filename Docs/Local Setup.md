@@ -331,7 +331,7 @@ This verifies that the backend is running and responding to HTTP requests. It do
 
 ## 9. Running Tests
 
-Palette includes automated backend tests and frontend development quality checks.
+Palette includes automated backend and frontend tests.
 
 ### Backend Tests
 
@@ -343,21 +343,24 @@ From the repository root:
 dotnet test tests/Palette.Tests.csproj
 ```
 
-The same command is used in the GitHub Actions CI workflow.
+GitHub Actions runs the same backend test project with coverage collection enabled.
 
-### Frontend Checks
+### Frontend Tests and Checks
 
-Automated frontend tests have not yet been implemented.
+Use Node.js 24 and run the following from the repository root:
 
-The following commands can be used for static type checking and linting.
+```bash
+npm ci --prefix frontend
+node --test 'tests/frontend/**/*.test.cjs'
+```
 
-From the `frontend` directory:
+The frontend CI job runs the My Library and password reset tests. These suites use test doubles for network requests and Clerk.
+
+For static type checking and linting, run the following from the `frontend` directory:
 
 ```bash
 npx tsc --noEmit
 npx expo lint
 ```
-
-These checks help identify TypeScript errors and code quality issues but do not replace automated frontend tests.
 
 For more details about testing frameworks, integration tests, and coverage, see [Testing Documentation](testing.md).

@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useState, useRef } from 'react';
-import { useUpdateEffect } from '@/hooks/UseUpdateEffect';
+import { useAuthFormErrors } from '@/hooks/use-auth-form-errors';
 import {
   ActivityIndicator,
   Keyboard,
@@ -24,15 +24,17 @@ import {
   View,
 } from 'react-native';
 import { useAuth, useSignIn } from '@clerk/expo';
-import { clerkErrorsToPageErrors, validateEmail } from '@/lib/validation';
+import { clerkRequestToPageErrors } from '@/lib/clerk-sign-in';
+import { validateEmail } from '@/lib/validation';
 
 export function SignInForm() {
   const { isLoaded } = useAuth();
-  const { signIn, errors, fetchStatus } = useSignIn()
+  const { signIn, fetchStatus } = useSignIn();
   
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
-  const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
+  const { pageErrors, setPageErrors, isFocused } = useAuthFormErrors();
+  const requestInProgress = useRef(false);
 
   const passwordInputRef = useRef<TextInputInstance>(null);
 
@@ -40,11 +42,8 @@ export function SignInForm() {
     passwordInputRef.current?.focus();
   }
 
-  useUpdateEffect(() => {
-    setPageErrors(clerkErrorsToPageErrors(errors));
-  }, [errors]);
-
   async function onSubmit() {
+    if (requestInProgress.current) return;
     setPageErrors({});
 
     const emailError = validateEmail(emailAddress);
@@ -53,23 +52,25 @@ export function SignInForm() {
       return;
     }
 
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      console.error(JSON.stringify(error, null, 2));
-      console.error(JSON.stringify(errors, null, 2));
-      return;
-    }
+    requestInProgress.current = true;
+    const failureMessage = 'Could not sign in. Please try again.';
+    try {
+      const { error } = await signIn.password({ emailAddress, password });
+      if (error) {
+        setPageErrors(clerkRequestToPageErrors(error, failureMessage));
+        return;
+      }
 
-    if(signIn.status === 'complete'){
-      await signIn.finalize({
-        navigate: () => {
-          router.replace('/(app)/(tabs)/movies');
-        },
-      })
-
-    }
-     else {
-      console.error('Sign-in attempt not complete:', signIn);
+      if (signIn.status === 'complete' && isFocused()) {
+        const { error: finalizeError } = await signIn.finalize({
+          navigate: () => router.replace('/(app)/(tabs)/movies'),
+        });
+        if (finalizeError) setPageErrors(clerkRequestToPageErrors(finalizeError, failureMessage));
+      }
+    } catch {
+      setPageErrors({ global: failureMessage });
+    } finally {
+      requestInProgress.current = false;
     }
   }
 
@@ -92,7 +93,7 @@ export function SignInForm() {
           
           {pageErrors?.global &&
             <Alert variant="destructive" icon={AlertCircleIcon}>
-              <AlertTitle>Unable to Sign In</AlertTitle>
+              <AlertTitle>{pageErrors.globalTitle || 'Unable to Sign In'}</AlertTitle>
               <AlertDescription>
                 {pageErrors?.global}
               </AlertDescription>
@@ -133,7 +134,7 @@ export function SignInForm() {
                   size="sm"
                   className="web:h-fit ml-auto h-4 px-1 py-0 sm:h-4"
                   onPress={() => {
-                    // TODO: Navigate to forgot password screen
+                    router.replace('/forgot-password');
                   }}>
                   <Text className="font-normal leading-4">Forgot your password?</Text>
                 </Button>
