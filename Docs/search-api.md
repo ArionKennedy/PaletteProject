@@ -1,6 +1,6 @@
 # API Contract: Media Search & Lookup
 
-This document describes the backend endpoints that let the client **search** for media and **look up** the details of one item. Both endpoints are read-only (`GET`). They fetch metadata from TMDB for movies and TV shows and from Google Books for books.
+This document describes the backend endpoints that let the client **search** for media and **look up** the details of one item. Both endpoints are read-only (`GET`). They fetch metadata from TMDB for movies and TV shows, from Google Books for books and from IGDB for games.
 
 | Endpoint                           | Purpose                                              |
 | ---------------------------------- | ---------------------------------------------------- |
@@ -8,7 +8,7 @@ This document describes the backend endpoints that let the client **search** for
 | `GET /api/lookup/{type}/{id}`      | Get the details of one media item by its provider id |
 
 - **Base URL (local dev):** `http://localhost:5251`
-- **Auth:** send a Clerk session JWT as a bearer token in the `Authorization` header. The backend adds the TMDB token itself.
+- **Auth:** send a Clerk session JWT as a bearer token in the `Authorization` header. The backend adds the provider credentials (TMDB token, Google Books key, IGDB Client ID and token) itself.
 - **Content type:** responses are `application/json` on success and `application/problem+json` on error.
 - **Field naming:** JSON properties are `camelCase`.
 - **OpenAPI:** in the Development environment, the generated spec is served at `GET /openapi/v1.json`.
@@ -21,11 +21,12 @@ Source: `backend/Features/Search`, `backend/Features/Lookup`, `backend/Providers
 
 The `{type}` path segment selects a **media provider**. Matching is case-insensitive and ignores surrounding whitespace, so `movie`, `Movie` and `MOVIE` all work.
 
-| `type`  | Provider | `id` format                                      |
-| ------- | -------- | ------------------------------------------------ |
-| `movie` | TMDB     | A positive TMDB movie ID, e.g. `27205` |
-| `tv` | TMDB | A positive TMDB TV show ID |
-| `book` | Google Books | A Google Books volume ID |
+| `type`  | Provider     | `id` format                            |
+| ------- | ------------ | -------------------------------------- |
+| `movie` | TMDB         | A positive TMDB movie ID, e.g. `27205` |
+| `tv`    | TMDB         | A positive TMDB TV show ID             |
+| `book`  | Google Books | A Google Books volume ID               |
+| `game`  | IGDB         | A positive IGDB game ID, e.g. `1942`   |
 
 Any other value returns `400 Unknown media type`. The error message lists the supported types. Register an `IMediaProvider` to add search and lookup for a new type. My Library also needs its own category and persistence mappings.
 
@@ -66,12 +67,12 @@ Returns up to **10** matches for `query`, in the order the provider ranks them b
 
 ### Errors
 
-| Status | `title`                | When                                                                             |
-| ------ | ---------------------- | -------------------------------------------------------------------------------- |
-| `400`  | `Invalid request`      | `q` is missing, empty or whitespace (`"Query parameter 'q' must not be empty."`) |
-| `400`  | `Invalid request`      | Trimmed `q` is longer than 200 characters                                        |
-| `400`  | `Unknown media type`   | `type` has no registered provider                                                |
-| `502`  | `Provider unavailable` | TMDB failed, timed out or returned an unexpected body                            |
+| Status | `title`                | When                                                                                       |
+| ------ | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `400`  | `Invalid request`      | `q` is missing, empty or whitespace (`"Query parameter 'q' must not be empty."`)           |
+| `400`  | `Invalid request`      | Trimmed `q` is longer than 200 characters                                                  |
+| `400`  | `Unknown media type`   | `type` has no registered provider                                                          |
+| `502`  | `Provider unavailable` | The provider (TMDB, Google Books or IGDB) failed, timed out or returned an unexpected body |
 
 The query is validated **before** the type. A request with an unsupported type and an empty `q` therefore reports the `q` error first.
 
@@ -99,14 +100,14 @@ curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/a
 
 ```bash
 # Unsupported type → 400
-curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/search/game?q=portal"
+curl -i -H "Authorization: Bearer $CLERK_SESSION_TOKEN" "http://localhost:5251/api/search/podcast?q=portal"
 ```
 
 ```json
 {
   "title": "Unknown media type",
   "status": 400,
-  "detail": "Media type 'game' is not supported. Supported: book, movie, tv.",
+  "detail": "Media type 'podcast' is not supported. Supported: book, game, movie, tv.",
   "traceId": "0HN7...:00000002"
 }
 ```
@@ -125,10 +126,10 @@ Pass `?includeLibrary=true` to include a boolean `saved` field for the signed-in
 
 ### Inputs
 
-| Name   | In   | Type   | Required | Rules                                                                                                                                                                                |
-| ------ | ---- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `type` | path | string | yes      | A supported media type                                                                                                                                                               |
-| `id`   | path | string | yes      | Must be valid for that provider. For `movie`, it must be a **positive integer** containing digits only: no sign, decimal point or letters. Leading zeros are accepted (`007` → `7`). |
+| Name   | In   | Type   | Required | Rules                                                                                                                                                                                                                                                                            |
+| ------ | ---- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type` | path | string | yes      | A supported media type                                                                                                                                                                                                                                                           |
+| `id`   | path | string | yes      | Must be valid for that provider. For `movie`, `tv` and `game` it must be a **positive integer** containing digits only: no sign, decimal point, spaces or letters. Leading zeros are accepted (`007` → `7`). For `book` it is the Google Books volume ID (any non-blank string). |
 
 ### Success: `200 OK` (movie)
 
@@ -143,7 +144,14 @@ Pass `?includeLibrary=true` to include a boolean `saved` field for the signed-in
 }
 ```
 
-The fields shared by all media types are `externalId`, `title`, `releaseDate`, `description` and `posterUrl`. Each media type can add its own fields. For movies, the extra field is `runtime`.
+The fields shared by all media types are `externalId`, `title`, `releaseDate`, `description` and `posterUrl`. Each media type can add its own fields:
+
+| `type`  | Extra fields                                        |
+| ------- | --------------------------------------------------- |
+| `movie` | `runtime` (minutes, or `null`)                      |
+| `tv`    | `numberOfSeasons` (int, or `null`)                  |
+| `book`  | `isbn` (ISBN-13 preferred, else ISBN-10, or `null`) |
+| `game`  | none                                                |
 
 ### Errors
 
@@ -152,9 +160,9 @@ The fields shared by all media types are `externalId`, `title`, `releaseDate`, `
 | `400`  | `Invalid request`      | `id` is malformed for the provider, e.g. `abc`, `-5`, `0`, `1.5`, or too large for an int (`"'abc' is not a valid movie id."`) |
 | `400`  | `Unknown media type`   | `type` has no registered provider                                                                                              |
 | `404`  | `Media not found`      | The id is well-formed but the provider has no such item (`"No movie found with id '999999999'."`)                              |
-| `502`  | `Provider unavailable` | TMDB failed, timed out or returned an unexpected body                                                                          |
+| `502`  | `Provider unavailable` | The provider (TMDB, Google Books or IGDB) failed, timed out or returned an unexpected body                                     |
 
-A malformed id returns **400**, not 404. TMDB itself answers 404 for both a malformed id and a missing one, so the backend validates the format first to tell these two cases apart.
+A malformed id returns **400**, not 404. The backend validates the format first, because providers handle bad ids differently: TMDB answers 404 for both a malformed and a missing id, Google Books answers 503 for unknown ids (the backend reports that as 404), and IGDB answers `200` with an empty array for an unknown id (also reported as 404). For games the id is also placed in the upstream query body, so only plain digits are accepted. A bad game id reports `"'abc' is not a valid IGDB game id."`.
 
 ### Examples
 
@@ -216,14 +224,22 @@ All error mapping happens in one place, `Shared/Errors/ApiExceptionHandler.cs`. 
 
 ## Configuration these endpoints depend on
 
-Movies and TV shows use the settings under `Tmdb`. Books use the Google Books settings in the [Local Setup Guide](Local%20Setup.md).
+Movies and TV shows use the settings under `Tmdb`. Books use the Google Books settings and games use the `Igdb` settings, both in the [Local Setup Guide](Local%20Setup.md).
 
-| Key                    | Where it's set                  | Notes                                                          |
-| ---------------------- | ------------------------------- | -------------------------------------------------------------- |
-| `Tmdb:BaseUrl`         | `appsettings.json`              | `https://api.themoviedb.org/3/` (must end with `/`)            |
-| `Tmdb:ImageBaseUrl`    | `appsettings.json`              | `https://image.tmdb.org/t/p/w500`, used to build `posterUrl`   |
-| `Tmdb:ReadAccessToken` | **user-secrets / env var only** | TMDB v4 read access token. Never commit it.                    |
-| `Tmdb:TimeoutSeconds`  | optional                        | Default `10`, allowed range 1–120. Exceeding it gives a `502`. |
+| Key                          | Where it's set                  | Notes                                                                                       |
+| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Tmdb:BaseUrl`               | `appsettings.json`              | `https://api.themoviedb.org/3/` (must end with `/`)                                         |
+| `Tmdb:ImageBaseUrl`          | `appsettings.json`              | `https://image.tmdb.org/t/p/w500`, used to build `posterUrl`                                |
+| `Tmdb:ReadAccessToken`       | **user-secrets / env var only** | TMDB v4 read access token. Never commit it.                                                 |
+| `Tmdb:TimeoutSeconds`        | optional                        | Default `10`, allowed range 1–120. Exceeding it gives a `502`.                              |
+| `Igdb:BaseUrl`               | `appsettings.json`              | `https://api.igdb.com/v4/` (must end with `/`)                                              |
+| `Igdb:ImageBaseUrl`          | `appsettings.json`              | `https://images.igdb.com/igdb/image/upload/` (must end with `/`), used to build `posterUrl` |
+| `Igdb:ClientId`              | user-secrets / env              | Twitch application Client ID                                                                |
+| `Igdb:AccessToken`           | user-secrets / env              | Twitch app access token, valid about 60 days, regenerate manually                           |
+| `GoogleBooks:BaseUrl`        | `appsettings.json`              | `https://www.googleapis.com/books/v1/` (must end with `/`)                                  |
+| `GoogleBooks:ApiKey`         | **user-secrets / env var only** | Optional. Sent as `x-goog-api-key`. Never commit it.                                        |
+| `GoogleBooks:TimeoutSeconds` | optional                        | Default `10`.                                                                               |
+| `Igdb:TimeoutSeconds`        | optional                        | Default `10`, allowed range 1–120. Exceeding it gives a `502`.                              |
 
 ```bash
 cd backend
@@ -238,3 +254,6 @@ dotnet user-secrets set "Tmdb:ReadAccessToken" "<your-token>"
 - Search returns at most 10 results and has no pagination.
 - Lookup responses do **not** include a `mediaType` field. The frontend type `MovieLookupResult` (`frontend/src/types/movieLookupResult.ts`) declares one, so on the client that value is `undefined`.
 - The example values above (poster paths, trace ids, overview text) are abbreviated.
+- **IGDB token:** the IGDB access token is fixed and is not refreshed. When it expires (about 60 days after it is issued), game search and lookup return `502` until it is regenerated.
+- **IGDB search results:** game search is not filtered by game type, so bundles, expansions and ports can appear alongside main games.
+- **Google Books lookup:** Google Books reports unknown volume ids as HTTP 503, so a real Google Books outage on lookup is also reported as `404`.

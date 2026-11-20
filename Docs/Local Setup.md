@@ -155,23 +155,6 @@ Replace `your_local_password` with the same password used in the Docker `.env` f
 
 If the backend project already has a `UserSecretsId`, you can skip `dotnet user-secrets init`.
 
-
-### Configure the Google Books Key
-
-The backend requires a Google Books API key to access movie information.
-
-Obtain the key from the team's shared development resources and store it using .NET User Secrets.
-
-From the project root:
-
-```bash
-dotnet user-secrets set "GoogleBooks:ApiKey" "<your_api_key>" --project backend
-```
-
-Replace `<your_api_key>` with the actual Google Books API key.
-
-Do not commit the token to the repository.
-
 ### Stop PostgreSQL
 
 To stop the database container, run from the Docker Compose directory:
@@ -227,7 +210,7 @@ For detailed instructions, see [Database Migrations](db-migration.md).
 
 ### Configure the TMDB Token
 
-The backend requires a TMDB API Read Access Token to access movie information.
+The backend requires a TMDB API Read Access Token to access movie or tv shows information.
 
 Obtain the token from the team's shared development resources and store it using .NET User Secrets.
 
@@ -241,9 +224,38 @@ Replace `<your_token>` with the actual TMDB API Read Access Token.
 
 Do not commit the token to the repository.
 
+### Configure the Google Books Key
+
+The backend requires a Google Books API key to access books information.
+
+Obtain the key from the team's shared development resources and store it using .NET User Secrets.
+
+From the project root:
+
+```bash
+dotnet user-secrets set "GoogleBooks:ApiKey" "<your_api_key>" --project backend
+```
+
+Replace `<your_api_key>` with the actual Google Books API key.
+
+Do not commit the token to the repository.
+
+### Configure IGDB (Games)
+
+The backend needs a Twitch application Client ID and an app access token to search IGDB.
+
+Store the Client ID and the `access_token` from the response:
+
+```bash
+dotnet user-secrets set "Igdb:ClientId" "<client_id>" --project backend
+dotnet user-secrets set "Igdb:AccessToken" "<access_token>" --project backend
+```
+
+Both are provided in the shared discord channel
+
 ### Configure Clerk
 
-The backend uses Clerk's Frontend API URL to validate authentication tokens from users. Ensure that the Fontend publishable key and the Frontend API URL are both for the same enviromnent. 
+The backend uses Clerk's Frontend API URL to validate authentication tokens from users. Ensure that the Fontend publishable key and the Frontend API URL are both for the same enviromnent.
 
 Obtain the token from the team's shared development resources and store it using .NET User Secrets.
 

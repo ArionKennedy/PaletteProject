@@ -35,7 +35,7 @@ erDiagram
 
     BOOKS {
         uuid media_id PK,FK
-        string goole_books_id UK
+        string google_books_id UK
         string isbn
     }
 
