@@ -1,6 +1,6 @@
 # Testing Documentation
 
-This document describes Palette’s backend testing strategy, test infrastructure, execution instructions, coverage evidence, and known testing gaps.
+This document describes Palette’s backend and frontend test suites and backend coverage evidence.
 
 ## 1. Testing Strategy
 
@@ -8,7 +8,8 @@ Palette uses unit tests and integration tests to verify application behaviour an
 
 The backend regression suite covers:
 
-- Normal search and lookup workflows for movies and TV shows and books.
+- Search and lookup for movies, TV shows, and books.
+- My Library membership, category previews, and cover persistence.
 - Input validation, boundary values, missing data, and failure handling.
 - External-provider request construction and response processing.
 - HTTP response contracts and application middleware.
@@ -77,6 +78,10 @@ Tests cover:
 - Book lookup of an unknown volume returns 404 (Google Books reports it as HTTP 503), while a 503 on search returns 502.
 
 These tests do not require a real TMDB account, token or Google Books API key.
+
+### My Library Integration Tests
+
+`LibraryTests` exercises the real authenticated endpoints using `PostgresFixture` and stub media providers. It covers adding and removing all three media types, concurrent and repeated saves, account isolation, saved state in lookup responses, the 12-item preview limit, and backfilling missing covers.
 
 ### Application Startup Tests
 
@@ -191,6 +196,22 @@ With the default Testcontainers setup, no manual database creation, connection-s
 
 For tests using `PostgresFixture`, an existing `PALETTE_TEST_DB_CONNECTION` overrides automatic database creation, and the configured database must be available. Development startup tests always create their own temporary database and require Docker.
 
+### Run Frontend Tests
+
+Use Node.js 24 and run the following from the repository root:
+
+```bash
+npm ci --prefix frontend
+node --test 'tests/frontend/**/*.test.cjs'
+```
+
+| Suite | Tested behaviour |
+| --- | --- |
+| `tests/frontend/my-library.test.cjs` | Poster navigation and fallback, the manual refresh animation trigger, immediate Add/Remove feedback and rollback, authenticated requests, and timeouts |
+| `tests/frontend/reset-password.test.cjs` | Resuming a valid attempt after going back, retrying a rejected password after code verification, recovering from resend failures or missing attempts, countdown after initial send and resend, and clearing errors after five seconds or on navigation |
+
+The suites use Node’s test runner and mock UI, navigation, and external dependencies. The password reset suite uses a simulated clock to check the countdown and error timeout.
+
 ### Run Only Unit Tests
 
 ```bash
@@ -304,17 +325,17 @@ Exclusion rules should be kept consistent between local and CI reports and docum
 
 ### Latest Test Results
 
-Last verified locally: November 16, 2026.
+Last verified locally: November 19, 2026.
 
-- **Full backend suite: 460 passed; no failures or skipped tests.**
-- **Line coverage: 100.00% — 832 of 832 lines.**
-- **Branch coverage: 100.00% — 118 of 118 branches.**
+- **Full backend suite: 471 passed with no failures or skips.**
+- **Line coverage: 99.5% — 1064 of 1069 lines.**
+- **Branch coverage: 93.4% — 172 of 184 branches.**
 
-![evidence screenshot](evidence/backend-test-coverage-11-16.png)
+![Backend coverage report](evidence/backend-test-coverage-11-19.png)
 
 ### Continuous Integration
 
-The backend workflow is located at `.github/workflows/ci.yml`.
+The workflow at `.github/workflows/ci.yml` runs on pull requests, pushes to `develop` or `master`, and manual dispatch. It runs **Frontend Tests** and **Backend Tests** as separate jobs. The frontend job installs dependencies from the frontend lockfile and runs all matching tests under `tests/frontend/`. The backend job collects and publishes backend coverage.
 
 The coverage-enabled workflow update is pending verification through a pull request. After it runs successfully, milestone documentation should link to:
 
@@ -330,12 +351,11 @@ If a regression test fails, investigate whether the implementation regressed, th
 ## 7. Current Limitations and Follow-Up Work
 
 - **HTTPS transport:** TestServer tests verify HTTPS redirection and request handling, but do not validate a real TLS handshake, certificates, or deployed HTTPS configuration.
-- **Frontend automation:** This backend suite does not measure frontend coverage or replace frontend component, navigation, and browser tests.
+- **Device coverage:** Frontend tests use mocked components and services. Visual layout, touch gestures, live sign-in, and password reset email delivery still need device checks.
 - **Real external services:** Simulated TMDB responses verify application behaviour but do not prove that live TMDB credentials or deployed connectivity are correct.
 - **Acceptance criteria:** User-story acceptance criteria still need an explicit mapping to automated tests or recorded manual checks.
 - **CI evidence:** The updated coverage collection and artifact publication must be verified after the pull request is created.
 - **Deployed workflows:** Local automated tests do not replace representative checks of the deployed application.
-- **Future features:** No history/logging coverage is added for unmerged PRs. Existing model tests remain. Coverage percentages must not be interpreted as coverage of unmerged features.
 - **Clerk JWT validation:** The controlled authentication scheme tests authorization and provisioning, but does not establish production bearer-token validation. Offline signed-token tests for invalid signatures, issuer, and expiration remain a possible follow-up; live Clerk calls are outside this suite.
 - **Custom migrations:** Future migrations containing hand-written data transformations should receive dedicated upgrade/data-preservation tests even though migration classes are excluded from the application coverage metric.
 

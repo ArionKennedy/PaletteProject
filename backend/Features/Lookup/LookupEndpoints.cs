@@ -1,6 +1,8 @@
 using Backend.Constants;
+using Backend.Features.Users;
 using Backend.Shared.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Palette.Api.Logging;
 
 namespace Backend.Features.Lookup;
 
@@ -21,10 +23,20 @@ public static class LookupEndpoints
     private static async Task<Ok<MediaLookupResult>> LookupAsync(
         string type,
         string id,
+        bool? includeLibrary,
         LookupService lookupService,
+        LibraryService library,
+        UserService users,
         CancellationToken cancellationToken)
     {
         var details = await lookupService.LookupAsync(type, id, cancellationToken);
+
+        if (includeLibrary == true && users.GetCurrentClerkId() is { } clerkId)
+        {
+            var mediaType = type.Trim().ToLowerInvariant();
+            var saved = await library.IsSavedBy(clerkId, mediaType, details.ExternalId, cancellationToken);
+            details = details with { Saved = saved };
+        }
 
         return TypedResults.Ok(details);
     }

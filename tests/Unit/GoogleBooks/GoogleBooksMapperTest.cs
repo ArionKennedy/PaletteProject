@@ -79,6 +79,21 @@ public class GoogleBooksMapperTests
         Assert.Null(result.ISBN);
     }
 
+    [Theory]
+    [InlineData(null, "https://img.example/small.jpg")]
+    [InlineData("  ", "https://img.example/small.jpg")]
+    [InlineData("http://img.example/regular.jpg", "https://img.example/regular.jpg")]
+    public void SearchAndLookupPreferStandardThumbnailAndFallBackToSmallThumbnail(
+        string? thumbnail, string expected)
+    {
+        var volume = new GoogleBooksVolume("abc123",
+            new GoogleBooksVolumeInfo("Dune", null, null,
+                new GoogleBooksImageLinks(thumbnail, "http://img.example/small.jpg"), null));
+
+        Assert.Equal(expected, GoogleBooksMapper.ToSearchResult(volume).PosterUrl);
+        Assert.Equal(expected, GoogleBooksMapper.ToLookupResult(volume).PosterUrl);
+    }
+
     // ---------- ParsePublishedDate ----------
 
     [Theory]
