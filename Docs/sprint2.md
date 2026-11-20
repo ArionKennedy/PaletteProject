@@ -182,6 +182,7 @@ The team reviewed Group 5's Drove application using externally observable behavi
         - The card entry is confusing and doesn't accept inputs like 1234 1234 1234 1234, but accepts 4242 4242 4242 4242
         - Doesn't check postal codes
         - Google browser shows a dangerous message in the tab, may be off putting to users
+
     <img width="1545" height="41" alt="Screenshot 2026-11-20 130738" src="https://github.com/user-attachments/assets/d5db5201-5d6f-4a02-9775-3e70a5e308fc" />
 
     Overall, the project was really well done otherwise. There are a lot of checks an input locks that were really well done, and the website design looks fantastic!
@@ -208,31 +209,31 @@ The team reviewed feedback by reproducing the reported behavior, determining whe
 Brief reflection on Sprint 2 work, challenges, and lessons learned.
 
 ### What technical decision or implementation improved most since Sprint 1, and why?
-The searching and recommendation implementations were the most improved since Sprint 1.
+The search and recommendation implementations showed the greatest improvement during Sprint 2.
 
-The searching has improvded to include TV Shows and books, with video games up and coming.
+Search now supports TV shows and books in addition to movies, giving users a more consistent way to discover multiple types of media. Video game support is planned for a later iteration.
 
-Additioanlly, despite not being included for this sprint iteration Recommendations has made leaps in bounds of creating a personalized user profile that creates movie recommendations and displays them in the explore page.
+Recommendation functionality also made significant progress. The team developed a personalized user profile that uses preferences to select and display movie recommendations on the Explore page. Although recommendations are still not fully complete, this implementation provides an important foundation for future recommendation work.
 
 ### What feedback from Sprint 1 did the team act on, and what changed as a result?
-The main feedback that the team acted on was improving the coverage and quality of the our frontend and backend tests, and focusing on the quality of our code rather than the pure implementation of features.
+The team acted on feedback about test coverage and code quality. During Sprint 2, we expanded backend and frontend testing and placed more emphasis on maintaining readable, modular code rather than implementing features quickly. We also established GitHub Actions checks and added a deployed Render backend so that code quality and deployment behavior could be verified more consistently.
 
 ### What part of the current testing, CI, or CD process creates the most friction, and what might improve it?
-[Need to look over]
+The greatest friction comes from coordinating repeatable verification across local development, CI, and production. Live authentication, external API behavior, physical-device behavior, and deployed database connectivity are not fully covered by automated tests. Recording deployment verification evidence and adding targeted checks for these areas would make failures easier to identify and reduce manual troubleshooting.
 
 ### What is the most important technical risk or uncertainty going into the final iteration?
-The most uncertainty comes from the time required for the social media features in the final iteration. There are a large number of remaining features that still need to be flushed out in order to even start the social media portion.
+The greatest risk is completing the remaining social media functionality within the available time. Several prerequisite features are still incomplete, and these dependencies must be finished before the social experience can be integrated and tested reliably. A smaller, clearly scoped first implementation will reduce the risk while preserving enough functionality for the final iteration.
 
 ### What are we proud of?
-The completed components that we are most proud of are the  inclusion of TV Shows and Books so that users can start interacting with them and creating thier own favourite lists.
+We are proud of extending the application beyond movies to include TV shows and books. Users can now search for these media types and add them to their own archived favourite lists.
 
-We are also proud of the progress that we have made on the upcoming features for recommendations, searching, and logging to include video games and diverse exploration pages.
+We are also proud of the progress made toward the recommendation, search, and logging features, particularly the work toward video game support and more diverse Explore pages.
 
-In particular, a large portion of the recommendation engine uses a custom simplified language model that converts the users preferences into a numeric form to choose the most likely piece of media that the user would be interetesetd in based on the:
+The recommendation engine uses a custom, simplified language-model approach to convert user preferences into a numerical representation. This representation is used to rank media using factors such as:
 - Genre
-- Author/Director/Studio
-- Length
-- Interacted Searches
+- Author, director, or studio
+- Media length
+- Search and interaction history
 - Media with more reviews
 - Media with higher review ratings
 - Depreciate older inputs over time
