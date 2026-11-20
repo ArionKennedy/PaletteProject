@@ -147,8 +147,8 @@ The status below describes the source in this checkout. The Android tester secti
 - PostgreSQL database structure and EF Core migrations
 - Frontend and backend integration
 - Unified development startup command
-- Backend unit and integration tests, plus local frontend tests for My Library
-- GitHub Actions CI for running backend tests on pull requests
+- Backend unit and integration tests, plus frontend regression tests for My Library and password reset
+- GitHub Actions CI for both test suites on pull requests and pushes to `develop` and `master`
 
 **Current Limitations:**
 - Search, lookup, and My Library currently support movies, TV shows, and books.
@@ -241,9 +241,12 @@ From the project root:
 dotnet test tests/Palette.Tests.csproj
 ```
 
-GitHub Actions automatically runs the backend test project on pull requests.
+With Node.js 24, install the frontend dependencies and run the frontend tests from the project root:
 
-Integration tests and automated frontend tests are not included in Sprint 1.
+```bash
+npm ci --prefix frontend
+node --test 'tests/frontend/**/*.test.cjs'
+```
 
 For testing details and coverage information, see [Testing Documentation](Docs/testing.md).
 
@@ -253,7 +256,7 @@ For testing details and coverage information, see [Testing Documentation](Docs/t
 COMP4350Project/
 ├── backend/             # ASP.NET Core API
 ├── frontend/            # React Native / Expo application
-├── tests/               # Backend tests
+├── tests/               # Backend and frontend tests
 ├── Docs/                # Project documentation
 ├── .github/workflows/   # CI configuration
 ├── package.json         # Development startup scripts

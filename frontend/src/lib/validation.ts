@@ -15,8 +15,9 @@ export function validateEmail(email: string): string | null {
 export function clerkErrorsToPageErrors(errors: Record<string, any>): Record<string, string> {
   const pageErrors: Record<string, string> = {};
 
-  if (errors?.fields?.global) {
-    pageErrors.global = errors.fields.global[0].longMessage;
+  const globalError = errors?.global?.[0];
+  if (globalError) {
+    pageErrors.global = globalError?.longMessage || globalError?.message;
   }
 
   if (errors?.fields?.identifier) {
@@ -33,6 +34,10 @@ export function clerkErrorsToPageErrors(errors: Record<string, any>): Record<str
 
   if (errors?.fields?.password) {
     pageErrors.password = errors?.fields?.password?.longMessage;
+  }
+
+  if (errors?.fields?.code) {
+    pageErrors.code = errors?.fields?.code?.longMessage;
   }
 
   return pageErrors;
