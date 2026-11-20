@@ -21,6 +21,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/lib/theme';
 import { mediaSearch } from '@/services/search';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
 import { PageHeader } from '@/components/page-header';
+import { recordSearchSelection } from '@/services/recommendation-interactions';
 
 type MediaSearchProps = {
     mediaType: string;
@@ -60,12 +61,22 @@ export default function MediaSearchPage({mediaType, title, getDetailHref} : Medi
     }
   }
 
+  async function handleSearchSelection(item: MediaSearchResult) {
+    try {
+      await recordSearchSelection(item.mediaType, item.externalId);
+    } catch (error) {
+      console.warn('Failed to record search selection:', error);
+    }
+  }
+  
   const renderItem: ListRenderItem<MediaSearchResult> = ({ item }) => (
-    <Link href={getDetailHref(item.externalId )} asChild>
+    <Link href={getDetailHref(item.externalId)} asChild>
       <Pressable
+        onPress={() => void handleSearchSelection(item)}
         accessibilityRole="link"
         accessibilityLabel={`Open details for ${item.title}`}
-        style={({ pressed }) => pressed && styles.pressed}>
+        style={({ pressed }) => pressed && styles.pressed}
+      >
         <Movie movie={item} />
       </Pressable>
     </Link>
