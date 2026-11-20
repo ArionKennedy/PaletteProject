@@ -132,6 +132,9 @@ namespace Palette.Api.Migrations
                     b.Property<Guid>("MediaId")
                         .HasColumnType("uuid");
 
+                    b.PrimitiveCollection<string[]>("Genres")
+                        .HasColumnType("text[]");
+
                     b.Property<int?>("RuntimeMinutes")
                         .HasColumnType("integer");
 
@@ -174,6 +177,37 @@ namespace Palette.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("REVIEWS", (string)null);
+                });
+
+            modelBuilder.Entity("Palette.Api.Models.SearchInteraction", b =>
+                {
+                    b.Property<Guid>("SearchInteractionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("SearchInteractionId");
+
+                    b.HasIndex("UserId", "MediaType", "ExternalId", "Type");
+
+                    b.ToTable("SEARCH_INTERACTIONS", (string)null);
                 });
 
             modelBuilder.Entity("Palette.Api.Models.TvShow", b =>
@@ -332,6 +366,17 @@ namespace Palette.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Media");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Palette.Api.Models.SearchInteraction", b =>
+                {
+                    b.HasOne("Palette.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

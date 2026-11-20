@@ -1,3 +1,4 @@
+
 namespace Backend.Constants;
 
 public static class TmdbConstants
@@ -9,8 +10,11 @@ public static class TmdbConstants
     public const string SEARCH_MOVIE_PATH = "search/movie";
     public const string MOVIE_PATH = "movie";
 
-    public const string SEARCH_TV_PATH = "search/tv";
+    // Movie recommendation discovery.
+    public const string DISCOVER_MOVIE_PATH = "discover/movie";
+    public const string MOVIE_GENRES_PATH = "genre/movie/list";
 
+    public const string SEARCH_TV_PATH = "search/tv";
     public const string TV_PATH = "tv";
 
     public const string BEARER_SCHEME = "Bearer";

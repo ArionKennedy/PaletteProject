@@ -1,3 +1,4 @@
+
 using System;
 using Backend.Providers.Tmdb;
 using Xunit;
@@ -58,7 +59,10 @@ public class TmdbMapperTests
             Overview: "A movie description.",
             ReleaseDate: "2024-03-15",
             PosterPath: "/movie.jpg",
-            Runtime: 120);
+            Runtime: 120,
+            Genres: null,
+            VoteCount: 100,
+            VoteAverage: 7.5f);
 
         var result = TmdbMapper.ToLookupResult(source, ImageBaseUrl);
 
@@ -107,7 +111,10 @@ public class TmdbMapperTests
             Overview: null,
             ReleaseDate: null,
             PosterPath: null,
-            Runtime: runtime);
+            Runtime: runtime,
+            Genres: null,
+            VoteCount: 0,
+            VoteAverage: null);
 
         var result = TmdbMapper.ToLookupResult(source, ImageBaseUrl);
 
@@ -125,7 +132,10 @@ public class TmdbMapperTests
             Overview: null,
             ReleaseDate: null,
             PosterPath: null,
-            Runtime: runtime);
+            Runtime: runtime,
+            Genres: null,
+            VoteCount: 0,
+            VoteAverage: null);
 
         var result = TmdbMapper.ToLookupResult(source, ImageBaseUrl);
 
@@ -258,7 +268,10 @@ public class TmdbMapperTests
             Overview: overview,
             ReleaseDate: null,
             PosterPath: null,
-            Runtime: null);
+            Runtime: null,
+            Genres: null,
+            VoteCount: 0,
+            VoteAverage: null);
 
         var result = TmdbMapper.ToLookupResult(source, ImageBaseUrl);
 
