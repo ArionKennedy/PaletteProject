@@ -31,52 +31,57 @@ Detailed development progress is tracked through our GitHub issues, pull request
 
 ## 3. Regression Testing
 
-Regression testing helps verify that changes do not break previously working functionality.
+Regression testing helps verify that changes do not break previously working functionality. The backend suite covers search and lookup, My Library, API contracts, authentication and user provisioning, and PostgreSQL persistence. Frontend tests cover selected library interactions and password-reset behaviour.
 
 ### Current Regression Tests
 
-[Explain which tests currently run, what important behaviour they protect, and why those tests were selected.]
+The full backend suite is run through `tests/Palette.Tests.csproj`, and the frontend suite uses Node.js tests under `tests/frontend/`. The tests were selected to protect user-facing flows, API contracts, database constraints, and important error-handling paths. See the linked testing documentation for individual cases.
 
 | Test Suite | Behaviour Covered | Why It Was Selected |
 |---|---|---|
-| [Test suite] | [Behaviour] | [Reason] |
-| [Test suite] | [Behaviour] | [Reason] |
+| Backend unit tests | Search/lookup services, media providers, mapping, validation, and error handling | Protects shared business logic and response contracts. |
+| Backend HTTP integration tests | Authenticated API requests, search/lookup, user provisioning, and My Library | Checks interactions across real application components. |
+| PostgreSQL integration tests | Persistence, relationships, uniqueness, constraints, and cascade deletion | Verifies database behaviour that EF Core InMemory cannot prove. |
+| Frontend Node.js tests | My Library interactions and password-reset flows | Protects selected user interactions and failure states. |
 
 ### Execution and Failure Handling
 
-- **Trigger:** [When tests run, such as pull requests, pushes, and manual runs.]
+- **Trigger:** Pull requests, pushes to `develop` and `master`, and manual workflow dispatch.
 - **Approximate Duration:** [Measured test execution time.]
-- **Failure Handling:** [Explain how failures appear in CI and whether they prevent merging or deployment.]
-- **Recent Execution:** [Link to a recent regression/CI run.](#)
+- **Failure Handling:** Failed test jobs are reported in GitHub Actions. The team should investigate and rerun the affected tests and full suite after fixing failures. [Confirm whether branch protection blocks merges.]
+- **Recent Execution:** The latest `develop` CI run is reported as passing as of November 20, 2026 (team confirmation). [GitHub Actions workflow runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml). [Add the direct run URL, commit SHA, and measured duration.]
 
 ### Test Coverage and Gaps
 
-- **Coverage Evidence:** [Link to a current coverage report or CI artifact.](#)
-- **Coverage Summary:** [Report measured coverage and explain what it does and does not show.]
+- **Coverage Evidence:** [November 19 local coverage screenshot](evidence/backend-test-coverage-11-19.png); [CI artifacts and runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [verify latest run].
+- **Coverage Summary:** `Docs/testing.md` reports 471 passing backend tests, 99.5% line coverage (1064/1069), and 93.4% branch coverage (172/184), last verified locally November 19, 2026. These metrics do not prove complete user-workflow or deployed-environment coverage.
 
 Important weakly tested or untested behaviour includes:
 
-- [Testing gap, why it matters, and next step.]
-- [Testing gap, why it matters, and next step.]
+- **Live authentication:** Controlled test identities do not verify real Clerk JWT validation, expiry, or production connectivity; perform deployed sign-in and authenticated API checks.
+- **Device and deployment behaviour:** Mocked frontend tests do not cover physical-device layout, live password-reset email delivery, or deployed HTTPS; record representative manual checks.
+- **Acceptance criteria:** Map important user-story acceptance criteria to automated tests or documented manual checks.
 
 See [Testing Documentation](testing.md) for testing tools, execution instructions, and current limitations.
 
 ## 4. Continuous Integration and Delivery
 
-The project uses GitHub Actions for continuous integration and [describe the current automated delivery/deployment process].
+The project uses GitHub Actions for continuous integration. The backend is hosted on Render and the PostgreSQL database on Supabase. The team is confirming whether Render deploys automatically from the development branch or requires manual deployment.
 
 ### Continuous Integration
 
-- **Trigger:** [Events that initiate CI, such as pull requests and pushes.]
-- **Automated Checks:** [List tests and quality checks actually executed.]
-- **Failure Handling:** [Explain the consequences of failed checks.]
+- **Trigger:** Pull requests, pushes to `develop` or `master`, and manual dispatch.
+- **Automated Checks:** Separate frontend Node.js tests and backend .NET 10 tests. The backend job collects Cobertura coverage and uploads test/coverage artifacts.
+- **Failure Handling:** Failed checks are visible in GitHub Actions; [confirm merge protection and team response procedure].
 
-See [CI Workflow](../.github/workflows/ci.yml) and [Recent CI Run](#).
+The latest `develop` run is reported as **passing** (November 20, 2026). This confirms the current CI status as reported by the team, but the exact run, commit, job durations, and uploaded artifacts still need to be linked and checked.
+
+See [CI Workflow](../.github/workflows/ci.yml) and [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml). [Link the specific passing run before submission.]
 
 ### Continuous Delivery / Deployment
 
-- **Development Branch:** [Main development branch and the changes that trigger the delivery workflow.]
-- **Workflow:** [Link to the actual CD workflow.](#)
+- **Development Branch:** `develop` [confirm Render tracks this branch].
+- **Workflow:** [Confirm whether Render GitHub auto-deploy is enabled; link Render deployment evidence if available.]
 - **Deployment Steps:** [Describe what the workflow builds, publishes, or deploys.]
 - **Success Criteria:** [Explain how a successful deployment is verified.]
 - **Failure Handling:** [Describe where failures are reported and what the team does next.]
@@ -96,17 +101,17 @@ The architecture documentation reflects the system's current implementation and 
 - [System Architecture](architecture.md)
 - [Database Design](database.md)
 
-[Summarize important architecture changes since Sprint 1 and confirm the linked diagrams are current.]
+The backend and database now have hosted environments (Render and Supabase), unlike the local-only deployment described in Sprint 1. **Documentation update needed:** `architecture.md` still describes PostgreSQL as local-only and cloud deployment as undecided; update its deployment description and distinguish proposed Redis caching from deployed components.
 
 ## 7. Deployment and Local Setup
 
-**Deployment Status:** [Describe the verified status of the frontend, backend, and database separately.]
+**Deployment Status:** The ASP.NET Core backend is hosted on Render and PostgreSQL is hosted on Supabase. The Expo frontend is currently run locally; instructor-accessible frontend deployment has not been confirmed.
 
 - **Application Access:** [Instructor-accessible URL or clear access instructions.]
-- **Backend API:** [Hosted endpoint and access limitations.]
-- **Database:** [Hosting details without credentials.]
+- **Backend API:** Render — [add backend service URL and authenticated/public endpoint details].
+- **Database:** Supabase-hosted PostgreSQL. [Confirm connection health and version; do not disclose credentials.]
 - **Deployment Verification:** [Explain how the team checked that the deployed version is running and current.]
-- **Configuration:** [List required variable names and configuration steps; do not include secrets.]
+- **Configuration:** Environment-based settings are used for application and database connectivity. Document required variable *names* for Render, Supabase, and Clerk without exposing values. Client-side `EXPO_PUBLIC_` variables must not contain secrets.
 
 For local development, see:
 - [Local Setup](Local%20Setup.md)
@@ -118,7 +123,7 @@ For local development, see:
 
 ### Black-Box Review
 
-The team reviewed the assigned project's deployed application using externally observable behaviour, without relying on its implementation details.
+[Once completed, describe how the team reviewed its assigned project using externally observable behaviour without relying on implementation details.]
 
 - **Assigned Team / Project:** [Name and link.]
 - **Testing Evidence:** [Link to submitted review.](#)
@@ -144,7 +149,7 @@ The team reviewed the assigned project's deployed application using externally o
 
 ## 10. Sprint Reflection
 
-Each team member contributed a brief reflection on their Sprint 2 work, challenges, and lessons learned.
+Each team member should contribute a brief reflection on their Sprint 2 work, challenges, and lessons learned.
 
 ### Individual Reflections
 
@@ -179,9 +184,9 @@ The links below provide a summary of the key Sprint 2 evidence.
 | Requirement | Evidence |
 |---|---|
 | Sprint Board and Completed Work | [Sprint Board](https://github.com/users/ArionKennedy/projects/4), [PRs / Issues](#) |
-| Regression Testing and Results | [Testing Documentation](testing.md), [Recent CI Run](#) |
-| Test Coverage and Testing Gaps | [Coverage Evidence](#), [Section 3](#3-regression-testing) |
-| CI/CD and Deployment | [CI Workflow](../.github/workflows/ci.yml), [CD Workflow](#), [Section 7](#7-deployment-and-local-setup) |
+| Regression Testing and Results | [Testing Documentation](testing.md), [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [specific run pending] |
+| Test Coverage and Testing Gaps | [Local Coverage Evidence](evidence/backend-test-coverage-11-19.png), [Section 3](#3-regression-testing) |
+| CI/CD and Deployment | [CI Workflow](../.github/workflows/ci.yml), [Render deployment details pending], [Section 7](#7-deployment-and-local-setup) |
 | API and Architecture | [API Documentation](api.md), [System Architecture](architecture.md), [Database Design](database.md) |
 | Cross-Team Review and Feedback | [Section 8](#8-cross-team-testing-and-feedback) |
 | Individual Reflections and Best Work | [Section 10](#10-sprint-reflection) |
