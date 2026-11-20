@@ -1,3 +1,4 @@
+
 using Backend.Features.Health;
 using Backend.Features.Lookup;
 using Backend.Features.Search;
@@ -17,26 +18,29 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure PostgreSQL database
+// Configure PostgreSQL database.
 builder.Services.AddDbContext<PaletteDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Configuration.GetConnectionString(
+            "DefaultConnection")));
 
-// Configure OpenAPI
+// Configure OpenAPI.
 builder.Services.AddOpenApi();
 
-// Register ProblemDetails and ApiExceptionHandler (required by app.UseExceptionHandler)
+// Register error handling.
 builder.Services.AddApiErrorHandling();
 
-// Register media providers and the search feature
+// Register providers and application services.
 builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
 builder.Services.AddGoogleBooksProvider(builder.Configuration);
+
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
 builder.Services.AddLoggingFeature();
 builder.Services.AddUserService();
 
+// Register the original recommendation engine integration.
 builder.Services.AddRecommendationFeature();
 
 builder.Services.AddCors(options =>
@@ -51,39 +55,46 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+// Configure Clerk JWT authentication.
+builder.Services.AddAuthentication(
+    JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Clerk:FrontendAPIURL"] ?? throw new InvalidOperationException("Clerk:FrontendAPIURL is not configured.");
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateAudience = false,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-            ValidateIssuer = true
-        };
+        options.Authority =
+            builder.Configuration["Clerk:FrontendAPIURL"]
+            ?? throw new InvalidOperationException(
+                "Clerk:FrontendAPIURL is not configured.");
+
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = true,
+                ValidateIssuer = true
+            };
     });
 
-
-// set all endpoints to require authorization unless marked with [AllowAnonymous]
+// Require authentication by default.
 builder.Services.AddAuthorization(options =>
 {
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
+    options.FallbackPolicy =
+        new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build();
 });
 
 var app = builder.Build();
 
-//adding the api exception handler.
+// Configure error handling.
 app.UseExceptionHandler();
 
 app.UseCors("FrontendDev");
 
-// Development configuration
+// Development configuration.
 if (app.Environment.IsDevelopment())
 {
-    // Automatically apply pending database migrations
+    // Apply pending database migrations.
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider
@@ -102,14 +113,21 @@ app.UseAuthorization();
 app.UseMiddleware<EnsureUserExistsMiddleware>();
 
 app.MapGet("/api/test", () =>
-    Results.Ok(new { message = "Connected to backend!" })
+    Results.Ok(new
+    {
+        message = "Connected to backend!"
+    })
 ).AllowAnonymous();
 
+// Existing endpoints.
 app.MapLibrary();
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();
 app.MapLookupEndpoints();
 app.MapSearchInteractionEndpoints();
+
+// Personalized movie recommendations.
+app.MapRecommendationEndpoints();
 
 app.Run();
 

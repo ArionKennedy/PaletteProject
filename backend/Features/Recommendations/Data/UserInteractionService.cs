@@ -14,46 +14,106 @@ public sealed class UserInteractionService
 {
     private readonly PaletteDbContext _dbContext;
 
-    // Initializes the user interaction service.
     public UserInteractionService(PaletteDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
     }
 
-    // Retrieves all supported recommendation interactions for a user.
     public async Task<IReadOnlyList<UserInteraction>> GetInteractionsAsync(
         Guid userId,
         CancellationToken cancellationToken = default)
     {
         var interactions = new List<UserInteraction>();
 
+        // Movies added to My Library.
         interactions.AddRange(
-            await GetStoredInteractionsAsync(userId, cancellationToken));
+            await GetLibraryInteractionsAsync(
+                userId,
+                cancellationToken));
 
+        // Movies saved to collections.
         interactions.AddRange(
-            await GetCompletedInteractionsAsync(userId, cancellationToken));
+            await GetCollectionInteractionsAsync(
+                userId,
+                cancellationToken));
 
+        // Movies marked as completed.
         interactions.AddRange(
-            await GetPositiveReviewInteractionsAsync(userId, cancellationToken));
+            await GetCompletedInteractionsAsync(
+                userId,
+                cancellationToken));
+
+        // Movies rated positively.
+        interactions.AddRange(
+            await GetPositiveReviewInteractionsAsync(
+                userId,
+                cancellationToken));
+
+        Console.WriteLine(
+            $"[UserInteractionService] Total interactions: {interactions.Count}");
 
         return interactions.AsReadOnly();
     }
 
-    // Retrieves media stored in the user's collections.
-    private async Task<IEnumerable<UserInteraction>> GetStoredInteractionsAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
+    // My Library is backed by USER_MEDIA_LOGS.
+    // Any existing library log represents a saved item,
+    // regardless of its completion status.
+    private async Task<IEnumerable<UserInteraction>>
+        GetLibraryInteractionsAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
     {
+        var items = await _dbContext.UserMediaLogs
+            .AsNoTracking()
+            .Where(log => log.UserId == userId)
+            .GroupBy(log => log.MediaId)
+            .Select(group => new
+            {
+                MediaId = group.Key,
+                LoggedDate = group.Max(log => log.LoggedDate)
+            })
+            .ToListAsync(cancellationToken);
+
+        Console.WriteLine(
+            $"[UserInteractionService] Library items: {items.Count}");
+
+        return items.Select(item => new UserInteraction(
+            userId,
+            item.MediaId,
+            InteractionType.Stored,
+            ToUtcTimestamp(
+                item.LoggedDate.ToDateTime(
+                    TimeOnly.MinValue))));
+    }
+
+    // Collection membership is another saved-item signal.
+    private async Task<IEnumerable<UserInteraction>>
+        GetCollectionInteractionsAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
+    {
+        // Avoid counting the same movie twice as Stored
+        // when it exists in both My Library and a collection.
+        var libraryMediaIds = _dbContext.UserMediaLogs
+            .AsNoTracking()
+            .Where(log => log.UserId == userId)
+            .Select(log => log.MediaId);
+
         var items = await _dbContext.CollectionItems
             .AsNoTracking()
             .Where(item => item.Collection.UserId == userId)
+            .Where(item =>
+                !libraryMediaIds.Contains(item.MediaId))
             .Select(item => new
             {
                 item.MediaId,
                 item.AddedAt
             })
             .ToListAsync(cancellationToken);
+
+        Console.WriteLine(
+            $"[UserInteractionService] Additional collection items: {items.Count}");
 
         return items.Select(item => new UserInteraction(
             userId,
@@ -62,10 +122,12 @@ public sealed class UserInteractionService
             ToUtcTimestamp(item.AddedAt)));
     }
 
-    // Retrieves media that the user has completed.
-    private async Task<IEnumerable<UserInteraction>> GetCompletedInteractionsAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
+    // Completion is an additional interaction,
+    // not a requirement for appearing in My Library.
+    private async Task<IEnumerable<UserInteraction>>
+        GetCompletedInteractionsAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
     {
         var logs = await _dbContext.UserMediaLogs
             .AsNoTracking()
@@ -79,18 +141,23 @@ public sealed class UserInteractionService
             })
             .ToListAsync(cancellationToken);
 
+        Console.WriteLine(
+            $"[UserInteractionService] Completed items: {logs.Count}");
+
         return logs.Select(log => new UserInteraction(
             userId,
             log.MediaId,
             InteractionType.Completed,
             ToUtcTimestamp(
-                log.LoggedDate.ToDateTime(TimeOnly.MinValue))));
+                log.LoggedDate.ToDateTime(
+                    TimeOnly.MinValue))));
     }
 
-    // Retrieves media that the user has positively reviewed.
-    private async Task<IEnumerable<UserInteraction>> GetPositiveReviewInteractionsAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
+    // Positive ratings strengthen preferences.
+    private async Task<IEnumerable<UserInteraction>>
+        GetPositiveReviewInteractionsAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
     {
         var reviews = await _dbContext.Reviews
             .AsNoTracking()
@@ -104,6 +171,9 @@ public sealed class UserInteractionService
             })
             .ToListAsync(cancellationToken);
 
+        Console.WriteLine(
+            $"[UserInteractionService] Positive reviews: {reviews.Count}");
+
         return reviews.Select(review => new UserInteraction(
             userId,
             review.MediaId,
@@ -111,8 +181,8 @@ public sealed class UserInteractionService
             ToUtcTimestamp(review.CreatedAt)));
     }
 
-    // Converts database timestamps into UTC interaction timestamps.
-    private static DateTimeOffset ToUtcTimestamp(DateTime timestamp)
+    private static DateTimeOffset ToUtcTimestamp(
+        DateTime timestamp)
     {
         return timestamp.Kind == DateTimeKind.Unspecified
             ? new DateTimeOffset(timestamp, TimeSpan.Zero)
