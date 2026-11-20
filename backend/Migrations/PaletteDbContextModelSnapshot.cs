@@ -132,6 +132,9 @@ namespace Palette.Api.Migrations
                     b.Property<Guid>("MediaId")
                         .HasColumnType("uuid");
 
+                    b.PrimitiveCollection<string[]>("Genres")
+                        .HasColumnType("text[]");
+
                     b.Property<int?>("RuntimeMinutes")
                         .HasColumnType("integer");
 

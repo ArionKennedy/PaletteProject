@@ -34,7 +34,7 @@ public sealed class MediaMetadataService
 
         return media == null
             ? null
-            : MediaFeatureMapper.Map(media);
+            : MapStoredFeatures(media);
     }
 
     // Retrieves recommendation features for multiple media items.
@@ -56,7 +56,7 @@ public sealed class MediaMetadataService
             .ToListAsync(cancellationToken);
 
         return media
-            .Select(item => MediaFeatureMapper.Map(item))
+            .Select(MapStoredFeatures)
             .ToArray();
     }
 
@@ -68,8 +68,17 @@ public sealed class MediaMetadataService
             .ToListAsync(cancellationToken);
 
         return media
-            .Select(item => MediaFeatureMapper.Map(item))
+            .Select(MapStoredFeatures)
             .ToArray();
+    }
+
+    // Maps database metadata into recommendation features.
+    // Movie genres are read from PostgreSQL rather than TMDB.
+    private static MediaFeatures MapStoredFeatures(Media media)
+    {
+        return MediaFeatureMapper.Map(
+            media,
+            genres: media.Movie?.Genres);
     }
 
     // Creates a read-only query containing media-specific metadata.
