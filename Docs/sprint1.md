@@ -84,7 +84,7 @@ Deployment to a publicly accessible environment is planned for a future sprint.
 
 For local development, see:
 - [Local Setup](Local%20Setup.md)
-- [Database Migration Guide](db-migration.md)
+- [Database Migration Guide](db_migration.md)
 
 ## 8. Known Issues and Limitations
 

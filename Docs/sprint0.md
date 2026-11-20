@@ -67,12 +67,12 @@ Palette currently plans to include six core features:
 
 Each core feature is represented by at least two user stories with acceptance criteria. Links to the GitHub Issues for each user story can be found below. User stories are linked as sub-issues to there corresponding core feature.
 
-- [Authentication](https://github.com/ArionKennedy/COMP4350Project/issues/25)
-- [Search & Discovery](https://github.com/ArionKennedy/COMP4350Project/issues/26)
-- [Logging & Archiving](https://github.com/ArionKennedy/COMP4350Project/issues/27)
-- [Recommendations](https://github.com/ArionKennedy/COMP4350Project/issues/28)
-- [Sharing & Social Features](https://github.com/ArionKennedy/COMP4350Project/issues/29)
-- [Analytics & Visualizations](https://github.com/ArionKennedy/COMP4350Project/issues/30)
+- [Authentication](https://github.com/ArionKennedy/PaletteProject/issues/25)
+- [Search & Discovery](https://github.com/ArionKennedy/PaletteProject/issues/26)
+- [Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27)
+- [Recommendations](https://github.com/ArionKennedy/PaletteProject/issues/28)
+- [Sharing & Social Features](https://github.com/ArionKennedy/PaletteProject/issues/29)
+- [Analytics & Visualizations](https://github.com/ArionKennedy/PaletteProject/issues/30)
 
 ---
 
