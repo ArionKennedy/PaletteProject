@@ -30,8 +30,8 @@ Make sure Docker Desktop is running before starting Docker containers.
 ## 2. Clone the Repository
 
 ```bash
-git clone https://github.com/ArionKennedy/COMP4350Project.git
-cd COMP4350Project
+git clone https://github.com/ArionKennedy/PaletteProject.git
+cd PaletteProject
 ```
 
 All commands below assume you are in the project root unless otherwise specified.
@@ -221,7 +221,7 @@ dotnet ef database update
 
 Do not create a new migration just to initialize an existing database if the repository already contains the required migrations.
 
-For detailed instructions, see [Database Migrations](db-migration.md).
+For detailed instructions, see [Database Migrations](db_migration.md).
 
 ## 7. Configure Backend
 
