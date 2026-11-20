@@ -117,6 +117,7 @@ Important project documentation:
 - [Team Working Agreement](Docs/Team%20Working%20Agreement.pdf)
 - [Sprint 0](Docs/sprint0.md)
 - [Sprint 1](Docs/sprint1.md)
+- [Sprint 2](Docs/sprint2.md)
 - [System Architecture](Docs/architecture.md)
 - [Database Design](Docs/database.md)
 - [API Documentation](Docs/api.md)
