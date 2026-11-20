@@ -83,7 +83,7 @@ public class PaletteDbContext : DbContext
         {
             entity.ToTable("GAMES");
 
-            entity.HasIndex(g => g.RawgGameId).IsUnique();
+            entity.HasIndex(g => g.IgdbGameId).IsUnique();
 
             entity.HasOne(g => g.Media)
                 .WithOne(m => m.Game)

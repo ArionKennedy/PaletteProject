@@ -35,7 +35,7 @@ public sealed class LibraryTests : IAsyncLifetime
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IMediaProvider>();
-                foreach (var type in new[] { "movie", "tv", "book" })
+                foreach (var type in new[] { "movie", "tv", "book", "game" })
                 {
                     services.AddScoped<IMediaProvider>(_ => new StubMediaProvider(type)
                     {
@@ -52,6 +52,7 @@ public sealed class LibraryTests : IAsyncLifetime
                             {
                                 "movie" => new MovieLookupResult(id, "Library Movie", null, null, CoverUrl, 120),
                                 "tv" => new TvLookupResult(id, "Library Series", null, null, CoverUrl, 2),
+                                "game" => new GameLookupResult(id, "Library Game", null, null, CoverUrl),
                                 _ => new BookLookupResult(id, "Library Book", null, null, CoverUrl, null)
                             });
                         }
@@ -84,8 +85,11 @@ public sealed class LibraryTests : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
         db.Users.Add(new User
         {
-            UserId = Guid.NewGuid(), ClerkId = subject, Username = "Test viewer",
-            Email = $"{Guid.NewGuid()}@palette.invalid", DateJoined = DateTime.UtcNow,
+            UserId = Guid.NewGuid(),
+            ClerkId = subject,
+            Username = "Test viewer",
+            Email = $"{Guid.NewGuid()}@palette.invalid",
+            DateJoined = DateTime.UtcNow,
         });
         await db.SaveChangesAsync();
         return new TestViewer(client, subject);
@@ -95,6 +99,7 @@ public sealed class LibraryTests : IAsyncLifetime
     [InlineData("movie", "004321", "4321")]
     [InlineData("tv", "4321", "4321")]
     [InlineData("book", "library-test-volume", "library-test-volume")]
+    [InlineData("game", "001942", "1942")]
     public async Task LibraryAddAndRemoveAreIdempotentAndScopedToTheCurrentUser(
         string type, string inputId, string externalId)
     {
@@ -119,7 +124,14 @@ public sealed class LibraryTests : IAsyncLifetime
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PaletteDbContext>();
-        var title = type == "tv" ? "Library Series" : "Library " + (type == "movie" ? "Movie" : "Book");
+        var title = type switch
+        {
+            "tv" => "Library Series",
+            "movie" => "Library Movie",
+            "game" => "Library Game",
+            _ => "Library Book"
+        };
+
         var media = await db.Media.SingleAsync(item => item.Title == title);
         mediaIds.Add(media.MediaId);
         Assert.Equal(2, await db.UserMediaLogs.CountAsync(log => log.MediaId == media.MediaId));
@@ -140,15 +152,19 @@ public sealed class LibraryTests : IAsyncLifetime
         {
             "movie" => previews.Movie,
             "tv" => previews.Tv,
+            "game" => previews.Game,
             _ => previews.Book
         };
         var preview = Assert.Single(category);
-        Assert.Single(previews.Movie.Concat(previews.Tv).Concat(previews.Book));
+        Assert.Single(previews.Movie.Concat(previews.Tv).Concat(previews.Book).Concat(previews.Game));
         Assert.Equal(item, preview);
         Assert.Equal(CoverUrl, preview.PosterUrl);
 
         var counts = await first.Client.GetFromJsonAsync<LibraryCounts>("/api/me/library");
-        Assert.Equal(new LibraryCounts(type == "movie" ? 1 : 0, type == "tv" ? 1 : 0, type == "book" ? 1 : 0), counts);
+        Assert.Equal(new LibraryCounts(
+            type == "movie" ? 1 : 0, type == "tv" ? 1 : 0,
+            type == "book" ? 1 : 0, type == "game" ? 1 : 0), counts);
+
 
         for (var i = 0; i < 2; i++)
         {
@@ -160,7 +176,8 @@ public sealed class LibraryTests : IAsyncLifetime
         Assert.False((await first.Client.GetFromJsonAsync<LibraryMembership>(path))!.Saved);
         Assert.Empty((await first.Client.GetFromJsonAsync<LibraryPage>($"/api/me/library/{type}"))!.Items);
         var afterRemoval = await first.Client.GetFromJsonAsync<LibraryPreviews>("/api/me/library/previews");
-        Assert.Empty(afterRemoval!.Movie.Concat(afterRemoval.Tv).Concat(afterRemoval.Book));
+        Assert.Empty(afterRemoval!.Movie.Concat(afterRemoval.Tv).Concat(afterRemoval.Book).Concat(afterRemoval.Game));
+
         Assert.True((await second.Client.GetFromJsonAsync<LibraryMembership>(path))!.Saved);
         using var firstDetails = await ReadDetails(first, type, externalId);
         using var secondDetails = await ReadDetails(second, type, externalId);
@@ -168,6 +185,31 @@ public sealed class LibraryTests : IAsyncLifetime
         Assert.True(secondDetails.RootElement.GetProperty("saved").GetBoolean());
         Assert.True(await db.Media.AnyAsync(record => record.MediaId == media.MediaId));
     }
+
+    [Fact]
+    public async Task UnknownLibraryTypeReturnsBadRequest()
+    {
+        using var viewer = await NewUserClient();
+
+        using var response = await viewer.Client.GetAsync("/api/me/library/unregistered");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public async Task SavingAGameWithAMalformedIdReturnsBadRequest(string id)
+    {
+        using var viewer = await NewUserClient();
+
+        using var response = await viewer.Client.PutAsync($"/api/me/library/game/{id}", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
 
     [Theory]
     [InlineData(null)]

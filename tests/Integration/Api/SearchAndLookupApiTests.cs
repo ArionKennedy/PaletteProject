@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using System.Text.RegularExpressions;
 
 namespace Palette.Tests.Integration.Api;
 
@@ -24,7 +25,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
 
     public SearchAndLookupApiTests(PostgresFixture fixture)
     {
-        _factory = new PaletteApplicationFactory(fixture.ConnectionString, () => new StubTmdbHandler(), () => new StubGoogleBooksHandler());
+        _factory = new PaletteApplicationFactory(fixture.ConnectionString, () => new StubTmdbHandler(), () => new StubGoogleBooksHandler(), () => new StubIgdbHandler());
     }
 
     public Task InitializeAsync()
@@ -106,6 +107,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("movie")]
     [InlineData("tv")]
     [InlineData("book")]
+    [InlineData("game")]
     public async Task SearchWithNoMatchesReturnsAnEmptyArray(
         string mediaType)
     {
@@ -127,6 +129,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("movie")]
     [InlineData("tv")]
     [InlineData("book")]
+    [InlineData("game")]
     public async Task SearchLimitsResultsToTenItems(
         string mediaType)
     {
@@ -159,6 +162,9 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("/api/search/book")]
     [InlineData("/api/search/book?q=%20%20")]
     [InlineData("/api/search/book?q=")]
+    [InlineData("/api/search/game")]
+    [InlineData("/api/search/game?q=")]
+    [InlineData("/api/search/game?q=%20%20")]
     public async Task InvalidSearchReturnsBadRequest(
         string path)
     {
@@ -171,6 +177,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("movie", 200)]
     [InlineData("tv", 200)]
     [InlineData("book", 200)]
+    [InlineData("game", 200)]
     public async Task SearchAcceptsTwoHundredCharacterQuery(
         string mediaType,
         int length)
@@ -187,6 +194,7 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("movie")]
     [InlineData("tv")]
     [InlineData("book")]
+    [InlineData("game")]
     public async Task SearchRejectsQueryLongerThanTwoHundredCharacters(
         string mediaType)
     {
@@ -358,6 +366,10 @@ public class SearchAndLookupApiTests : IAsyncLifetime
     [InlineData("/api/search/book?q=invalid-json")]
     [InlineData("/api/lookup/book/server-error")]
     [InlineData("/api/lookup/book/bad-json")]
+    [InlineData("/api/search/game?q=upstream-error")]
+    [InlineData("/api/search/game?q=invalid-json")]
+    [InlineData("/api/lookup/game/500")]
+    [InlineData("/api/lookup/game/501")]
     public async Task UpstreamFailureReturnsBadGatewayWithoutLeakingDetails(
         string path)
     {
@@ -644,6 +656,183 @@ public class SearchAndLookupApiTests : IAsyncLifetime
                 Content = new StringContent(body, Encoding.UTF8, "application/json"),
             });
     }
+
+    // ---------- Games (IGDB) ----------
+
+    [Fact]
+    public async Task GameSearchReturnsMappedResults()
+    {
+        using var response = await _client.GetAsync("/api/search/game?q=Example");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var results = document.RootElement.GetProperty("results");
+        Assert.Equal(2, results.GetArrayLength());
+
+        var first = results[0];
+        Assert.Equal("1", first.GetProperty("externalId").GetString());
+        Assert.Equal("game", first.GetProperty("mediaType").GetString());
+        Assert.Equal("Game 1", first.GetProperty("title").GetString());
+        // 1431993600 is 2015-05-19 UTC.
+        Assert.Equal("2015-05-19", first.GetProperty("releaseDate").GetString());
+        Assert.Equal(
+            "https://images.igdb.example/upload/t_cover_big/co1abc.jpg",
+            first.GetProperty("posterUrl").GetString());
+
+        var second = results[1];
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("releaseDate").ValueKind);
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("posterUrl").ValueKind);
+    }
+
+    [Fact]
+    public async Task GameLookupIncludesCommonFields()
+    {
+        using var response = await _client.GetAsync("/api/lookup/game/1942");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var result = document.RootElement;
+
+        Assert.Equal("1942", result.GetProperty("externalId").GetString());
+        Assert.Equal("Example Game", result.GetProperty("title").GetString());
+        Assert.Equal("2015-05-19", result.GetProperty("releaseDate").GetString());
+        Assert.Equal("A big adventure.", result.GetProperty("description").GetString());
+        Assert.Equal(
+            "https://images.igdb.example/upload/t_cover_big/co1abc.jpg",
+            result.GetProperty("posterUrl").GetString());
+
+        // The derived GameLookupResult adds nothing, and must not leak other types' fields.
+        Assert.False(result.TryGetProperty("isbn", out _));
+        Assert.False(result.TryGetProperty("runtime", out _));
+        Assert.False(result.TryGetProperty("numberOfSeasons", out _));
+    }
+
+    [Fact]
+    public async Task GameLookupNormalizesMissingOptionalDataToNull()
+    {
+        using var response = await _client.GetAsync("/api/lookup/game/7");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var result = document.RootElement;
+
+        Assert.Equal("Bare Game", result.GetProperty("title").GetString());
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("releaseDate").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("description").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("posterUrl").ValueKind);
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("-5")]
+    [InlineData("0")]
+    [InlineData("19.5")]
+    [InlineData("%20")]
+    public async Task GameLookupWithMalformedIdReturnsBadRequest(string id)
+    {
+        await AssertProblemAsync($"/api/lookup/game/{id}", HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UnknownGameReturnsNotFound()
+    {
+        // IGDB answers 200 with [] for unknown ids; the API must report 404.
+        await AssertProblemAsync("/api/lookup/game/99999", HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UnknownMediaTypeProblemListsGameAsSupported()
+    {
+        using var response = await _client.GetAsync("/api/search/unregistered?q=x");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("game", await response.Content.ReadAsStringAsync());
+    }
+
+
+    private sealed class StubIgdbHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var uri = request.RequestUri
+                ?? throw new InvalidOperationException("The HTTP request has no URI.");
+
+            if (request.Method != HttpMethod.Post || uri.AbsolutePath != "/v4/games")
+                throw new InvalidOperationException($"Unexpected upstream request: {request.Method} {uri}");
+
+            var body = await request.Content!.ReadAsStringAsync(cancellationToken);
+
+            var search = Regex.Match(body, "^search \"(.*)\";");
+            if (search.Success)
+            {
+                switch (search.Groups[1].Value)
+                {
+                    case "upstream-error":
+                        return Respond(HttpStatusCode.Unauthorized,
+                            """{ "message": "sensitive-upstream-marker" }""");
+                    case "invalid-json":
+                        return Respond(HttpStatusCode.OK, "sensitive-upstream-marker: invalid JSON");
+                    case "empty":
+                        return Respond(HttpStatusCode.OK, "[]");
+                    case "many":
+                        // The API must forward its limit, so the stub honours "limit N;".
+                        var limit = int.Parse(Regex.Match(body, @"limit (\d+);").Groups[1].Value);
+                        return Respond(HttpStatusCode.OK, CreateSearchBody(limit));
+                    default:
+                        return Respond(HttpStatusCode.OK, CreateSearchBody(2));
+                }
+            }
+
+            var lookup = Regex.Match(body, @"where id = (\d+);");
+            if (lookup.Success)
+            {
+                return lookup.Groups[1].Value switch
+                {
+                    "1942" => Respond(HttpStatusCode.OK, """
+                [{
+                  "id": 1942,
+                  "name": "Example Game",
+                  "summary": "A big adventure.",
+                  "first_release_date": 1431993600,
+                  "cover": { "id": 1, "image_id": "co1abc" }
+                }]
+                """),
+                    "7" => Respond(HttpStatusCode.OK, """[{ "id": 7, "name": "Bare Game" }]"""),
+                    "500" => Respond(HttpStatusCode.InternalServerError,
+                        """{ "message": "sensitive-upstream-marker" }"""),
+                    "501" => Respond(HttpStatusCode.OK, "sensitive-upstream-marker: invalid JSON"),
+                    // Real IGDB answers 200 with [] for an id that does not exist.
+                    _ => Respond(HttpStatusCode.OK, "[]"),
+                };
+            }
+
+            throw new InvalidOperationException($"Unexpected IGDB query body: {body}");
+        }
+
+        private static string CreateSearchBody(int count)
+        {
+            var games = Enumerable.Range(0, count).Select(index => new Dictionary<string, object?>
+            {
+                ["id"] = index + 1,
+                ["name"] = $"Game {index + 1}",
+                ["first_release_date"] = index == 0 ? 1431993600L : null,
+                ["cover"] = index == 0 ? new { id = 1, image_id = "co1abc" } : null,
+            }).ToArray();
+
+            return JsonSerializer.Serialize(games);
+        }
+
+        private static HttpResponseMessage Respond(HttpStatusCode statusCode, string body) =>
+            new(statusCode) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+    }
+
 
 
     private sealed class StubTmdbHandler : HttpMessageHandler

@@ -283,6 +283,12 @@ public sealed class DevelopmentApplicationFactory(
                             "development-startup-test-token",
 
                         ["Tmdb:TimeoutSeconds"] = "10",
+                        ["GoogleBooks:BaseUrl"] = "https://books.example/books/v1/",
+
+                        ["Igdb:BaseUrl"] = "https://igdb.example/v4/",
+                        ["Igdb:ImageBaseUrl"] = "https://images.igdb.example/upload/",
+                        ["Igdb:ClientId"] = "development-startup-test-client-id",
+                        ["Igdb:AccessToken"] = "development-startup-test-access-token",
                     });
             });
 

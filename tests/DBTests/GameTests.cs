@@ -21,7 +21,7 @@ public class GameTests {
     public void CanAddGame() {
         Guid TestMediaId = Guid.NewGuid();
         _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Saulo strikes back", MediaType = MediaType.Game});
-        _context.Games.Add(new Game{MediaId = TestMediaId, RawgGameId = 0});
+        _context.Games.Add(new Game{MediaId = TestMediaId, IgdbGameId = 0});
 
         _context.SaveChanges();
 
@@ -34,7 +34,7 @@ public class GameTests {
     public void CanGetGame() {
         Guid TestMediaId = Guid.NewGuid();
         _context.Media.Add(new Media{MediaId = TestMediaId, Title = "Saulo strikes back", MediaType = MediaType.Game});
-        _context.Games.Add(new Game{MediaId = TestMediaId, RawgGameId = 0});
+        _context.Games.Add(new Game{MediaId = TestMediaId, IgdbGameId = 0});
 
         _context.SaveChanges();
 

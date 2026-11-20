@@ -35,13 +35,13 @@ erDiagram
 
     BOOKS {
         uuid media_id PK,FK
-        string openlibrary_id UK
+        string goole_books_id UK
         string isbn
     }
 
     GAMES {
         uuid media_id PK,FK
-        int rawg_game_id UK
+        int igdb_game_id UK
     }
 
     USER_MEDIA_LOGS {
@@ -96,12 +96,12 @@ The ER diagram uses Crow's Foot Notation to represent cardinality and optionalit
 
 ### Relationship Notation
 
-| Symbol | Meaning |
-|---|---|
-| `\|\|` | Exactly one |
-| `o\|` | Zero or one |
-| `\|{` | One or many |
-| `o{` | Zero or many |
+| Symbol | Meaning      |
+| ------ | ------------ |
+| `\|\|` | Exactly one  |
+| `o\|`  | Zero or one  |
+| `\|{`  | One or many  |
+| `o{`   | Zero or many |
 
 **Cardinality** describes the maximum number of related records (1:1, 1:N, M:N).
 
@@ -167,8 +167,8 @@ Palette uses a hybrid approach that combines external media APIs with PostgreSQL
 External APIs are responsible for providing searchable media catalogues and metadata.
 
 - **[TMDB](https://developer.themoviedb.org/docs/getting-started):** Movies and TV shows, including titles, directors, creators, cast, genres, production companies, and posters.
-- **[OpenLibrary](https://freeapihub.com/apis/open-library):** Book metadata and search functionality (to be finalized).
-- **[Rawg](https://rawg.io/apidocs):** Game metadata and search functionality (to be finalized).
+- **[Google Books](https://developers.google.com/books/docs/v1/using):** Book metadata and search.
+- **[IGDB](https://api-docs.igdb.com/):** Game metadata and search, through a Twitch app token (valid about 60 days, set manually, no refresh).
 
 Media searches are performed against external APIs rather than being limited to records already stored in PostgreSQL.
 
@@ -201,7 +201,7 @@ This approach prevents duplicate media records and reduces unnecessary storage a
 
 The following example illustrates how Palette uses TMDB to retrieve movie information and PostgreSQL to store user-related data.
 
-**Scenario: A user searches for and saves *Inception* to My Library.**
+**Scenario: A user searches for and saves _Inception_ to My Library.**
 
 ### 1. Search for Media
 
@@ -212,14 +212,14 @@ The following example illustrates how Palette uses TMDB to retrieve movie inform
 
 ### 2. Select a Movie
 
-- The user selects *Inception* from the search results.
+- The user selects _Inception_ from the search results.
 - The backend retrieves additional movie details from TMDB, if needed.
 - The frontend displays the movie's title, release date, poster, runtime, and description when available.
 - These details are obtained from TMDB and do not require separate local tables for people, studios, or genres.
 
 ### 3. Save the Movie
 
-- The user taps **+** beside the title to add *Inception* to My Library.
+- The user taps **+** beside the title to add _Inception_ to My Library.
 - The backend checks whether the movie already exists in PostgreSQL using its TMDB movie ID.
 - If the movie does not exist, new records are inserted into `MEDIA` and `MOVIES`.
 - If the movie already exists, the existing media record is reused.

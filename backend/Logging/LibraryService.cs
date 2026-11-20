@@ -195,7 +195,7 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
             .Select(game => new LibraryMedia
             {
                 MediaId = game.MediaId,
-                ExternalId = game.RawgGameId.ToString(),
+                ExternalId = game.IgdbGameId.ToString(),
                 Title = game.Media.Title,
                 ReleaseDate = game.Media.ReleaseDate,
                 PosterUrl = game.Media.PosterUrl
@@ -253,7 +253,7 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
                 media.MediaType = MediaType.Game;
                 media.Game = new Game
                 {
-                    RawgGameId = int.Parse(externalId, CultureInfo.InvariantCulture)
+                    IgdbGameId = int.Parse(externalId, CultureInfo.InvariantCulture)
                 };
                 break;
             default:
