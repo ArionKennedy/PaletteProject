@@ -168,8 +168,9 @@ For local development, see:
 
 | Feedback | Decision | Reason / Next Step | Evidence |
 |---|---|---|---|
-| [Feedback item] | [Accepted / Deferred / Rejected] | [Reason] | [Issue/PR or discussion](#) |
-| [Feedback item] | [A different decision category] | [Reason] | [Issue/PR or discussion](#) |
+| Breached password message | Deferred | The user misinterpreted the message, entered password was found in a data breach | N/A
+| API request failed: 401 for search | Accepted | This search issue should be resolved | [Search & Discovery](https://github.com/ArionKennedy/PaletteProject/issues/26) |
+| Empty landing page | Accepted | This is an issue that is already nearly resolved | [Recommendations](https://github.com/ArionKennedy/PaletteProject/issues/28) |
 
 **Note:** Include at least two responses across at least two categories: accepted, deferred, and rejected.
 
