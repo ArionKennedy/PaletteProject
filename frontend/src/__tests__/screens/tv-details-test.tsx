@@ -14,6 +14,12 @@ jest.mock('@/services/lookup', () => ({
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(() => ({ id: '1396' })),
   Stack: { Screen: () => null },
+  useFocusEffect: jest.fn(),
+}));
+
+// LibraryAction brings in the Clerk/API dependency chain — not under test here
+jest.mock('@/components/library-action', () => ({
+  LibraryAction: () => null,
 }));
 
 jest.mock('@/hooks/use-theme', () => ({

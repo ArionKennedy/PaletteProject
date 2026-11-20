@@ -38,8 +38,6 @@ describe('<SignInForm />', () => {
     mockSignInReady();
   });
 
-
-
   
   test('renders the form title, inputs, and Continue button', async () => {
     await render(<SignInForm />);

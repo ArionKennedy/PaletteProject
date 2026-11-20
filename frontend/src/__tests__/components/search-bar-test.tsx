@@ -18,8 +18,8 @@ describe('<SearchBar />', () => {
     await render(<SearchBar onSubmitSearch={onSubmitSearch} />);
 
     const input = screen.getByPlaceholderText('Search...');
-    fireEvent.changeText(input, 'batman');
-    fireEvent(input, 'submitEditing');
+    await fireEvent.changeText(input, 'batman');
+    await fireEvent(input, 'submitEditing');
 
     expect(onSubmitSearch).toHaveBeenCalledWith('batman');
     expect(onSubmitSearch).toHaveBeenCalledTimes(1);
@@ -32,7 +32,7 @@ describe('<SearchBar />', () => {
     await render(<SearchBar onSubmitSearch={onSubmitSearch} />);
 
     const input = screen.getByPlaceholderText('Search...');
-    fireEvent(input, 'submitEditing');
+    await fireEvent(input, 'submitEditing');
 
     expect(onSubmitSearch).not.toHaveBeenCalled();
   });

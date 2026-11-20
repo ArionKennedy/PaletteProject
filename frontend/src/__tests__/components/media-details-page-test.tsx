@@ -6,6 +6,12 @@ import type { MediaDetail } from '@/types/mediaDetail';
 // Stack.Screen renders nothing meaningful in tests
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
+  useFocusEffect: jest.fn(),
+}));
+
+// LibraryAction brings in the Clerk/API dependency chain — not under test here
+jest.mock('@/components/library-action', () => ({
+  LibraryAction: () => null,
 }));
 
 jest.mock('@/hooks/use-theme', () => ({
@@ -20,6 +26,7 @@ jest.mock('@/hooks/use-theme', () => ({
 // --- Fixtures ---
 
 const mockMedia: MediaDetail = {
+  externalId: '27205',
   title: 'Inception',
   posterUrl: 'https://example.com/inception.jpg',
   releaseDate: '2010-07-16',
@@ -33,7 +40,7 @@ describe('<MediaDetailsPage />', () => {
 
   test('shows a loading spinner when media has not loaded yet', async () => {
     await render(
-      <MediaDetailsPage media={null} error={null} metaText="" errorTitle="Movie" />
+      <MediaDetailsPage media={null} error={null} metaText="" errorTitle="Movie" type="movie" />
     );
 
     // Neither content nor error should appear while loading
@@ -50,6 +57,7 @@ describe('<MediaDetailsPage />', () => {
         error="Something went wrong"
         metaText=""
         errorTitle="Movie"
+        type="movie"
       />
     );
 
@@ -60,7 +68,7 @@ describe('<MediaDetailsPage />', () => {
 
   test('renders the media title and description when loaded', async () => {
     await render(
-      <MediaDetailsPage media={mockMedia} error={null} metaText="2010 · 2h 28m" errorTitle="Movie" />
+      <MediaDetailsPage media={mockMedia} error={null} metaText="2010 · 2h 28m" errorTitle="Movie" type="movie" />
     );
 
     expect(screen.getByText('Inception')).toBeTruthy();
@@ -77,6 +85,7 @@ describe('<MediaDetailsPage />', () => {
         error={null}
         metaText=""
         errorTitle="Movie"
+        type="movie"
       />
     );
 
@@ -92,6 +101,7 @@ describe('<MediaDetailsPage />', () => {
         error={null}
         metaText=""
         errorTitle="Movie"
+        type="movie"
       />
     );
 

@@ -74,7 +74,7 @@ export default function MediaSearchPage({mediaType, title, getDetailHref} : Medi
   // Shown when the list is empty: loading, an error, "no results", or nothing yet.
   function renderEmpty() {
     if (isLoading) {
-      return <ActivityIndicator color={theme.text} style={styles.message} />;
+      return <ActivityIndicator testID="loading-indicator" color={theme.text} style={styles.message} />;
     }
     if (error) {
       return <Text style={[styles.message, { color: theme.textSecondary }]}>{error}</Text>;

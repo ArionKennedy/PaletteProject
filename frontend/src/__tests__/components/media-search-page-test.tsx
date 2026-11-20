@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { ActivityIndicator } from 'react-native';
 import { mediaSearch } from '@/services/search';
 import MediaSearchPage from '@/components/media-search-page';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
@@ -51,8 +50,8 @@ const mockResults: MediaSearchResult[] = [
 ];
 
 // Helper to render the page and get the search input
-function renderPage() {
-  render(
+async function renderPage() {
+  await render(
     <MediaSearchPage
       mediaType="movie"
       title="Movies"
@@ -65,10 +64,10 @@ function renderPage() {
 // --- Tests ---
 
 describe('<MediaSearchPage />', () => {
-  test('renders the search bar', () => {
+  test('renders the search bar', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue([]);
 
-    const input = renderPage();
+    const input = await renderPage();
 
     expect(input).toBeTruthy();
   });
@@ -79,13 +78,12 @@ describe('<MediaSearchPage />', () => {
     // Never resolves so the loading state stays visible
     (mediaSearch as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
-    
-    const input = screen.getByPlaceholderText('Search...');
-    fireEvent.changeText(input, 'batman');
-    fireEvent(input, 'submitEditing');
+    const input = await renderPage();
+    await fireEvent.changeText(input, 'batman');
+    await fireEvent(input, 'submitEditing');
 
     await waitFor(() => {
-      expect((screen as any).UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+      expect(screen.getByTestId('loading-indicator')).toBeTruthy();
     });
   });
 
@@ -94,13 +92,13 @@ describe('<MediaSearchPage />', () => {
   test('displays results after a successful search', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue(mockResults);
 
-    const input = renderPage();
-    fireEvent.changeText(input, 'batman');
-    fireEvent(input, 'submitEditing');
+    const input = await renderPage();
+    await fireEvent.changeText(input, 'batman');
+    await fireEvent(input, 'submitEditing');
 
     await waitFor(() => {
-      expect(screen.getByText('Batman Begins')).toBeTruthy();
-      expect(screen.getByText('The Dark Knight')).toBeTruthy();
+      expect(screen.getByText('Zapps trap')).toBeTruthy();
+      expect(screen.getByText('The lowly CS major')).toBeTruthy();
     });
   });
 
@@ -109,9 +107,9 @@ describe('<MediaSearchPage />', () => {
   test('shows an error message when the API call fails', async () => {
     (mediaSearch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-    const input = renderPage();
-    fireEvent.changeText(input, 'batman');
-    fireEvent(input, 'submitEditing');
+    const input = await renderPage();
+    await fireEvent.changeText(input, 'batman');
+    await fireEvent(input, 'submitEditing');
 
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeTruthy();
@@ -123,9 +121,9 @@ describe('<MediaSearchPage />', () => {
   test('shows "No results found." when the API returns an empty array', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue([]);
 
-    const input = renderPage();
-    fireEvent.changeText(input, 'xyzzy');
-    fireEvent(input, 'submitEditing');
+    const input = await renderPage();
+    await fireEvent.changeText(input, 'xyzzy');
+    await fireEvent(input, 'submitEditing');
 
     await waitFor(() => {
       expect(screen.getByText('No results found.')).toBeTruthy();
@@ -137,9 +135,9 @@ describe('<MediaSearchPage />', () => {
   test('calls mediaSearch with the correct mediaType and query', async () => {
     (mediaSearch as jest.Mock).mockResolvedValue([]);
 
-    const input = renderPage();
-    fireEvent.changeText(input, 'batman');
-    fireEvent(input, 'submitEditing');
+    const input = await renderPage();
+    await fireEvent.changeText(input, 'batman');
+    await fireEvent(input, 'submitEditing');
 
     await waitFor(() => {
       expect(mediaSearch).toHaveBeenCalledWith('movie', 'batman', expect.any(AbortSignal));

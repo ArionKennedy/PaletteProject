@@ -60,7 +60,7 @@ describe('movieLookup()', () => {
     await movieLookup('27205');
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/lookup/movie/27205',
+      'http://localhost:3000/api/lookup/movie/27205?includeLibrary=true',
       expect.any(Object),
     );
   });
@@ -107,7 +107,7 @@ describe('tvLookup()', () => {
     await tvLookup('1396');
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/lookup/tv/1396',
+      'http://localhost:3000/api/lookup/tv/1396?includeLibrary=true',
       expect.any(Object),
     );
   });
