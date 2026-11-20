@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Link, Stack, type Href } from 'expo-router';
 
@@ -30,7 +30,13 @@ export default function MediaDetailsPage({ metaText, errorTitle, media, error, t
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <Stack.Screen options={{ title: errorTitle }} />
         <Text style={{ color: theme.textSecondary }}>{error}</Text>
-        {backHref && Platform.OS === 'web' && <Link href={backHref} style={{ color: theme.text }}>Back to list</Link>}
+        {backHref && Platform.OS === 'web' && (
+          <Link href={backHref} asChild>
+            <Pressable accessibilityRole="link" style={styles.backButton}>
+              <Text style={[styles.backText, { color: theme.textSecondary, textDecorationLine: 'underline' }]}>Back to list</Text>
+            </Pressable>
+          </Link>
+        )}
       </View>
     );
   }
@@ -49,11 +55,15 @@ export default function MediaDetailsPage({ metaText, errorTitle, media, error, t
       showsVerticalScrollIndicator={false}
       contentContainerStyle={[
         styles.content,
-        Platform.OS === 'web' && { paddingTop: WEB_TAB_BAR_OFFSET },
+        Platform.OS === 'web' && { paddingTop: WEB_TAB_BAR_OFFSET + Spacing.three },
       ]}>
       <Stack.Screen options={{ title: media.title }} />
       {backHref && Platform.OS === 'web' && (
-        <Link href={backHref} style={{ color: theme.text, alignSelf: 'flex-start' }}>Back to list</Link>
+        <Link href={backHref} asChild>
+          <Pressable accessibilityRole="link" style={styles.backButton}>
+            <Text style={[styles.backText, { color: theme.textSecondary, textDecorationLine: 'underline' }]}>Back to list</Text>
+          </Pressable>
+        </Link>
       )}
 
       {media.posterUrl ? (
@@ -89,6 +99,8 @@ export default function MediaDetailsPage({ metaText, errorTitle, media, error, t
 }
 
 const styles = StyleSheet.create({
+  backButton: { alignSelf: 'flex-start' },
+  backText: { fontSize: 14 },
   centered: {
     flex: 1,
     alignItems: 'center',

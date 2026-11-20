@@ -54,7 +54,11 @@ export function LibraryList({ type, title }: { type: LibraryMediaType; title: st
           <View style={styles.header}>
             {Platform.OS === 'web' && (
               <View style={styles.webHeader}>
-                <Link href="/my-library" style={{ color: theme.textSecondary }}>Back to My Library</Link>
+                <Link href="/my-library" asChild>
+                  <Pressable accessibilityRole="link">
+                    <Text style={[styles.backText, { color: theme.textSecondary, textDecorationLine: 'underline' }]}>Back to My Library</Text>
+                  </Pressable>
+                </Link>
                 <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{title}</Text>
               </View>
             )}
@@ -91,6 +95,7 @@ const styles = StyleSheet.create({
   },
   header: { gap: Spacing.two },
   webHeader: { gap: Spacing.two },
+  backText: { fontSize: 14 },
   title: { fontSize: 28, fontWeight: '700' },
   pressed: { opacity: 0.7 },
 });
