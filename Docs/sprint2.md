@@ -129,7 +129,7 @@ For local development, see:
 
 - **Assigned Team / Project:** Group 5 - Drove
 - **Testing Evidence:** [Link to submitted review.](#)
-- **Test Scenarios:** [Summarize scenarios, observed behaviour, and findings.]
+- **Test Scenarios:**
     - Tested a user logging in and verifying their account, the email took 5 minutes, took too long.
     - Tested the search bar, saw the user being confused how to search, determiend the UI needed to be relocated.
     - Tested availabitliy for student body, drives arent available for rural students, rural students need to be included.
