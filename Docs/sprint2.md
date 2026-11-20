@@ -204,6 +204,7 @@ The team reviewed feedback by reproducing the reported behavior, determining whe
 The table includes accepted, deferred, and rejected responses, with a reason and next step for each disposition.
 
 ## 9. Known Issues and Final Iteration Risks
+- **User Reviews:** Currently users can only add media to their library but are unable to make reviews on them. We are currently in the progress of implementing users reviews into the workflow. 
 - **Recommendations:** Movie recommendations are nearing completion, but TV show, book, and video game recommendation functionality remains to be added.
 - **Analytics & Visualizations:** Analytics and visualization work has not yet started, so the initial implementation will use simplified visuals while preserving the quality of the social integrations.
 - **Social Media Integration:** The remaining time may prevent this feature from being fully developed because several required base features are still in progress. A simpler initial implementation should allow time to develop the social feature more thoroughly in a later iteration.
