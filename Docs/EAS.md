@@ -16,8 +16,8 @@ was published successfully to `production`. Its runtime fingerprint is
 The first [APK build](https://expo.dev/accounts/palette-comp4350/projects/palette/builds/fbed7a13-7221-4346-9a26-e8717f6e227e)
 completed successfully and uses version `1.0.0` / Android version code `1`.
 
-[Download Palette 1.0.0 for Android](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk)
-(105.4 MiB). This link can be shared directly with Android testers.
+For the current Android APK, open [GitHub Releases](https://github.com/ArionKennedy/PaletteProject/releases)
+and download the `.apk` from the latest release’s **Assets** section.
 
 ## One-time project setup
 

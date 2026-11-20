@@ -48,7 +48,8 @@ flowchart LR
 
 ### Database
 
-- PostgreSQL 17, hosted locally using Docker Compose.
+- PostgreSQL 17 is hosted on Supabase for the production environment.
+- Local development PostgreSQL 17 may also run through Docker Compose.
 - Stores application-specific data such as users, media records,
   and other persisted user activity. My Library uses `USER_MEDIA_LOGS` to associate saved items with each user.
 
@@ -67,16 +68,14 @@ flowchart LR
 
 - Redis caching may be introduced when needed.
 - Additional external media providers may be integrated.
-- Cloud deployment infrastructure is not yet finalized.
 
 ## 3. Deployment
 
-During local development, PostgreSQL runs in a Docker container,
-while the ASP.NET Core backend and Expo frontend run as local
-development processes.
+The ASP.NET Core Web API is containerized using Docker and hosted on Render using the free tier. GitHub Actions builds and pushes backend images to Docker Hub after backend changes are merged into `master`, and the workflow triggers a Render deploy hook to update the running service.
 
-The application can be started using the unified development
-command described in the Local Setup Guide.
+The backend runs in the `Production` environment. Its database connection string and API credentials are configured as Render environment variables. The backend connects to the Supabase PostgreSQL database using that connection string. EF Core migrations are not applied automatically in production; schema changes are applied separately to Supabase.
+
+During local development, PostgreSQL may run in a Docker container while the ASP.NET Core backend and Expo frontend run as local development processes. The application can be started using the unified development command described in the Local Setup Guide.
 
 
 ## 4. Future Updates
