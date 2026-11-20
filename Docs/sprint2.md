@@ -10,6 +10,8 @@ During Sprint 2, Palette continued development of its core media tracking and di
 
 - Added Archiving to allow users to save favourited lists of movies, shows, and books
 - Added Searches for TV Shows and books
+- Added Fogot password workflow
+- Added backend authentication
 - Added UI Elements and back page buttons to improve the user experience
 - Hosted the ASP.NET Core backend on Render and the PostgreSQL database on Supabase
 
@@ -23,11 +25,11 @@ Detailed development progress is tracked through our GitHub issues, pull request
 
 | Feature | Sprint 2 Progress | Evidence |
 |---|---|---|
-| Archiving | Added user favourite lists for movies, TV shows, and books | [Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27) |
-| Account Recovery | Linked the Authentication Backend to the database, and added account recovery | [Account Recovery](https://github.com/ArionKennedy/PaletteProject/issues/3) |
-| APK Distribution | Added APK distribution for mobile testing | [Distribute Android APK and Automate Frontend OTA Updates](https://github.com/ArionKennedy/PaletteProject/issues/86) |
+| Authentication | Forget password workflow was added. Backend endpoints now require authentication and enfore users only being able to access their own data. | [Authentication issue](https://github.com/ArionKennedy/PaletteProject/issues/25) - [Forgot Password PR](https://github.com/ArionKennedy/PaletteProject/pull/93) - [Backend Authentication PR](https://github.com/ArionKennedy/PaletteProject/pull/80)  |
+| Archiving | Users can add movies, TV shows, and books to their library. They can also view all media they have saved to there library. | [Logging & Archiving issue](https://github.com/ArionKennedy/PaletteProject/issues/27) - [User Library PR](https://github.com/ArionKennedy/PaletteProject/pull/46)|
+| Search | Added support for TV Shows and for Books | [Books PR](https://github.com/ArionKennedy/PaletteProject/pull/81) - [TV Show PR](https://github.com/ArionKennedy/PaletteProject/pull/79)|
+| APK Distribution | Added APK distribution for mobile testing | [Distribute Android APK and Automate Frontend OTA Updates issue](https://github.com/ArionKennedy/PaletteProject/issues/86) |
 
-**Note:** Linked evidence should point to representative merged PRs or completed issues. Additional bug fixes may be linked separately.
 
 ### Development Improvements
 
