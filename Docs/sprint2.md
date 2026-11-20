@@ -23,17 +23,18 @@ Detailed development progress is tracked through our GitHub issues, pull request
 
 | Feature | Sprint 2 Progress | Evidence |
 |---|---|---|
-| Archiving | Added user favourite lists for movies, tv shows, adn books | [Logging & Archiving](#https://github.com/ArionKennedy/PaletteProject/issues/27) |
-| User Authentication & Account Recovery | Linked the Authentication Backend to the database, and added account recovery | [Authentication](https://github.com/ArionKennedy/PaletteProject/issues/25) |
+| Archiving | Added user favourite lists for movies, tv shows, adn books | [Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27) |
+| Account Recovery | Linked the Authentication Backend to the database, and added account recovery | [Account Recovery](https://github.com/ArionKennedy/PaletteProject/issues/3) |
+| APK Distribution | Added an APK distirbution | [Distribute Android APK and Automate Frontend OTA Updates](https://github.com/ArionKennedy/PaletteProject/issues/86) |
 
 **Note:** Linked evidence should point to representative merged PRs or completed issues. Additional bug fixes may be linked separately.
 
 ### Development Improvements
 
-- [Describe significant refactoring or improvements to code readability, modularity, and separation of responsibilities.]
+- Improved the backend's separation of responsibilities by organizing feature-specific endpoints and services for users, search, lookup, library, logging, and health checks.
 - Dockerized the ASP.NET Core backend and added a GitHub Actions workflow that builds and publishes the image to Docker Hub.
 - Established the production database workflow: the backend connects to Supabase PostgreSQL through Render environment configuration, while EF Core migrations are applied manually to production.
-- [Describe new functionality that can be demonstrated end-to-end.]
+- Added a complete end-to-end flow for archiving and discovering media: the Expo frontend interacts with the deployed Render API, and the API persists and retrieves user and media data from Supabase PostgreSQL.
 
 ## 3. Regression Testing
 
