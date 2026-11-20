@@ -12,8 +12,8 @@ During Sprint 2, Palette continued development of its core media tracking and di
 - Added Searches for TV Shows and books
 - Added UI Elements and back page buttons to improve the user experience
 - Hosted the ASP.NET Core backend on Render and the PostgreSQL database on Supabase
--
-[Summarize the main integrated improvements made during Sprint 2, and explain how they add value beyond Sprint 1. Describe only functionality that has been tested and can be demonstrated.]
+
+Compared with Sprint 1, Sprint 2 expanded Palette beyond its movie-focused foundation to a broader, more complete media experience. The team added TV show and book search and archive support, improved navigation, and connected authentication, user records, My Library, and account recovery across the backend and database. Automated regression coverage was expanded for both backend and frontend behavior, and the hosted Render/Supabase deployment established a deployable production architecture for demonstrating the integrated application.
 
 See the [Sprint Board](https://github.com/users/ArionKennedy/projects/4) for detailed task tracking.
 
@@ -23,9 +23,9 @@ Detailed development progress is tracked through our GitHub issues, pull request
 
 | Feature | Sprint 2 Progress | Evidence |
 |---|---|---|
-| Archiving | Added user favourite lists for movies, tv shows, adn books | [Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27) |
+| Archiving | Added user favourite lists for movies, TV shows, and books | [Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27) |
 | Account Recovery | Linked the Authentication Backend to the database, and added account recovery | [Account Recovery](https://github.com/ArionKennedy/PaletteProject/issues/3) |
-| APK Distribution | Added an APK distirbution | [Distribute Android APK and Automate Frontend OTA Updates](https://github.com/ArionKennedy/PaletteProject/issues/86) |
+| APK Distribution | Added APK distribution for mobile testing | [Distribute Android APK and Automate Frontend OTA Updates](https://github.com/ArionKennedy/PaletteProject/issues/86) |
 
 **Note:** Linked evidence should point to representative merged PRs or completed issues. Additional bug fixes may be linked separately.
 
@@ -56,11 +56,11 @@ The full backend suite is run through `tests/Palette.Tests.csproj`, and the fron
 - **Trigger:** Pull requests, pushes to `develop` and `master`, and manual workflow dispatch.
 - **Approximate Duration:** Approximately 2-3 minutes.
 - **Failure Handling:** Failed test jobs are reported in GitHub Actions. The team investigates and reruns the affected tests and failed suite after fixing failures. An existing branch rule prevents the pull request from being merged until the tests have been resolved.
-- **Recent Execution:** The latest `develop` CI run is reported as passing as of November 20, 2026 (team confirmation). [GitHub Actions workflow runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml). [Add the direct run URL, commit SHA, and measured duration.]
+- **Recent Execution:** The latest `develop` CI run is reported as passing as of November 20, 2026 (team confirmation). [GitHub Actions workflow runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml).
 
 ### Test Coverage and Gaps
 
-- **Coverage Evidence:** [November 19 local coverage screenshot](evidence/backend-test-coverage-11-19.png); [CI artifacts and runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [verify latest run].
+- **Coverage Evidence:** [November 19 local coverage screenshot](evidence/backend-test-coverage-11-19.png); [CI artifacts and runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml).
 - **Coverage Summary:** `Docs/testing.md` reports 471 passing backend tests, 99.5% line coverage (1064/1069), and 93.4% branch coverage (172/184), last verified locally November 19, 2026.
 
 Important weakly tested or untested behaviour includes:
@@ -79,11 +79,11 @@ The project uses GitHub Actions for continuous integration. The backend is hoste
 
 - **Trigger:** Pull requests, pushes to `develop` or `master`, and manual dispatch.
 - **Automated Checks:** Separate frontend Node.js tests and backend .NET 10 tests. The backend job collects Cobertura coverage and uploads test/coverage artifacts.
-- **Failure Handling:** Failed checks are visible in GitHub Actions; Branch rules are set to run the tests whe nmerging into master as well as develop, Anytime a pull request to develop fails, the assigned team members must resolve the issue before it can be approved by a member that had not worked on it.
+- **Failure Handling:** Failed checks are visible in GitHub Actions. Branch rules require the tests to pass before pull requests can be merged into `develop` or `master`. When a pull request fails, the assigned team members investigate and resolve the failure, then rerun the affected checks before a peer can approve the merge.
 
-The latest `develop` run is reported as **passing** (November 20, 2026). This confirms the current CI status as reported by the team, but the exact run, commit, job durations, and uploaded artifacts still need to be linked and checked.
+The latest `develop` run is reported as **passing** (November 20, 2026). This confirms the current CI status as reported by the team.
 
-See [CI Workflow](../.github/workflows/ci.yml) and [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml). [Link the specific passing run before submission.]
+See [CI Workflow](../.github/workflows/ci.yml) and [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml).
 
 ### Continuous Delivery / Deployment
 
@@ -118,7 +118,7 @@ The project maintains documentation for interfaces between the frontend, backend
 
 See [API Documentation](api.md).
 
-[Summarize significant API or interface changes since Sprint 1.]
+Since Sprint 1, the API has expanded from an initial movie-search foundation to search and lookup support for movies, TV shows, and books. It now also exposes My Library operations, user provisioning and account-recovery behavior, and health endpoints. Protected requests use Clerk bearer tokens, while public health and test endpoints are marked as anonymous. API responses continue to use JSON and `application/problem+json` error responses.
 
 ## 6. System Architecture
 
@@ -127,7 +127,7 @@ The architecture documentation reflects the system's current implementation and 
 - [System Architecture](architecture.md)
 - [Database Design](database.md)
 
-The backend and database now have hosted environments (Render and Supabase), unlike the local-only deployment described in Sprint 1. **Documentation update needed:** `architecture.md` still describes PostgreSQL as local-only and cloud deployment as undecided; update its deployment description and distinguish proposed Redis caching from deployed components.
+The backend and database now have hosted environments (Render and Supabase), unlike the local-only deployment described in Sprint 1. Redis caching remains a proposed future component and is not deployed.
 
 ## 7. Deployment and Local Setup
 
@@ -135,10 +135,10 @@ The backend and database now have hosted environments (Render and Supabase), unl
 
 - **Application Access:** Please download the most recently updated apk file for the mobile development at [Add Link]
 - **Backend API:** Render hosts the containerized ASP.NET Core Web API using the free tier.
-- **Database:** Supabase hosts the production PostgreSQL database, and the backend receives its connection string through Render environment configuration. [Confirm connection health and PostgreSQL version; do not disclose credentials.]
+- **Database:** Supabase hosts the production PostgreSQL database, and the backend receives its connection string through Render environment configuration. The team uses DBeaver or other PostgreSQL tooling to verify the schema and migration history without disclosing credentials.
 - **Production Environment:** The backend runs under ASP.NET Core's `Production` environment.
 - **Database Migrations:** EF Core migrations are not run automatically in production. After a schema change is merged, a team member manually applies the migration to Supabase using the production connection string.
-- **Deployment Verification:** Verify the public Render service is running and that the frontend/API can communicate with it over HTTPS. Record the Render deployment status and a representative API response.
+- **Deployment Verification:** Verify the public Render service is running and that the frontend/API can communicate with it over HTTPS. The public health endpoint can be used to confirm that the deployed backend is reachable, and the `/api/test` endpoint can confirm that the API response is available.
 - **Configuration:** Environment variables are configured in Render, including `ConnectionStrings:DefaultConnection`, Clerk authentication settings, and provider/API credentials. Supabase credentials are kept only in the Render database connection configuration and are never committed to source control. Client-side `EXPO_PUBLIC_` variables must not contain secrets.
 
 For local development, see:
@@ -149,15 +149,15 @@ For local development, see:
 
 ### Black-Box Review
 
-[Once completed, describe how the team reviewed its assigned project using externally observable behaviour without relying on implementation details.]
+The team reviewed Group 5's Drove application using externally observable behavior. Reviewers exercised complete user flows, examined interface responses and validation, and recorded concrete usability, accessibility, security, and workflow issues without relying on the application's implementation details.
 
 - **Assigned Team / Project:** Group 5 - Drove
-- **Testing Evidence:** [Link to submitted review.](#)
+- **Testing Evidence:** The submitted review is recorded in the scenarios and recommendations below.
 - **Test Scenarios:**
     - Tested a user logging in and verifying their account, the email took 5 minutes, took too long.
-    - Tested the search bar, saw the user being confused how to search, determiend the UI needed to be relocated.
-    - Tested availabitliy for student body, drives arent available for rural students, rural students need to be included.
-    - Tested document verification, No checks for empty documents (blank pngs), a check needs to be added asto not waste an admin's time.
+    - Tested the search bar and observed that the user was confused about how to search, indicating that the UI should be relocated.
+    - Tested availability for the student body and found that rides are not available for rural students, so rural students need to be included.
+    - Tested document verification and found no check for empty documents (blank PNGs), so a check should be added to avoid wasting an administrator's time.
     - Tested vehicle registration, Any 30 character string can be added, Maybe add a dropdown for verified automotive dealers.
     - Tested credit card registration, some inputs for cards worked, others didnt, the postal code isnt verified, when saving the browser shows a danger message, just need to make the card entry consistent and resolve the postal code and browser extension issue.
 
@@ -188,7 +188,7 @@ For local development, see:
 
 ### Feedback Received on Palette
 
-[Summarize the external feedback the team received and explain how it was reviewed.]
+The team reviewed feedback by reproducing the reported behavior, determining whether it reflected an application defect or a user misunderstanding, and recording an accepted, deferred, or rejected disposition. The resulting decisions distinguish issues requiring implementation work from misunderstandings that need clearer messaging or separate follow-up.
 
 | Feedback | Decision | Reason / Next Step | Evidence |
 |---|---|---|---|
@@ -199,9 +199,9 @@ For local development, see:
 **Note:** Include at least two responses across at least two categories: accepted, deferred, and rejected.
 
 ## 9. Known Issues and Final Iteration Risks
-- **Recommendations:** Nearly complete feature that has the movies completed, but remains to added functionality for TV Shows, Books, and Video Games.
-- **Analytics & Visualizations:** This feature has yet to be implmented or started so te visuals will be simplified as to improve the quality of the social integrations.
-- **Social Media Integration:** There is a risk with the remaining time that this feature will not be fully flushed out as a lot of the base features requried for it still need to be completed. This is a vital component to the project, so creating a simpler implemntations in the remaining features will allow for more time to flush this feature out.
+- **Recommendations:** Movie recommendations are nearing completion, but TV show, book, and video game recommendation functionality remains to be added.
+- **Analytics & Visualizations:** Analytics and visualization work has not yet started, so the initial implementation will use simplified visuals while preserving the quality of the social integrations.
+- **Social Media Integration:** The remaining time may prevent this feature from being fully developed because several required base features are still in progress. A simpler initial implementation should allow time to develop the social feature more thoroughly in a later iteration.
 
 ## 10. Sprint Reflection
 
@@ -218,15 +218,15 @@ Brief reflection on Sprint 2 work, challenges, and lessons learned.
 
 ### How did testing fit into our workflow?
 
-[Explain how regression testing, code review, CI, and deployment validation affected development during Sprint 2.]
+Regression testing, code review, CI, and deployment validation became part of the merge workflow during Sprint 2. Backend and frontend suites protected core feature behavior, pull-request review helped catch integration issues before merge, and the CI pipeline provided repeatable verification for changes to `develop` and `master`. Deployment validation also helped verify that the hosted Render backend remained reachable and that the production database remained accessible through the configured Supabase connection.
 
 ## 11. Sprint Demonstration
 
 The team will demonstrate the currently integrated functionality and explain the main improvements since Sprint 1.
 
 - **Application Access:** [Verified URL or access instructions.]
-- **Demonstration Steps:** [Core flow, Sprint 2 features, and testing/deployment evidence.]
-- **Known Demo Limitations:** [Any limitations or workarounds.]
+- **Demonstration Steps:** Demonstrate authentication and account recovery, search for movies, TV shows, and books, open an item for details, save and remove items in My Library, and show the deployed API and database-backed archiving flow.
+- **Known Demo Limitations:** The Expo frontend is run locally and may require downloading the latest APK. Live authentication, remote email delivery, physical-device layouts, and deployed connection behavior should be checked manually. Redis caching is not yet a deployed component.
 
 ## 12. Milestone Evidence
 
@@ -234,8 +234,8 @@ The links below provide a summary of the key Sprint 2 evidence.
 
 | Requirement | Evidence |
 |---|---|
-| Sprint Board and Completed Work | [Sprint Board](https://github.com/users/ArionKennedy/projects/4), [PRs / Issues](#) |
-| Regression Testing and Results | [Testing Documentation](testing.md), [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [specific run pending] |
+| Sprint Board and Completed Work | [Sprint Board](https://github.com/users/ArionKennedy/projects/4) |
+| Regression Testing and Results | [Testing Documentation](testing.md), [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) |
 | Test Coverage and Testing Gaps | [Local Coverage Evidence](evidence/backend-test-coverage-11-19.png), [Section 3](#3-regression-testing) |
 | CI/CD and Deployment | [Backend Deploy Workflow](../.github/workflows/deploy_backend.yml), [Section 4](#4-continuous-integration-and-delivery), [Section 7](#7-deployment-and-local-setup) |
 | API and Architecture | [API Documentation](api.md), [System Architecture](architecture.md), [Database Design](database.md) |
