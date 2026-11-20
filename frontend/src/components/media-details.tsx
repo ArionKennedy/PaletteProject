@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 import type { Href } from 'expo-router';
 
 import MediaDetailsPage from '@/components/media-details-page';
-import { bookLookup, movieLookup, tvLookup } from '@/services/lookup';
+import { bookLookup, movieLookup, tvLookup, gameLookup } from '@/services/lookup';
 import type { BookLookupResult } from '@/types/bookLookupResult';
 import type { LibraryMediaType } from '@/types/library';
 import type { MovieLookupResult } from '@/types/movieLookupResult';
 import type { TvLookupResult } from '@/types/tvLookupResult';
+import type { GameLookupResult } from '@/types/gameLookupResult';
 
-type LookupResult = MovieLookupResult | TvLookupResult | BookLookupResult;
+type LookupResult = MovieLookupResult | TvLookupResult | BookLookupResult | GameLookupResult;
 
-const lookups = { movie: movieLookup, tv: tvLookup, book: bookLookup };
-const titles = { movie: 'Movie', tv: 'TV Show', book: 'Book' };
+const lookups = { movie: movieLookup, tv: tvLookup, book: bookLookup, game: gameLookup };
+const titles = { movie: 'Movie', tv: 'TV Show', book: 'Book', game: 'Game' };
 
 export function MediaDetails({ id, type, backHref }: { id: string; type: LibraryMediaType; backHref?: Href }) {
   const [media, setMedia] = useState<LookupResult | null>(null);
@@ -42,6 +43,10 @@ function getMetaText(media: LookupResult): string {
     return [year && `First Air: ${year}`, seasons && `${seasons} ${seasons === 1 ? 'Season' : 'Seasons'}`]
       .filter(Boolean).join(' · ');
   }
+  if (!('isbn' in media)) {
+    return year ? `Released: ${year}` : 'Release date unknown';
+  }
+  
   return [year && `Published: ${year}`, media.isbn && `ISBN: ${media.isbn}`].filter(Boolean).join(' · ');
 }
 

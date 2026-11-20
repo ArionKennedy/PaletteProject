@@ -4,6 +4,7 @@ using Backend.Features.Lookup;
 using Backend.Shared.Errors;
 using Backend.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Palette.Api.Data;
 using Palette.Api.Enums;
 using Palette.Api.Models;
@@ -11,12 +12,13 @@ using Palette.Api.Models;
 namespace Palette.Api.Logging;
 
 public sealed record LibraryPage(IReadOnlyList<MediaSearchResult> Items, int Page, bool HasMore);
-public sealed record LibraryCounts(int Movie, int Tv, int Book);
+public sealed record LibraryCounts(int Movie, int Tv, int Book, int Game);
 public sealed record LibraryMembership(bool Saved);
 public sealed record LibraryPreviews(
     IReadOnlyList<MediaSearchResult> Movie,
     IReadOnlyList<MediaSearchResult> Tv,
-    IReadOnlyList<MediaSearchResult> Book);
+    IReadOnlyList<MediaSearchResult> Book,
+    IReadOnlyList<MediaSearchResult> Game);
 
 public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
 {
@@ -28,13 +30,14 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
         var counts = await db.UserMediaLogs.Where(log => log.UserId == userId)
             .Where(log => (log.Media.MediaType == MediaType.Movie && log.Media.Movie != null)
                 || (log.Media.MediaType == MediaType.TVShow && log.Media.TvShow != null)
-                || (log.Media.MediaType == MediaType.Book && log.Media.Book != null))
+                || (log.Media.MediaType == MediaType.Book && log.Media.Book != null)
+                || (log.Media.MediaType == MediaType.Game && log.Media.Game != null))
             .GroupBy(log => log.Media.MediaType)
             .Select(group => new { Type = group.Key, Count = group.Select(log => log.MediaId).Distinct().Count() })
             .ToDictionaryAsync(group => group.Type, group => group.Count, cancellationToken);
 
         return new LibraryCounts(counts.GetValueOrDefault(MediaType.Movie),
-            counts.GetValueOrDefault(MediaType.TVShow), counts.GetValueOrDefault(MediaType.Book));
+            counts.GetValueOrDefault(MediaType.TVShow), counts.GetValueOrDefault(MediaType.Book), counts.GetValueOrDefault(MediaType.Game));
     }
 
     public async Task<LibraryPage> GetPage(Guid userId, string type, int page, CancellationToken cancellationToken)
@@ -51,7 +54,8 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
         return new LibraryPreviews(
             await GetItems(userId, MediaConstants.MEDIA_TYPE_MOVIE, 0, PreviewSize, cancellationToken),
             await GetItems(userId, MediaConstants.MEDIA_TYPE_TV, 0, PreviewSize, cancellationToken),
-            await GetItems(userId, MediaConstants.MEDIA_TYPE_BOOK, 0, PreviewSize, cancellationToken));
+            await GetItems(userId, MediaConstants.MEDIA_TYPE_BOOK, 0, PreviewSize, cancellationToken),
+            await GetItems(userId, MediaConstants.MEDIA_TYPE_GAME, 0, PreviewSize, cancellationToken));
     }
 
     private Task<List<MediaSearchResult>> GetItems(
@@ -187,7 +191,16 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
                 ReleaseDate = book.Media.ReleaseDate,
                 PosterUrl = book.Media.PosterUrl
             }),
-        _ => throw new InvalidRequestException("Choose movie, tv, or book.")
+        MediaConstants.MEDIA_TYPE_GAME => db.Games.Where(game => game.Media.MediaType == MediaType.Game)
+            .Select(game => new LibraryMedia
+            {
+                MediaId = game.MediaId,
+                ExternalId = game.RawgGameId.ToString(),
+                Title = game.Media.Title,
+                ReleaseDate = game.Media.ReleaseDate,
+                PosterUrl = game.Media.PosterUrl
+            }),
+        _ => throw new InvalidRequestException("Choose movie, tv, book or game.")
     };
 
     private static string NormalizeId(string type, string externalId)
@@ -196,10 +209,10 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
         return type switch
         {
             MediaConstants.MEDIA_TYPE_BOOK when id.Length > 0 => id,
-            MediaConstants.MEDIA_TYPE_MOVIE or MediaConstants.MEDIA_TYPE_TV
+            MediaConstants.MEDIA_TYPE_MOVIE or MediaConstants.MEDIA_TYPE_TV or MediaConstants.MEDIA_TYPE_GAME
                 when int.TryParse(id, NumberStyles.None, CultureInfo.InvariantCulture, out var number) && number > 0
                 => number.ToString(CultureInfo.InvariantCulture),
-            _ => throw new InvalidRequestException("Provide a valid movie, tv, or book ID.")
+            _ => throw new InvalidRequestException("Provide a valid movie, tv, book or game ID.")
         };
     }
 
@@ -235,6 +248,13 @@ public sealed class LibraryService(PaletteDbContext db, LookupService lookup)
             case BookLookupResult book:
                 media.MediaType = MediaType.Book;
                 media.Book = new Book { GoogleBooksId = externalId, ISBN = book.ISBN };
+                break;
+            case GameLookupResult:
+                media.MediaType = MediaType.Game;
+                media.Game = new Game
+                {
+                    RawgGameId = int.Parse(externalId, CultureInfo.InvariantCulture)
+                };
                 break;
             default:
                 throw new InvalidOperationException("Unsupported media details.");
