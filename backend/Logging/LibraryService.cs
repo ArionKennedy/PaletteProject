@@ -1,9 +1,7 @@
 
 using System.Globalization;
-using System.Text.Json;
 using Backend.Constants;
 using Backend.Features.Lookup;
-using Backend.Providers.Tmdb;
 using Backend.Shared.Errors;
 using Backend.Shared.Models;
 using Microsoft.EntityFrameworkCore;
@@ -29,8 +27,7 @@ public sealed record LibraryPreviews(
 
 public sealed class LibraryService(
     PaletteDbContext db,
-    LookupService lookup,
-    TmdbClient tmdbClient)
+    LookupService lookup)
 {
     private const int PageSize = 50;
     private const int PreviewSize = 12;
@@ -205,57 +202,10 @@ public sealed class LibraryService(
                 }
             }
 
-            // Fetch genres only when the movie has none stored.
-            if (type == MediaConstants.MEDIA_TYPE_MOVIE)
+            // Use genres supplied by the existing provider lookup.
+            if (details is MovieLookupResult movieDetails)
             {
-                int tmdbId = int.Parse(
-                    externalId,
-                    CultureInfo.InvariantCulture);
-
-                bool hasGenres = await db.Movies
-                    .AnyAsync(
-                        m => m.TmdbMovieId == tmdbId
-                            && m.Genres != null
-                            && m.Genres.Length > 0,
-                        cancellationToken);
-
-                if (!hasGenres)
-                {
-                    try
-                    {
-                        var tmdbMovie =
-                            await tmdbClient.LookupMovieAsync(
-                                tmdbId,
-                                cancellationToken);
-
-                        movieGenres = tmdbMovie?.Genres?
-                            .Select(g => g.Name)
-                            .Where(name =>
-                                !string.IsNullOrWhiteSpace(name))
-                            .Distinct()
-                            .ToArray();
-
-                        // Temporary debugging output.
-                        Console.WriteLine(
-                            $"[Genre Debug] TMDB movie ID: {tmdbId}");
-
-                        Console.WriteLine(
-                            "[Genre Debug] Genres returned: " +
-                            string.Join(
-                                ", ",
-                                movieGenres ?? Array.Empty<string>()));
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        Console.WriteLine(
-                            $"[Genre Debug] TMDB HTTP error: {ex.Message}");
-                    }
-                    catch (JsonException ex)
-                    {
-                        Console.WriteLine(
-                            $"[Genre Debug] TMDB JSON error: {ex.Message}");
-                    }
-                }
+                movieGenres = movieDetails.Genres;
             }
         }
 
@@ -282,6 +232,8 @@ public sealed class LibraryService(
             var mediaId = await matchingMedia
                 .Select(media => (Guid?)media.MediaId)
                 .SingleOrDefaultAsync(cancellationToken);
+
+            bool isNewMedia = mediaId is null;
 
             if (mediaId is null)
             {
@@ -312,7 +264,8 @@ public sealed class LibraryService(
             // Populate missing genres for existing movies.
             // For new movies, genres are already assigned
             // through CreateMedia().
-            if (mediaId is not null
+            if (!isNewMedia
+                && mediaId is not null
                 && movieGenres is { Length: > 0 })
             {
                 await db.Movies

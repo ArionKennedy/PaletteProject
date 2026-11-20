@@ -6,5 +6,11 @@ public sealed record MovieLookupResult(
     DateOnly? ReleaseDate,
     string? Description,
     string? PosterUrl,
-    int? Runtime)
-    : MediaLookupResult(ExternalId, Title, ReleaseDate, Description, PosterUrl);
+    int? Runtime,
+    string[]? Genres = null)
+    : MediaLookupResult(
+        ExternalId,
+        Title,
+        ReleaseDate,
+        Description,
+        PosterUrl);

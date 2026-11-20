@@ -15,15 +15,21 @@ public static class TmdbMapper
             ReleaseDate: ParseReleaseDate(source.ReleaseDate),
             PosterUrl: BuildPosterUrl(source.PosterPath, imageBaseUrl));
 
-    public static MovieLookupResult ToLookupResult(TmdbMovieDetails source, string imageBaseUrl) =>
+    public static MovieLookupResult ToLookupResult(
+        TmdbMovieDetails source,
+        string imageBaseUrl) =>
         new(
             ExternalId: source.Id.ToString(CultureInfo.InvariantCulture),
             Title: source.Title,
             ReleaseDate: ParseReleaseDate(source.ReleaseDate),
             Description: NullIfBlank(source.Overview),
             PosterUrl: BuildPosterUrl(source.PosterPath, imageBaseUrl),
-            // TMDB reports 0 for "unknown", and "0 minutes" is not a real runtime.
-            Runtime: source.Runtime is > 0 ? source.Runtime : null);
+            Runtime: source.Runtime is > 0 ? source.Runtime : null,
+            Genres: source.Genres?
+                .Select(genre => genre.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray());
 
     public static MediaSearchResult ToSearchResult(TmdbTvSummary source, string imageBaseUrl) =>
         new(
