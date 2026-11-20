@@ -218,11 +218,24 @@ Additioanlly, despite not being included for this sprint iteration Recommendatio
 The main feedback that the team acted on was improving the coverage and quality of the our frontend and backend tests, and focusing on the quality of our code rather than the pure implementation of features.
 
 ### What part of the current testing, CI, or CD process creates the most friction, and what might improve it?
-
+[Need to look over]
 
 ### What is the most important technical risk or uncertainty going into the final iteration?
+The most uncertainty comes from the time required for the social media features in the final iteration. There are a large number of remaining features that still need to be flushed out in order to even start the social media portion.
 
 ### What are we proud of?
+The completed components that we are most proud of are the  inclusion of TV Shows and Books so that users can start interacting with them and creating thier own favourite lists.
+
+We are also proud of the progress that we have made on the upcoming features for recommendations, searching, and logging to include video games and diverse exploration pages.
+
+In particular, a large portion of the recommendation engine uses a custom simplified language model that converts the users preferences into a numeric form to choose the most likely piece of media that the user would be interetesetd in based on the:
+- Genre
+- Author/Director/Studio
+- Length
+- Interacted Searches
+- Media with more reviews
+- Media with higher review ratings
+- Depreciate older inputs over time
 
 ### How did testing fit into our workflow?
 
