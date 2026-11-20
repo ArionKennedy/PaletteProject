@@ -133,7 +133,7 @@ The backend and database now have hosted environments (Render and Supabase), unl
 
 **Deployment Status:** The ASP.NET Core backend is hosted on Render and PostgreSQL is hosted on Supabase. The Expo frontend is currently run locally; instructor-accessible frontend deployment has not been confirmed.
 
-- **Application Access:** Please download the most recently updated apk file for the mobile development at [Add Link]
+- **Application Access:** Download and install [Palette 1.0.0 for Android](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk).
 - **Backend API:** Render hosts the containerized ASP.NET Core Web API using the free tier.
 - **Database:** Supabase hosts the production PostgreSQL database, and the backend receives its connection string through Render environment configuration. The team uses DBeaver or other PostgreSQL tooling to verify the schema and migration history without disclosing credentials.
 - **Production Environment:** The backend runs under ASP.NET Core's `Production` environment.
@@ -209,12 +209,7 @@ Brief reflection on Sprint 2 work, challenges, and lessons learned.
 
 ### What are we proud of?
 
-[Summarize one or two strong pieces of Sprint 2 work. Link representative issues or pull requests and explain why they demonstrate quality.]
-- We are proud of the 
-
 ### What could have been improved?
-
-[Describe important coordination, implementation, testing, or delivery challenges and how they will be addressed.]
 
 ### How did testing fit into our workflow?
 
@@ -224,7 +219,7 @@ Regression testing, code review, CI, and deployment validation became part of th
 
 The team will demonstrate the currently integrated functionality and explain the main improvements since Sprint 1.
 
-- **Application Access:** [Verified URL or access instructions.]
+- **Application Access:** Download and install [Palette 1.0.0 for Android](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk).
 - **Demonstration Steps:** Demonstrate authentication and account recovery, search for movies, TV shows, and books, open an item for details, save and remove items in My Library, and show the deployed API and database-backed archiving flow.
 - **Known Demo Limitations:** The Expo frontend is run locally and may require downloading the latest APK. Live authentication, remote email delivery, physical-device layouts, and deployed connection behavior should be checked manually. Redis caching is not yet a deployed component.
 
