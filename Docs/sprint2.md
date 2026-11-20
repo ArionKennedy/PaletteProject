@@ -207,9 +207,22 @@ The team reviewed feedback by reproducing the reported behavior, determining whe
 
 Brief reflection on Sprint 2 work, challenges, and lessons learned.
 
-### What are we proud of?
+### What technical decision or implementation improved most since Sprint 1, and why?
+The searching and recommendation implementations were the most improved since Sprint 1.
 
-### What could have been improved?
+The searching has improvded to include TV Shows and books, with video games up and coming.
+
+Additioanlly, despite not being included for this sprint iteration Recommendations has made leaps in bounds of creating a personalized user profile that creates movie recommendations and displays them in the explore page.
+
+### What feedback from Sprint 1 did the team act on, and what changed as a result?
+The main feedback that the team acted on was improving the coverage and quality of the our frontend and backend tests, and focusing on the quality of our code rather than the pure implementation of features.
+
+### What part of the current testing, CI, or CD process creates the most friction, and what might improve it?
+
+
+### What is the most important technical risk or uncertainty going into the final iteration?
+
+### What are we proud of?
 
 ### How did testing fit into our workflow?
 
