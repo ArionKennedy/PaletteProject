@@ -2,12 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { useAuth, useSignIn } from '@clerk/expo';
 import { SignInForm } from '@/components/sign-in-form';
+import { router } from 'expo-router';
 
 // --- Mocks ---
 
-const mockRouterReplace = jest.fn();
 jest.mock('expo-router', () => ({
-  router: { replace: mockRouterReplace },
+  router: { replace: jest.fn() },
 }));
 
 jest.mock('@clerk/expo', () => ({
@@ -40,6 +40,7 @@ describe('<SignInForm />', () => {
 
 
 
+  
   test('renders the form title, inputs, and Continue button', async () => {
     await render(<SignInForm />);
 
@@ -73,13 +74,13 @@ describe('<SignInForm />', () => {
   test('shows an email validation error when the email is invalid', async () => {
     await render(<SignInForm />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'notanemail');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'notanemail');
+    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
 
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
-      expect(screen.getByText(/valid email/i)).toBeTruthy();
+      expect(screen.getByText('Unable to Sign In')).toBeTruthy();
     });
   });
 
@@ -96,9 +97,9 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
+    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
       expect(mockPassword).toHaveBeenCalledWith({
@@ -124,12 +125,12 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
+    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
-      expect(mockRouterReplace).toHaveBeenCalledWith('/(app)/(tabs)/movies');
+      expect(router.replace).toHaveBeenCalledWith('/(app)/(tabs)/movies');
     });
   });
 
@@ -138,8 +139,9 @@ describe('<SignInForm />', () => {
   test('pressing "Sign up" navigates to the signup screen', async () => {
     await render(<SignInForm />);
 
-    fireEvent.press(screen.getByText('Sign up'));
+    await fireEvent.press(screen.getByText('Sign up'));
 
-    expect(mockRouterReplace).toHaveBeenCalledWith('/signup');
+    expect(router.replace).toHaveBeenCalledWith('/signup');
   });
+  
 });

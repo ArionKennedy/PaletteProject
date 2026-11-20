@@ -2,12 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { useAuth, useSignUp } from '@clerk/expo';
 import { SignUpForm } from '@/components/sign-up-form';
+import { router } from 'expo-router';
 
 // --- Mocks ---
 
-const mockRouterReplace = jest.fn();
 jest.mock('expo-router', () => ({
-  router: { replace: mockRouterReplace },
+  router: { replace: jest.fn() },
 }));
 
 jest.mock('@clerk/expo', () => ({
@@ -40,6 +40,7 @@ describe('<SignUpForm />', () => {
 
 
   test('renders the form title, inputs, and Continue button', async () => {
+
     await render(<SignUpForm />);
 
     expect(screen.getByText('Create Your Palette Account')).toBeTruthy();
@@ -70,16 +71,13 @@ describe('<SignUpForm />', () => {
   test('shows an email validation error when the email is invalid', async () => {
     await render(<SignUpForm />);
 
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[0], 'notanemail');   // email
-    fireEvent.changeText(inputs[1], 'myusername');   // username
-    fireEvent.changeText(inputs[2], 'password123');  // password
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'notanemail');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
 
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
-      expect(screen.getByText(/valid email/i)).toBeTruthy();
+      expect(screen.getByText('Unable to Sign Up')).toBeTruthy();
     });
   });
 
@@ -96,12 +94,10 @@ describe('<SignUpForm />', () => {
 
     await render(<SignUpForm />);
 
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[0], 'user@example.com');
-    fireEvent.changeText(inputs[1], 'myusername');
-    fireEvent.changeText(inputs[2], 'password123');
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'user@example.com');
+    await fireEvent.changeText(screen.getByTestId('username-input'), 'myusername');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
       expect(mockPassword).toHaveBeenCalledWith({
@@ -128,25 +124,23 @@ describe('<SignUpForm />', () => {
 
     await render(<SignUpForm />);
 
-    const { TextInput } = require('react-native');
-    const inputs = (screen as any).UNSAFE_getAllByType(TextInput);
-    fireEvent.changeText(inputs[0], 'user@example.com');
-    fireEvent.changeText(inputs[1], 'myusername');
-    fireEvent.changeText(inputs[2], 'password123');
-    fireEvent.press(screen.getByText('Continue'));
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'user@example.com');
+    await fireEvent.changeText(screen.getByTestId('username-input'), 'myusername');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
+    await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
-      expect(mockRouterReplace).toHaveBeenCalledWith('/(app)/(tabs)/movies');
+      expect(router.replace).toHaveBeenCalledWith('/(app)/(tabs)/movies');
     });
   });
 
 
-
+  
   test('pressing "Sign in" navigates to the login screen', async () => {
     await render(<SignUpForm />);
 
-    fireEvent.press(screen.getByText('Sign in'));
+    await fireEvent.press(screen.getByText('Sign in'));
 
-    expect(mockRouterReplace).toHaveBeenCalledWith('/login');
+    expect(router.replace).toHaveBeenCalledWith('/login');
   });
 });

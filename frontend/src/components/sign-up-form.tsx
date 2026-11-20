@@ -112,6 +112,7 @@ export function SignUpForm() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                testID="email-input"
                 placeholder="m@example.com"
                 keyboardType="email-address"
                 autoComplete="email"
@@ -139,6 +140,7 @@ export function SignUpForm() {
               <Input
                 ref={usernameInputRef}
                 id="username"
+                testID="username-input"
                 placeholder=""
                 autoComplete="username"
                 onSubmitEditing={onUsernameSubmitEditing}
@@ -164,6 +166,7 @@ export function SignUpForm() {
               <Input
                 ref={passwordInputRef}
                 id="password"
+                testID="password-input"
                 secureTextEntry
                 returnKeyType="send"
                 onSubmitEditing={onSubmit}

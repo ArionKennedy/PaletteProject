@@ -164,6 +164,7 @@ export function SignInForm() {
           <View className="flex-row items-center justify-center">
             <Text className="text-sm">Don&apos;t have an account? </Text>
             <Pressable
+              testID = "Sign up button"
               onPress={() => {
                 router.replace('/signup');
               }}>
