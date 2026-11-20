@@ -15,63 +15,68 @@ import { useSignIn } from '@clerk/expo';
 import { useState, useRef } from 'react';
 import { ActivityIndicator, Keyboard, Platform, TouchableWithoutFeedback, View, type TextInputInstance } from 'react-native';
 import { router } from 'expo-router';
-import { clerkErrorsToPageErrors } from '@/lib/validation';
-import { useUpdateEffect } from '@/hooks/UseUpdateEffect';
+import { useAuthFormErrors } from '@/hooks/use-auth-form-errors';
+import { getVerificationCodeWaitSeconds, useVerificationCodeCooldown } from '@/hooks/use-verification-code-cooldown';
+import {
+  clerkRequestToPageErrors,
+  getVerificationCodeRetryAfter,
+  hasClerkErrorCode,
+  type ClerkSignInRequestError,
+} from '@/lib/clerk-sign-in';
 
 export function ResetPasswordForm() {
-  const { signIn, errors, fetchStatus } = useSignIn();
+  const { signIn, fetchStatus } = useSignIn();
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const codeInputRef = useRef<TextInputInstance>(null);
-  const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
-  const [verificationError, setVerificationError] = useState('');
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const requestInProgress = useRef(false);
+  const { pageErrors, setPageErrors, isFocused } = useAuthFormErrors();
+  const { secondsLeft, startCooldown } = useVerificationCodeCooldown(signIn.identifier);
   const [isReSendingCode, setIsReSendingCode] = useState(false);
+  const codeVerified = signIn.status === 'needs_new_password';
 
-  useUpdateEffect(() => {
-    setPageErrors(clerkErrorsToPageErrors(errors));
+  function showResetError(error: ClerkSignInRequestError, fallback: string, globalTitle?: string) {
+    if (!isFocused()) return;
 
-    const globalError = errors?.global?.[0];
-    if(globalError?.code === 'verification_expired'){
-      setVerificationError('This verification code has expired. Request a new code and try again.');
-    }
-    else if(errors?.fields?.identifier?.code === `form_conditional_param_missing`){
+    if (!signIn.id || hasClerkErrorCode(error, 'form_conditional_param_missing', 'client_state_invalid')) {
       router.replace('/forgot-password');
+      return;
     }
-    else if(globalError?.isClerkAPIResponseError()) {
-      if(globalError?.errors?.[0]?.code === 'client_state_invalid'){
+    if (hasClerkErrorCode(error, 'verification_expired')) {
+      if (signIn.status === 'needs_new_password') {
         router.replace('/forgot-password');
+      } else {
+        setPageErrors({ global: 'This verification code has expired. Request a new code and try again.' });
       }
+      return;
     }
-  }, [errors]);
+    const errors = clerkRequestToPageErrors(error, fallback);
+    setPageErrors(globalTitle ? { ...errors, globalTitle } : errors);
+  }
 
-  // Handle the countdown timer
-  useUpdateEffect(() => {
-    if (secondsLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [secondsLeft]);
-  
   function onPasswordSubmitEditing() {
     codeInputRef.current?.focus();
   }
   
   async function onSubmit() {
+    if (!password || (!code && !codeVerified) || requestInProgress.current) {
+      return;
+    }
+    if (!signIn.id) {
+      router.replace('/forgot-password');
+      return;
+    }
+
+    requestInProgress.current = true;
     setPageErrors({});
-    setVerificationError('');
 
     try {
-      const { error: verifyCodeError } = await signIn.resetPasswordEmailCode.verifyCode({
-        code,
-      });
-
-      if (verifyCodeError) {
-        console.error(verifyCodeError);
-        return;
+      if (!codeVerified) {
+        const { error: verifyCodeError } = await signIn.resetPasswordEmailCode.verifyCode({ code });
+        if (verifyCodeError) {
+          showResetError(verifyCodeError, 'Could not verify the code. Please try again.');
+          return;
+        }
       }
 
       const { error: submitPasswordError } = await signIn.resetPasswordEmailCode.submitPassword({
@@ -79,11 +84,11 @@ export function ResetPasswordForm() {
       });
 
       if (submitPasswordError) {
-        console.error(submitPasswordError);
+        showResetError(submitPasswordError, 'Could not reset your password. Please try again.');
         return;
       }
 
-      if (signIn.status === 'complete') {
+      if (signIn.status === 'complete' && isFocused()) {
         // Set the active session to
         // the newly created session (user is now signed in)
         await signIn.finalize({
@@ -92,29 +97,51 @@ export function ResetPasswordForm() {
           },
         })
       }
-      else{
-        console.error('reset password attempt not complete:', signIn);
-      }
     } catch (err) {
       console.error(err);
+      setPageErrors({ global: 'Could not reset your password. Please try again.' });
+    } finally {
+      requestInProgress.current = false;
     }
   }
 
   async function onResendCode() {
-    if (secondsLeft > 0 || isReSendingCode) {
+    if (codeVerified || requestInProgress.current || fetchStatus === 'fetching') {
       return;
     }
+    const identifier = signIn.identifier;
+    if (!signIn.id || !identifier) {
+      router.replace('/forgot-password');
+      return;
+    }
+    if (getVerificationCodeWaitSeconds(identifier) > 0) return;
 
+    requestInProgress.current = true;
     setIsReSendingCode(true);
+    setPageErrors({});
+    const resendErrorMessage = 'Could not resend the verification code. Please try again.';
 
-    const { error: sendCodeError } = await signIn.resetPasswordEmailCode.sendCode();
-
-    if (sendCodeError) {
+    try {
+      const { error: sendCodeError } = await signIn.resetPasswordEmailCode.sendCode();
+      if (sendCodeError) {
+        const retryAfter = getVerificationCodeRetryAfter(sendCodeError);
+        if (retryAfter !== null) startCooldown(identifier, retryAfter);
+        showResetError(sendCodeError, resendErrorMessage, 'Unable to send verification code');
+        return;
+      }
+      setCode('');
+      startCooldown(identifier);
+    } catch (err) {
+      console.error(err);
+      if (!signIn.id) {
+        if (isFocused()) router.replace('/forgot-password');
+      } else {
+        setPageErrors({ global: resendErrorMessage, globalTitle: 'Unable to send verification code' });
+      }
+    } finally {
+      requestInProgress.current = false;
       setIsReSendingCode(false);
-      return;
     }
-    setSecondsLeft(30);
-    setIsReSendingCode(false);
   }
 
 
@@ -124,14 +151,14 @@ export function ResetPasswordForm() {
         <CardHeader>
           <CardTitle className="text-center text-xl sm:text-left">Reset password</CardTitle>
           <CardDescription className="text-center sm:text-left">
-            Enter the code sent to your email and set a new password
+            {codeVerified ? 'Code verified. Set a new password.' : 'Enter the code sent to your email and set a new password'}
           </CardDescription>
 
-          {(verificationError || pageErrors?.global) &&
+          {pageErrors.global &&
             <Alert variant="destructive" icon={AlertCircleIcon}>
-              <AlertTitle>Unable to Reset Password</AlertTitle>
+              <AlertTitle>{pageErrors.globalTitle || 'Unable to Reset Password'}</AlertTitle>
               <AlertDescription>
-                {verificationError || pageErrors?.global}
+                {pageErrors.global}
               </AlertDescription>
             </Alert>
           }
@@ -147,9 +174,9 @@ export function ResetPasswordForm() {
                 id="password"
                 secureTextEntry
                 onChangeText={setPassword}
-                returnKeyType="next"
+                returnKeyType={codeVerified ? 'send' : 'next'}
                 submitBehavior="submit"
-                onSubmitEditing={onPasswordSubmitEditing}
+                onSubmitEditing={codeVerified ? onSubmit : onPasswordSubmitEditing}
               />
               
               {pageErrors?.password && 
@@ -162,82 +189,62 @@ export function ResetPasswordForm() {
               }
             </View>
 
-            <View>
-              <View className="gap-1.5">
-                <Label htmlFor="code">Verification code</Label>
-                <Input
-                  ref={codeInputRef}
-                  id="code"
-                  autoCapitalize="none"
-                  onChangeText={setCode}
-                  returnKeyType="send"
-                  keyboardType="numeric"
-                  autoComplete="sms-otp"
-                  textContentType="oneTimeCode"
-                  onSubmitEditing={onSubmit}
-                  maxLength={6}
-                />
+            {!codeVerified && (
+              <View>
+                <View className="gap-1.5">
+                  <Label htmlFor="code">Verification code</Label>
+                  <Input
+                    ref={codeInputRef}
+                    id="code"
+                    value={code}
+                    autoCapitalize="none"
+                    onChangeText={setCode}
+                    returnKeyType="send"
+                    keyboardType="numeric"
+                    autoComplete="sms-otp"
+                    textContentType="oneTimeCode"
+                    onSubmitEditing={onSubmit}
+                    maxLength={6}
+                  />
 
-                {pageErrors?.code &&
-                  <Alert variant="destructive" icon={AlertCircleIcon}>
-                    <AlertTitle>Unable to Reset Password</AlertTitle>
-                    <AlertDescription>
-                      {pageErrors?.code}
-                    </AlertDescription>
-                  </Alert>
-                }
-              </View>
+                  {pageErrors?.code &&
+                    <Alert variant="destructive" icon={AlertCircleIcon}>
+                      <AlertTitle>Unable to Reset Password</AlertTitle>
+                      <AlertDescription>
+                        {pageErrors?.code}
+                      </AlertDescription>
+                    </Alert>
+                  }
+                </View>
 
-              <View
-                className="flex-row items-center justify-start"
-                style={{ marginTop: 8 }}
-              >
-                {secondsLeft > 0 ? (
-                  <Text>
-                    {`You can resend the code again in ${secondsLeft}s`}
-                  </Text>
-                ) : (
-                  <>
-                    <Text className="text-muted-foreground text-sm">
-                      {`Didn't get the code? `}
-                    </Text>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-fit px-1 py-0"
-                      onPress={onResendCode}
-                      disabled={isReSendingCode}
-                    >
-                      <>
-                        <Text
-                          className="text-base text-sm"
-                          style={isReSendingCode ? { visibility: 'hidden' } : undefined}
-                        >
-                          Resend code
-                        </Text>
-                        {isReSendingCode && (
-                          <View
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              right: 0,
-                              bottom: 0,
-                              left: 0,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <ActivityIndicator size={16} color="black" />
-                          </View>
-                        )}
-                      </>
-                    </Button>
-                  </>
-                )}
+                <View
+                  className="flex-row items-center justify-start"
+                  style={{ marginTop: 8 }}
+                >
+                  <Text className="text-muted-foreground text-sm">Didn&apos;t get the code?</Text>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-fit px-1 py-0"
+                    onPress={onResendCode}
+                    disabled={secondsLeft > 0 || isReSendingCode || fetchStatus === 'fetching'}
+                  >
+                    {isReSendingCode ? (
+                      <ActivityIndicator size={16} color="black" />
+                    ) : (
+                      <Text className="text-sm">
+                        {secondsLeft > 0 ? `Resend in ${secondsLeft}s` : 'Resend code'}
+                      </Text>
+                    )}
+                  </Button>
+                </View>
               </View>
-            </View>
+            )}
             
-            <Button className={"w-full"} onPress={onSubmit} disabled={!code || !password || fetchStatus === 'fetching'}>
+            <Button
+              className="w-full"
+              onPress={onSubmit}
+              disabled={!password || (!codeVerified && !code) || fetchStatus === 'fetching' || isReSendingCode}>
               <Text>Reset Password</Text>
             </Button>
             <Button

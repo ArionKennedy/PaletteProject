@@ -12,50 +12,70 @@ import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon } from 'lucide-react-native';
 import { useSignIn } from '@clerk/expo';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Keyboard, Platform, TouchableWithoutFeedback, View } from 'react-native';
 import { router } from 'expo-router';
-import { clerkErrorsToPageErrors, validateEmail } from '@/lib/validation';
-import { useUpdateEffect } from '@/hooks/UseUpdateEffect';
+import { useAuthFormErrors } from '@/hooks/use-auth-form-errors';
+import { getVerificationCodeWaitSeconds, useVerificationCodeCooldown } from '@/hooks/use-verification-code-cooldown';
+import { canResumePasswordReset, clerkRequestToPageErrors, getVerificationCodeRetryAfter } from '@/lib/clerk-sign-in';
+import { validateEmail } from '@/lib/validation';
 
 export function ForgotPasswordForm() {
   const [emailAddress, setEmailAddress] = useState('');
-  const { signIn, errors, fetchStatus } = useSignIn();
-  const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
-
-  useUpdateEffect(() => {
-    setPageErrors(clerkErrorsToPageErrors(errors));
-  }, [errors]);
+  const { signIn, fetchStatus } = useSignIn();
+  const { pageErrors, setPageErrors, isFocused } = useAuthFormErrors();
+  const requestInProgress = useRef(false);
+  const { secondsLeft, startCooldown } = useVerificationCodeCooldown(emailAddress);
+  const waitingToSend = secondsLeft > 0 && !canResumePasswordReset(signIn, emailAddress.trim());
 
   const onSubmit = async () => {
+    if (requestInProgress.current || fetchStatus === 'fetching') return;
     setPageErrors({});
 
-    const emailError = validateEmail(emailAddress);
+    const identifier = emailAddress.trim();
+    const emailError = validateEmail(identifier);
     if (emailError) {
       setPageErrors({ identifier: emailError });
       return;
     }
 
+    if (canResumePasswordReset(signIn, identifier)) {
+      router.replace('/reset-password');
+      return;
+    }
+
+    if (getVerificationCodeWaitSeconds(identifier) > 0) return;
+
+    requestInProgress.current = true;
     try {
-      const { error: createError } = await signIn.create({
-        identifier: emailAddress,
-      });
+      const { error: createError } = await signIn.create({ identifier });
 
       if (createError) {
-        console.error(createError);
+        setPageErrors(clerkRequestToPageErrors(createError, 'Could not start password reset. Please try again.'));
         return;
       }
 
       const { error: sendCodeError } = await signIn.resetPasswordEmailCode.sendCode();
 
       if (sendCodeError) {
-        console.error(sendCodeError);
+        const retryAfter = getVerificationCodeRetryAfter(sendCodeError);
+        if (retryAfter !== null) startCooldown(identifier, retryAfter);
+        setPageErrors({
+          ...clerkRequestToPageErrors(sendCodeError, 'Could not send the verification code. Please try again.'),
+          globalTitle: 'Unable to send verification code',
+        });
         return;
       }
 
-      router.replace('/reset-password');
-    } catch (err) {
-      console.error(err);
+      startCooldown(identifier);
+      if (isFocused()) router.replace('/reset-password');
+    } catch {
+      setPageErrors({
+        global: 'Could not send the verification code. Please try again.',
+        globalTitle: 'Unable to send verification code',
+      });
+    } finally {
+      requestInProgress.current = false;
     }
   };
 
@@ -70,7 +90,7 @@ export function ForgotPasswordForm() {
                     
           {pageErrors?.global &&
             <Alert variant="destructive" icon={AlertCircleIcon}>
-              <AlertTitle>Unable to Reset Password</AlertTitle>
+              <AlertTitle>{pageErrors.globalTitle || 'Unable to Reset Password'}</AlertTitle>
               <AlertDescription>
                 {pageErrors?.global}
               </AlertDescription>
@@ -84,7 +104,7 @@ export function ForgotPasswordForm() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                defaultValue={emailAddress}
+                value={emailAddress}
                 placeholder="m@example.com"
                 keyboardType="email-address"
                 autoComplete="email"
@@ -102,8 +122,12 @@ export function ForgotPasswordForm() {
                 </Alert>
               }
             </View>
-            <Button className={"w-full"} onPress={onSubmit} disabled={!emailAddress || fetchStatus === 'fetching'} >
-              <Text>Reset your password</Text>
+            <Button
+              className="w-full"
+              onPress={onSubmit}
+              disabled={!emailAddress.trim() || waitingToSend || fetchStatus === 'fetching'}
+            >
+              <Text>{waitingToSend ? `Request a new code in ${secondsLeft}s` : 'Reset your password'}</Text>
             </Button>
             <Button
               variant="link"

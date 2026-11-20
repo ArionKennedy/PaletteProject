@@ -1,6 +1,6 @@
 # Testing Documentation
 
-This document describes Palette’s backend test suites, local My Library frontend tests, and coverage evidence.
+This document describes Palette’s backend and frontend test suites and backend coverage evidence.
 
 ## 1. Testing Strategy
 
@@ -196,15 +196,21 @@ With the default Testcontainers setup, no manual database creation, connection-s
 
 For tests using `PostgresFixture`, an existing `PALETTE_TEST_DB_CONNECTION` overrides automatic database creation, and the configured database must be available. Development startup tests always create their own temporary database and require Docker.
 
-### Run My Library Frontend Tests
+### Run Frontend Tests
 
-After installing dependencies in `frontend/` with `npm ci`, run this command from the repository root.
+Use Node.js 24 and run the following from the repository root:
 
 ```bash
-node --test tests/frontend/my-library.test.cjs
+npm ci --prefix frontend
+node --test 'tests/frontend/**/*.test.cjs'
 ```
 
-The Node tests cover poster navigation and fallback, the manual refresh animation trigger, immediate Add/Remove feedback and rollback, authenticated requests, and timeouts. They use mocked UI and network dependencies. The backend CI job does not run them.
+| Suite | Tested behaviour |
+| --- | --- |
+| `tests/frontend/my-library.test.cjs` | Poster navigation and fallback, the manual refresh animation trigger, immediate Add/Remove feedback and rollback, authenticated requests, and timeouts |
+| `tests/frontend/reset-password.test.cjs` | Resuming a valid attempt after going back, retrying a rejected password after code verification, recovering from resend failures or missing attempts, countdown after initial send and resend, and clearing errors after five seconds or on navigation |
+
+The suites use Node’s test runner and mock UI, navigation, and external dependencies. The password reset suite uses a simulated clock to check the countdown and error timeout.
 
 ### Run Only Unit Tests
 
@@ -329,7 +335,7 @@ Last verified locally: November 19, 2026.
 
 ### Continuous Integration
 
-The backend workflow is located at `.github/workflows/ci.yml`.
+The workflow at `.github/workflows/ci.yml` runs on pull requests, pushes to `develop` or `master`, and manual dispatch. It runs **Frontend Tests** and **Backend Tests** as separate jobs. The frontend job installs dependencies from the frontend lockfile and runs all matching tests under `tests/frontend/`. The backend job collects and publishes backend coverage.
 
 The coverage-enabled workflow update is pending verification through a pull request. After it runs successfully, milestone documentation should link to:
 
@@ -345,7 +351,7 @@ If a regression test fails, investigate whether the implementation regressed, th
 ## 7. Current Limitations and Follow-Up Work
 
 - **HTTPS transport:** TestServer tests verify HTTPS redirection and request handling, but do not validate a real TLS handshake, certificates, or deployed HTTPS configuration.
-- **Device coverage:** The My Library frontend tests use mocked components. Visual layout, touch gestures, and live sign-in still need checks on a device.
+- **Device coverage:** Frontend tests use mocked components and services. Visual layout, touch gestures, live sign-in, and password reset email delivery still need device checks.
 - **Real external services:** Simulated TMDB responses verify application behaviour but do not prove that live TMDB credentials or deployed connectivity are correct.
 - **Acceptance criteria:** User-story acceptance criteria still need an explicit mapping to automated tests or recorded manual checks.
 - **CI evidence:** The updated coverage collection and artifact publication must be verified after the pull request is created.
