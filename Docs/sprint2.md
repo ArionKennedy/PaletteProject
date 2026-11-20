@@ -8,6 +8,10 @@ This page serves as the landing page for Sprint 2 progress and milestone evidenc
 
 During Sprint 2, Palette continued development of its core media tracking and discovery features while expanding automated testing, continuous integration, and deployment infrastructure.
 
+- Added Archiving to allow users to save favourited lists of movies, shows, and books
+- Added Searches for TV Shows and books
+- Added UI Elements and back page buttons to improve the user experience
+-
 [Summarize the main integrated improvements made during Sprint 2, and explain how they add value beyond Sprint 1. Describe only functionality that has been tested and can be demonstrated.]
 
 See the [Sprint Board](https://github.com/users/ArionKennedy/projects/4) for detailed task tracking.
@@ -47,14 +51,14 @@ The full backend suite is run through `tests/Palette.Tests.csproj`, and the fron
 ### Execution and Failure Handling
 
 - **Trigger:** Pull requests, pushes to `develop` and `master`, and manual workflow dispatch.
-- **Approximate Duration:** [Measured test execution time.]
-- **Failure Handling:** Failed test jobs are reported in GitHub Actions. The team should investigate and rerun the affected tests and full suite after fixing failures. [Confirm whether branch protection blocks merges.]
+- **Approximate Duration:** Approximately 2-3 minutes.
+- **Failure Handling:** Failed test jobs are reported in GitHub Actions. The team investigates and reruns the affected tests and failed suite after fixing failures. An existing branch rule prevents the pull request from being merged until the tests have been resolved.
 - **Recent Execution:** The latest `develop` CI run is reported as passing as of November 20, 2026 (team confirmation). [GitHub Actions workflow runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml). [Add the direct run URL, commit SHA, and measured duration.]
 
 ### Test Coverage and Gaps
 
 - **Coverage Evidence:** [November 19 local coverage screenshot](evidence/backend-test-coverage-11-19.png); [CI artifacts and runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [verify latest run].
-- **Coverage Summary:** `Docs/testing.md` reports 471 passing backend tests, 99.5% line coverage (1064/1069), and 93.4% branch coverage (172/184), last verified locally November 19, 2026. These metrics do not prove complete user-workflow or deployed-environment coverage.
+- **Coverage Summary:** `Docs/testing.md` reports 471 passing backend tests, 99.5% line coverage (1064/1069), and 93.4% branch coverage (172/184), last verified locally November 19, 2026.
 
 Important weakly tested or untested behaviour includes:
 
@@ -66,13 +70,13 @@ See [Testing Documentation](testing.md) for testing tools, execution instruction
 
 ## 4. Continuous Integration and Delivery
 
-The project uses GitHub Actions for continuous integration. The backend is hosted on Render and the PostgreSQL database on Supabase. The team is confirming whether Render deploys automatically from the development branch or requires manual deployment.
+The project uses GitHub Actions for continuous integration. The backend is hosted on Render and the PostgreSQL database on Supabase. Render deploys automatically from the master branch.
 
 ### Continuous Integration
 
 - **Trigger:** Pull requests, pushes to `develop` or `master`, and manual dispatch.
 - **Automated Checks:** Separate frontend Node.js tests and backend .NET 10 tests. The backend job collects Cobertura coverage and uploads test/coverage artifacts.
-- **Failure Handling:** Failed checks are visible in GitHub Actions; [confirm merge protection and team response procedure].
+- **Failure Handling:** Failed checks are visible in GitHub Actions; Branch rules are set to run the tests whe nmerging into master as well as develop, Anytime a pull request to develop fails, the assigned team members must resolve the issue before it can be approved by a member that had not worked on it.
 
 The latest `develop` run is reported as **passing** (November 20, 2026). This confirms the current CI status as reported by the team, but the exact run, commit, job durations, and uploaded artifacts still need to be linked and checked.
 
@@ -80,7 +84,7 @@ See [CI Workflow](../.github/workflows/ci.yml) and [CI Runs](https://github.com/
 
 ### Continuous Delivery / Deployment
 
-- **Development Branch:** `develop` [confirm Render tracks this branch].
+- **Development Branch:** `develop`
 - **Workflow:** [Confirm whether Render GitHub auto-deploy is enabled; link Render deployment evidence if available.]
 - **Deployment Steps:** [Describe what the workflow builds, publishes, or deploys.]
 - **Success Criteria:** [Explain how a successful deployment is verified.]
@@ -107,8 +111,8 @@ The backend and database now have hosted environments (Render and Supabase), unl
 
 **Deployment Status:** The ASP.NET Core backend is hosted on Render and PostgreSQL is hosted on Supabase. The Expo frontend is currently run locally; instructor-accessible frontend deployment has not been confirmed.
 
-- **Application Access:** [Instructor-accessible URL or clear access instructions.]
-- **Backend API:** Render — [add backend service URL and authenticated/public endpoint details].
+- **Application Access:** Please download the most recently updated apk file for the mobile development at [Add Link]
+- **Backend API:** Render, [add backend service URL and authenticated/public endpoint details.]
 - **Database:** Supabase-hosted PostgreSQL. [Confirm connection health and version; do not disclose credentials.]
 - **Deployment Verification:** [Explain how the team checked that the deployed version is running and current.]
 - **Configuration:** Environment-based settings are used for application and database connectivity. Document required variable *names* for Render, Supabase, and Clerk without exposing values. Client-side `EXPO_PUBLIC_` variables must not contain secrets.
@@ -117,18 +121,46 @@ For local development, see:
 - [Local Setup](Local%20Setup.md)
 - [Database Migration Guide](db-migration.md)
 
-[Describe any changes to setup, dependencies, or deployment instructions made during Sprint 2.]
-
 ## 8. Cross-Team Testing and Feedback
 
 ### Black-Box Review
 
 [Once completed, describe how the team reviewed its assigned project using externally observable behaviour without relying on implementation details.]
 
-- **Assigned Team / Project:** [Name and link.]
+- **Assigned Team / Project:** Group 5 - Drove
 - **Testing Evidence:** [Link to submitted review.](#)
 - **Test Scenarios:** [Summarize scenarios, observed behaviour, and findings.]
-- **Recommendations:** [Summarize useful feedback provided.]
+    - Tested a user logging in and verifying their account, the email took 5 minutes, took too long.
+    - Tested the search bar, saw the user being confused how to search, determiend the UI needed to be relocated.
+    - Tested availabitliy for student body, drives arent available for rural students, rural students need to be included.
+    - Tested document verification, No checks for empty documents (blank pngs), a check needs to be added asto not waste an admin's time.
+    - Tested vehicle registration, Any 30 character string can be added, Maybe add a dropdown for verified automotive dealers.
+    - Tested credit card registration, some inputs for cards worked, others didnt, the postal code isnt verified, when saving the browser shows a danger message, just need to make the card entry consistent and resolve the postal code and browser extension issue.
+
+- **Recommendations:**
+    - Login verification takes way too long to send an email
+        - Thought it didn't send
+
+    - The search address bar is in a confusing place for pickup area, thought I could click it
+        - Maybe move it to be onto or include the pickup area as a search bar (similar to google maps or apple maps)
+
+    - Ignores students that live in local municipalities
+        - Include students that live at least as far as Steinbach or even portage la prairie
+
+    - No existing check for empty documents
+        - Atleast parse maybe a face or text to exist
+
+    - No dropdown for existing vehicles, user can put in anything they would like
+
+    - Have to wait for an admin to review it, no automated checks
+
+    - Card payments
+        - The card entry is confusing and doesn't accept inputs like 1234 1234 1234 1234, but accepts 4242 4242 4242 4242
+        - Doesn't check postal codes
+        - Google browser shows a dangerous message in the tab, may be off putting to users
+    <img width="1545" height="41" alt="Screenshot 2026-11-20 130738" src="https://github.com/user-attachments/assets/d5db5201-5d6f-4a02-9775-3e70a5e308fc" />
+
+    Overall, the project was really well done otherwise. There are a lot of checks an input locks that were really well done, and the website design looks fantastic!
 
 ### Feedback Received on Palette
 
