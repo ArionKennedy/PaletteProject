@@ -11,6 +11,7 @@ During Sprint 2, Palette continued development of its core media tracking and di
 - Added Archiving to allow users to save favourited lists of movies, shows, and books
 - Added Searches for TV Shows and books
 - Added UI Elements and back page buttons to improve the user experience
+- Hosted the ASP.NET Core backend on Render and the PostgreSQL database on Supabase
 -
 [Summarize the main integrated improvements made during Sprint 2, and explain how they add value beyond Sprint 1. Describe only functionality that has been tested and can be demonstrated.]
 
@@ -22,15 +23,16 @@ Detailed development progress is tracked through our GitHub issues, pull request
 
 | Feature | Sprint 2 Progress | Evidence |
 |---|---|---|
-| [Feature name] | [Describe the working change and its user value.] | [Issue/PR](#) |
-| [Feature name] | [Describe the working change and its user value.] | [Issue/PR](#) |
+| Archiving | Added user favourite lists for movies, tv shows, adn books | [Logging & Archiving](#https://github.com/ArionKennedy/PaletteProject/issues/27) |
+| User Authentication & Account Recovery | Linked the Authentication Backend to the database, and added account recovery | [Authentication](https://github.com/ArionKennedy/PaletteProject/issues/25) |
 
 **Note:** Linked evidence should point to representative merged PRs or completed issues. Additional bug fixes may be linked separately.
 
 ### Development Improvements
 
 - [Describe significant refactoring or improvements to code readability, modularity, and separation of responsibilities.]
-- [Describe updated development or database workflows.]
+- Dockerized the ASP.NET Core backend and added a GitHub Actions workflow that builds and publishes the image to Docker Hub.
+- Established the production database workflow: the backend connects to Supabase PostgreSQL through Render environment configuration, while EF Core migrations are applied manually to production.
 - [Describe new functionality that can be demonstrated end-to-end.]
 
 ## 3. Regression Testing
@@ -84,11 +86,30 @@ See [CI Workflow](../.github/workflows/ci.yml) and [CI Runs](https://github.com/
 
 ### Continuous Delivery / Deployment
 
-- **Development Branch:** `develop`
-- **Workflow:** [Confirm whether Render GitHub auto-deploy is enabled; link Render deployment evidence if available.]
-- **Deployment Steps:** [Describe what the workflow builds, publishes, or deploys.]
-- **Success Criteria:** [Explain how a successful deployment is verified.]
-- **Failure Handling:** [Describe where failures are reported and what the team does next.]
+- **Production Branch:** `master`
+- **Render (Backend):**
+  - The ASP.NET Core Web API is containerized using Docker and hosted on Render using the free tier.
+  - The backend runs in the `Production` environment and is accessible through a public Render URL.
+  - Environment variables, including the database connection string and API credentials, are configured in Render.
+- **Docker Hub:**
+  - GitHub Actions builds the backend Docker image for `linux/amd64` and pushes `latest` and commit-SHA tags to Docker Hub when changes are merged into `master`.
+- **Render Deployment:**
+  - GitHub Actions triggers the configured Render deploy hook after the Docker image is pushed.
+  - Render then deploys the updated backend image.
+- **Supabase (Database):**
+  - Production PostgreSQL is hosted on Supabase.
+  - The backend connects to Supabase using the connection string configured in Render.
+  - Entity Framework Core is used for database access and migrations.
+  - Database migrations are not automatically applied in production. Schema changes are generated and committed by developers, then manually applied to the Supabase database separately.
+- **Overall CD Process:**
+  1. Backend changes are merged into `master`.
+  2. GitHub Actions builds and pushes the updated Docker image to Docker Hub.
+  3. Render deploys the updated backend.
+  4. If the schema has changed, the EF Core migrations are manually applied to Supabase separately.
+- **End-to-End Deployment:** The frontend APK connects to the deployed Render API, and the deployed API communicates with the Supabase PostgreSQL database.
+- **Success Criteria:** A deployment is considered successful when Render reports a healthy running service and the public API can be reached with the expected response.
+- **Failure Handling:** Docker build, Docker Hub authentication/push, Render deploy-hook, and Render service failures are visible in GitHub Actions or the Render deployment logs. The team investigates the relevant logs, fixes the cause, and reruns or redeploys the backend.
+- **Deployment Evidence:** Deployment was performed through the GitHub Actions backend deploy workflow and verified through the Render service.
 
 ## 5. API Documentation
 
@@ -112,10 +133,12 @@ The backend and database now have hosted environments (Render and Supabase), unl
 **Deployment Status:** The ASP.NET Core backend is hosted on Render and PostgreSQL is hosted on Supabase. The Expo frontend is currently run locally; instructor-accessible frontend deployment has not been confirmed.
 
 - **Application Access:** Please download the most recently updated apk file for the mobile development at [Add Link]
-- **Backend API:** Render, [add backend service URL and authenticated/public endpoint details.]
-- **Database:** Supabase-hosted PostgreSQL. [Confirm connection health and version; do not disclose credentials.]
-- **Deployment Verification:** [Explain how the team checked that the deployed version is running and current.]
-- **Configuration:** Environment-based settings are used for application and database connectivity. Document required variable *names* for Render, Supabase, and Clerk without exposing values. Client-side `EXPO_PUBLIC_` variables must not contain secrets.
+- **Backend API:** Render hosts the containerized ASP.NET Core Web API using the free tier.
+- **Database:** Supabase hosts the production PostgreSQL database, and the backend receives its connection string through Render environment configuration. [Confirm connection health and PostgreSQL version; do not disclose credentials.]
+- **Production Environment:** The backend runs under ASP.NET Core's `Production` environment.
+- **Database Migrations:** EF Core migrations are not run automatically in production. After a schema change is merged, a team member manually applies the migration to Supabase using the production connection string.
+- **Deployment Verification:** Verify the public Render service is running and that the frontend/API can communicate with it over HTTPS. Record the Render deployment status and a representative API response.
+- **Configuration:** Environment variables are configured in Render, including `ConnectionStrings:DefaultConnection`, Clerk authentication settings, and provider/API credentials. Supabase credentials are kept only in the Render database connection configuration and are never committed to source control. Client-side `EXPO_PUBLIC_` variables must not contain secrets.
 
 For local development, see:
 - [Local Setup](Local%20Setup.md)
@@ -175,24 +198,18 @@ For local development, see:
 **Note:** Include at least two responses across at least two categories: accepted, deferred, and rejected.
 
 ## 9. Known Issues and Final Iteration Risks
-
-- **[Risk or limitation]:** [Explain its impact, priority, and proposed next step.]
-- **[Risk or limitation]:** [Explain its impact, priority, and proposed next step.]
-- **[Remaining feature or testing gap]:** [Explain what is not yet complete and how the team plans to address it.]
+- **Recommendations:** Nearly complete feature that has the movies completed, but remains to added functionality for TV Shows, Books, and Video Games.
+- **Analytics & Visualizations:** This feature has yet to be implmented or started so te visuals will be simplified as to improve the quality of the social integrations.
+- **Social Media Integration:** There is a risk with the remaining time that this feature will not be fully flushed out as a lot of the base features requried for it still need to be completed. This is a vital component to the project, so creating a simpler implemntations in the remaining features will allow for more time to flush this feature out.
 
 ## 10. Sprint Reflection
 
-Each team member should contribute a brief reflection on their Sprint 2 work, challenges, and lessons learned.
-
-### Individual Reflections
-
-- **[Team Member]:** [Brief reflection or link.]
-- **[Team Member]:** [Brief reflection or link.]
-- **[Add remaining team members]:** [Brief reflection or link.]
+Brief reflection on Sprint 2 work, challenges, and lessons learned.
 
 ### What are we proud of?
 
 [Summarize one or two strong pieces of Sprint 2 work. Link representative issues or pull requests and explain why they demonstrate quality.]
+- We are proud of the 
 
 ### What could have been improved?
 
@@ -219,7 +236,7 @@ The links below provide a summary of the key Sprint 2 evidence.
 | Sprint Board and Completed Work | [Sprint Board](https://github.com/users/ArionKennedy/projects/4), [PRs / Issues](#) |
 | Regression Testing and Results | [Testing Documentation](testing.md), [CI Runs](https://github.com/ArionKennedy/PaletteProject/actions/workflows/ci.yml) [specific run pending] |
 | Test Coverage and Testing Gaps | [Local Coverage Evidence](evidence/backend-test-coverage-11-19.png), [Section 3](#3-regression-testing) |
-| CI/CD and Deployment | [CI Workflow](../.github/workflows/ci.yml), [Render deployment details pending], [Section 7](#7-deployment-and-local-setup) |
+| CI/CD and Deployment | [Backend Deploy Workflow](../.github/workflows/deploy_backend.yml), [Section 4](#4-continuous-integration-and-delivery), [Section 7](#7-deployment-and-local-setup) |
 | API and Architecture | [API Documentation](api.md), [System Architecture](architecture.md), [Database Design](database.md) |
 | Cross-Team Review and Feedback | [Section 8](#8-cross-team-testing-and-feedback) |
 | Individual Reflections and Best Work | [Section 10](#10-sprint-reflection) |
