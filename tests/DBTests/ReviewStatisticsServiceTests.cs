@@ -53,7 +53,7 @@ public class ReviewStatisticsServiceTests : IDisposable
             UserId = id,
             Username = $"User-{id}",
             Email = $"{id}@test.com",
-            Auth0Id = $"auth0|{id}"
+            ClerkId = $"clerk|{id}"
         });
 
         return id;
