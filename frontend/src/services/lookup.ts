@@ -1,11 +1,17 @@
-import type { MovieLookupResult } from '@/types/movieLookupResult';
 import { getJson } from '@/services/client';
+import type { MovieLookupResult } from '@/types/movieLookupResult';
 import { TvLookupResult } from '@/types/tvLookupResult';
+import { BookLookupResult } from '@/types/bookLookupResult';
+
 
 export function movieLookup(movieId: string, signal?: AbortSignal): Promise<MovieLookupResult> {
-  return getJson<MovieLookupResult>(`/api/lookup/movie/${encodeURIComponent(movieId)}`, signal);
+  return getJson<MovieLookupResult>(`/api/lookup/movie/${encodeURIComponent(movieId)}?includeLibrary=true`, signal);
 }
 
 export function tvLookup(tvId: string, signal?: AbortSignal): Promise<TvLookupResult> {
-  return getJson<TvLookupResult>(`/api/lookup/tv/${encodeURIComponent(tvId)}`, signal);
+  return getJson<TvLookupResult>(`/api/lookup/tv/${encodeURIComponent(tvId)}?includeLibrary=true`, signal);
+}
+
+export function bookLookup(bookId: string, signal?: AbortSignal): Promise<BookLookupResult> {
+  return getJson<BookLookupResult>(`/api/lookup/book/${encodeURIComponent(bookId)}?includeLibrary=true`, signal);
 }

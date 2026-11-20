@@ -4,9 +4,11 @@ using Backend.Features.Search;
 using Backend.Features.Users;
 using Backend.Providers;
 using Backend.Providers.Tmdb;
+using Backend.Providers.GoogleBooks;
 using Backend.Shared.Errors;
 using Microsoft.EntityFrameworkCore;
 using Palette.Api.Data;
+using Palette.Api.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
@@ -27,9 +29,12 @@ builder.Services.AddApiErrorHandling();
 // Register media providers and the search feature
 builder.Services.AddMediaProviders();
 builder.Services.AddTmdbProvider(builder.Configuration);
+builder.Services.AddGoogleBooksProvider(builder.Configuration);
 builder.Services.AddSearchFeature();
 builder.Services.AddLookupFeature();
+builder.Services.AddLoggingFeature();
 builder.Services.AddUserService();
+
 
 builder.Services.AddCors(options =>
 {
@@ -97,8 +102,11 @@ app.MapGet("/api/test", () =>
     Results.Ok(new { message = "Connected to backend!" })
 ).AllowAnonymous();
 
+app.MapLibrary();
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();
 app.MapLookupEndpoints();
 
 app.Run();
+
+public partial class Program { }

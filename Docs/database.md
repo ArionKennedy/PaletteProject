@@ -201,7 +201,7 @@ This approach prevents duplicate media records and reduces unnecessary storage a
 
 The following example illustrates how Palette uses TMDB to retrieve movie information and PostgreSQL to store user-related data.
 
-**Scenario: A user searches for and logs *Inception*.**
+**Scenario: A user searches for and saves *Inception* to My Library.**
 
 ### 1. Search for Media
 
@@ -214,30 +214,24 @@ The following example illustrates how Palette uses TMDB to retrieve movie inform
 
 - The user selects *Inception* from the search results.
 - The backend retrieves additional movie details from TMDB, if needed.
-- The frontend displays the movie's title, release date, poster, genres, directors, and other available information.
+- The frontend displays the movie's title, release date, poster, runtime, and description when available.
 - These details are obtained from TMDB and do not require separate local tables for people, studios, or genres.
 
-### 3. Log the Movie
+### 3. Save the Movie
 
-- The user marks *Inception* as watched.
+- The user taps **+** beside the title to add *Inception* to My Library.
 - The backend checks whether the movie already exists in PostgreSQL using its TMDB movie ID.
 - If the movie does not exist, new records are inserted into `MEDIA` and `MOVIES`.
 - If the movie already exists, the existing media record is reused.
 - A new record is created in `USER_MEDIA_LOGS`, linking the user to the movie.
 
-### 4. Review the Movie
+### 4. Browse or Remove the Movie
 
-- The user submits a rating and written review.
-- The backend creates a record in `REVIEWS`, referencing the user and the existing media record.
-- The review is stored in PostgreSQL, not TMDB.
+- My Library reads the signed-in user's entries in `USER_MEDIA_LOGS` and joins them to the saved media metadata and provider IDs.
+- The Movies preview displays the stored cover and can open the movie's detail page.
+- Removing the item deletes the user's library entry. The shared media record and any reviews stay in the database.
 
-### 5. Retrieve User History
-
-- When the user opens their media history, the backend queries PostgreSQL for their logged media and reviews.
-- Stored media metadata is used to display the results.
-- TMDB may be queried again if additional or updated movie information is needed.
-
-### 6. Search by Director or Studio
+### Planned Workflow: Search by Director or Studio
 
 - The user selects a search field, such as Director or Production Company.
 - The frontend sends the selected field and search query to the backend.
