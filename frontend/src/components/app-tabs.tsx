@@ -26,6 +26,12 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.book} />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="games">
+        <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon {...MEDIA_TAB_ICONS.game} />
+      </NativeTabs.Trigger>
+
+
       <NativeTabs.Trigger name="my-library">
         <NativeTabs.Trigger.Label>My Library</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="square.stack" md="collections_bookmark" />

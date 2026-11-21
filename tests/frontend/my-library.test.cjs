@@ -175,7 +175,7 @@ test('home renders inset category links and separate horizontal cover links, and
     '@/services/library': {
       async getLibraryPreviews() {
         requests++;
-        return { movie: [], tv: [], book: [book] };
+        return { movie: [], tv: [], book: [book], game: [] };
       },
     },
   });
@@ -186,14 +186,14 @@ test('home renders inset category links and separate horizontal cover links, and
   assert.equal(rotations.length, 0);
 
   const sections = findNodes(tree, node => node.type === 'Link' && node.props.href.pathname === '/my-library/[type]');
-  assert.deepEqual(sections.map(node => node.props.href.params.type), ['movie', 'tv', 'book']);
+  assert.deepEqual(sections.map(node => node.props.href.params.type), ['movie', 'tv', 'book', 'game']);
   for (const { props: { children: heading } } of sections) {
     assert.equal(heading.props.style.flexDirection, 'row');
     assert.equal(heading.props.children[0].type, 'SymbolView');
     assert.equal(heading.props.children[2].type, 'ChevronRight');
   }
   const cards = findNodes(tree, node => node.type === 'View' && node.props.children?.[0]?.type === 'Link');
-  assert.equal(cards.length, 3);
+  assert.equal(cards.length, 4);
   assert.ok(cards.every(card => card.props.style[0].marginHorizontal === 16));
   const [coverRow] = findNodes(tree, node => node.type === 'ScrollView' && node.props.horizontal);
   const [coverLink] = findNodes(coverRow, node => node.type === 'Link');

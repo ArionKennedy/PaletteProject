@@ -4,6 +4,7 @@ export const LIBRARY_CATEGORIES = [
   { type: 'movie', label: 'Movies' },
   { type: 'tv', label: 'TV Shows' },
   { type: 'book', label: 'Books' },
+  { type: 'game', label: 'Games' },
 ] as const;
 
 export type LibraryMediaType = (typeof LIBRARY_CATEGORIES)[number]['type'];

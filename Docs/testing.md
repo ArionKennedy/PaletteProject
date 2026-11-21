@@ -8,7 +8,8 @@ Palette uses unit tests and integration tests to verify application behaviour an
 
 The backend regression suite covers:
 
-- Search and lookup for movies, TV shows, and books.
+- Search and lookup for movies, TV shows, books, and games.
+
 - My Library membership, category previews, and cover persistence.
 - Input validation, boundary values, missing data, and failure handling.
 - External-provider request construction and response processing.
@@ -30,21 +31,25 @@ Coverage percentages help identify untested code, but do not establish that ever
 
 ### Tested Components
 
-| Component                  | Tested behaviour                                                                                                                                                                        |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SearchService              | Missing queries, query-length boundaries, trimming, provider selection, result-limit forwarding, empty results, errors, and cancellation                                                |
-| LookupService              | Missing IDs, trimming, provider selection, cancellation-token forwarding, and error propagation                                                                                         |
-| MediaProviderResolver      | Case-insensitive resolution, unknown types, duplicate registrations, and independent provider selection                                                                                 |
-| TmdbMapper                 | Movie and TV mapping, dates, poster URLs, descriptions, runtimes, season counts, and missing optional values                                                                            |
-| ProviderCallGuard          | Successful calls, HTTP and JSON failures, upstream cancellation, caller cancellation, and unexpected exceptions                                                                         |
-| TmdbClient                 | Request paths, query encoding, response deserialization, HTTP failures, invalid responses, and cancellation                                                                             |
-| Movie and TV providers     | ID validation, result limits, mapping, missing items, provider failures, and cancellation                                                                                               |
-| ApiExceptionHandler        | ProblemDetails responses, trace IDs, logging levels, internal-detail protection, and unhandled exceptions                                                                               |
-| TMDB configuration         | Required settings, URL validation, timeout boundaries, defaults, client configuration, and provider registration                                                                        |
-| GoogleBooksMapper          | Search and lookup mapping, published-date formats (full, month, year), HTTPS poster URLs, ISBN-13/ISBN-10 priority and trimming, HTML description cleaning, and missing optional values |
-| GoogleBooksClient          | Request paths, query and volume-id escaping, response deserialization, 503 treated as not found, HTTP failures, empty or invalid bodies, required fields, and cancellation              |
-| Google Books provider      | Result mapping and order, empty results, missing volume to `MediaNotFoundException`, provider failures, and cancellation                                                                |
-| Google Books configuration | Required and valid BaseUrl, trailing slash, optional API key header, default timeout, client configuration, and provider registration                                                   |
+| Component                  | Tested behaviour                                                                                                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SearchService              | Missing queries, query-length boundaries, trimming, provider selection, result-limit forwarding, empty results, errors, and cancellation                                                                  |
+| LookupService              | Missing IDs, trimming, provider selection, cancellation-token forwarding, and error propagation                                                                                                           |
+| MediaProviderResolver      | Case-insensitive resolution, unknown types, duplicate registrations, and independent provider selection                                                                                                   |
+| TmdbMapper                 | Movie and TV mapping, dates, poster URLs, descriptions, runtimes, season counts, and missing optional values                                                                                              |
+| ProviderCallGuard          | Successful calls, HTTP and JSON failures, upstream cancellation, caller cancellation, and unexpected exceptions                                                                                           |
+| TmdbClient                 | Request paths, query encoding, response deserialization, HTTP failures, invalid responses, and cancellation                                                                                               |
+| Movie and TV providers     | ID validation, result limits, mapping, missing items, provider failures, and cancellation                                                                                                                 |
+| ApiExceptionHandler        | ProblemDetails responses, trace IDs, logging levels, internal-detail protection, and unhandled exceptions                                                                                                 |
+| TMDB configuration         | Required settings, URL validation, timeout boundaries, defaults, client configuration, and provider registration                                                                                          |
+| GoogleBooksMapper          | Search and lookup mapping, published-date formats (full, month, year), HTTPS poster URLs, ISBN-13/ISBN-10 priority and trimming, HTML description cleaning, and missing optional values                   |
+| GoogleBooksClient          | Request paths, query and volume-id escaping, response deserialization, 503 treated as not found, HTTP failures, empty or invalid bodies, required fields, and cancellation                                |
+| Google Books provider      | Result mapping and order, empty results, missing volume to `MediaNotFoundException`, provider failures, and cancellation                                                                                  |
+| Google Books configuration | Required and valid BaseUrl, trailing slash, optional API key header, default timeout, client configuration, and provider registration                                                                     |
+| IgdbMapper                 | Search and lookup mapping, Unix-seconds release dates, cover-image URL building, missing cover or date, and trimmed or blank summaries                                                                    |
+| IgdbClient                 | `POST` to `games`, Apicalypse query bodies for search and lookup, quote and backslash escaping, empty array treated as not found, HTTP failures including 401, null or malformed bodies, and cancellation |
+| IGDB provider              | Result mapping and order, numeric-id validation (malformed ids rejected without calling IGDB), unknown game to `MediaNotFoundException`, provider failures, and cancellation                              |
+| IGDB configuration         | Required `ClientId` and `AccessToken`, URL and trailing-slash validation, timeout range and default, `Client-ID` and Bearer headers on the client, and provider registration                              |
 
 EF Core InMemory tests are not used as evidence that PostgreSQL constraints or database-side cascade deletion work correctly. Those behaviours are verified separately against PostgreSQL.
 
@@ -60,7 +65,9 @@ HTTP integration tests use ASP.NET Core TestServer and the real endpoint, servic
 
 Both classes share the existing migrated `PostgresFixture`, use unique test identities, and delete users they provision. An identity does not bypass user provisioning. `HealthEndpointsTests` remains a small endpoint-only test; authorization assertions belong to the real-entry-point tests.
 
-Tests that do not excercise books uses a handler that throws on any Google Books request, so not test can reach the network by accident.
+Tests replace the external TMDB, Google Books, and IGDB HTTP transports and register a test authentication scheme. ...
+
+Tests that do not exercise books or games use handlers that throw on any Google Books or IGDB request, so no test can reach the network by accident.
 
 Tests cover:
 
@@ -76,12 +83,14 @@ Tests cover:
 - ProblemDetails content types, response fields, and trace IDs.
 - Protection against leaking upstream error details.
 - Book lookup of an unknown volume returns 404 (Google Books reports it as HTTP 503), while a 503 on search returns 502.
+- Game search and lookup, including the 10-item result limit (forwarded to IGDB as `limit`), the cover URL built from `image_id`, and Unix release dates.
+- Game lookup of an unknown id returns 404 (IGDB answers `200` with `[]`), malformed ids return 400, and an upstream 401 or invalid body returns 502.
 
 These tests do not require a real TMDB account, token or Google Books API key.
 
 ### My Library Integration Tests
 
-`LibraryTests` exercises the real authenticated endpoints using `PostgresFixture` and stub media providers. It covers adding and removing all three media types, concurrent and repeated saves, account isolation, saved state in lookup responses, the 12-item preview limit, and backfilling missing covers.
+`LibraryTests` exercises the real authenticated endpoints using `PostgresFixture` and stub media providers. It covers adding and removing all four media types, concurrent and repeated saves, account isolation, saved state in lookup responses, the 12-item preview limit, and backfilling missing covers.
 
 ### Application Startup Tests
 
@@ -153,7 +162,7 @@ Service tests configure its responses and inspect recorded calls. Unexpected, un
 
 ### Stub HTTP Handlers
 
-Stub handlers provide deterministic HTTP responses to the real `TmdbClient` and `GoogleBooksClient`.
+Stub handlers provide deterministic HTTP responses to the real `TmdbClient`, `GoogleBooksClient` and `IgdbClient`.
 
 They simulate successful responses, missing items, invalid JSON, network errors, and cancellation. Automated tests do not depend on live TMDB data or availability.
 
@@ -327,11 +336,11 @@ Exclusion rules should be kept consistent between local and CI reports and docum
 
 Last verified locally: November 19, 2026.
 
-- **Full backend suite: 471 passed with no failures or skips.**
-- **Line coverage: 99.5% — 1064 of 1069 lines.**
-- **Branch coverage: 93.4% — 172 of 184 branches.**
+- **Full backend suite: 570 passed with no failures or skips.**
+- **Line coverage: 99.6% — 1188 of 1192 lines.**
+- **Branch coverage: 96.1% — 200 of 208 branches.**
 
-![Backend coverage report](evidence/backend-test-coverage-11-19.png)
+![Backend coverage report](evidence/backend-test-coverage-11-19-igdb.png)
 
 ### Continuous Integration
 
@@ -358,5 +367,6 @@ If a regression test fails, investigate whether the implementation regressed, th
 - **Deployed workflows:** Local automated tests do not replace representative checks of the deployed application.
 - **Clerk JWT validation:** The controlled authentication scheme tests authorization and provisioning, but does not establish production bearer-token validation. Offline signed-token tests for invalid signatures, issuer, and expiration remain a possible follow-up; live Clerk calls are outside this suite.
 - **Custom migrations:** Future migrations containing hand-written data transformations should receive dedicated upgrade/data-preservation tests even though migration classes are excluded from the application coverage metric.
+- **IGDB token:** The IGDB provider uses a fixed Twitch app token that is not refreshed. Tests use fake credentials and stubbed transport, so they do not detect an expired real token (about 60 days after it is issued).
 
 Testing is a shared team responsibility. Feature changes should include relevant regression tests, and the testing documentation should be updated as functionality and known gaps change.

@@ -9,7 +9,7 @@ public class Game
     [ForeignKey(nameof(Media))]
     public Guid MediaId { get; set; }
     [Required]
-    public int RawgGameId { get; set; }
+    public int IgdbGameId { get; set; }
 
     public Media Media { get; set; } = null!;
 }

@@ -88,12 +88,12 @@ namespace Palette.Api.Migrations
                     b.Property<Guid>("MediaId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("RawgGameId")
+                    b.Property<int>("IgdbGameId")
                         .HasColumnType("integer");
 
                     b.HasKey("MediaId");
 
-                    b.HasIndex("RawgGameId")
+                    b.HasIndex("IgdbGameId")
                         .IsUnique();
 
                     b.ToTable("GAMES", (string)null);

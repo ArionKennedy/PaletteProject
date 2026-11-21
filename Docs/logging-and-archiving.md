@@ -2,7 +2,7 @@
 
 ## My Library
 
-Open a movie, TV show, or book from search and tap **+** beside its title to save it. The icon switches to **−**. Tap it to remove the item from your library.
+Open a movie, TV show, book or game from search and tap **+** beside its title to save it. The icon switches to **−**. Tap it to remove the item from your library.
 
 On the **My Library** tab, swipe the covers in a category and tap one to open its detail page. Tap the category heading to open the full list. Use the refresh icon beside **My Library** to reload the previews. Full lists refresh when reopened and support pagination.
 
@@ -10,9 +10,9 @@ Saved items come from the signed-in user's records in `USER_MEDIA_LOGS`. Each pr
 
 ## API
 
-Use `movie`, `tv`, or `book` for `{type}`. The item ID is the provider's `externalId` returned by search and the library.
+Use `movie`, `tv`, `book` or `game` for `{type}`. The item ID is the provider's `externalId` returned by search and the library.
 
-- `GET /api/me/library/previews` returns up to 12 saved items in each of the `movie`, `tv`, and `book` arrays.
+- `GET /api/me/library/previews` returns up to 12 saved items in each of the `movie`, `tv`, `book` or `game` arrays.
 - `GET /api/me/library` returns counts by media type.
 - `GET /api/me/library/{type}?page=1` returns `items`, `page`, and `hasMore` with up to 50 items per page. Each item uses the search result shape, including `externalId` and `posterUrl`.
 - `GET /api/me/library/{type}/{externalId}` returns `{ "saved": true }` or `{ "saved": false }`.

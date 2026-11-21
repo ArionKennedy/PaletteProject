@@ -2,6 +2,7 @@ import { getJson } from '@/services/client';
 import type { MovieLookupResult } from '@/types/movieLookupResult';
 import { TvLookupResult } from '@/types/tvLookupResult';
 import { BookLookupResult } from '@/types/bookLookupResult';
+import { GameLookupResult } from '@/types/gameLookupResult';
 
 
 export function movieLookup(movieId: string, signal?: AbortSignal): Promise<MovieLookupResult> {
@@ -14,4 +15,8 @@ export function tvLookup(tvId: string, signal?: AbortSignal): Promise<TvLookupRe
 
 export function bookLookup(bookId: string, signal?: AbortSignal): Promise<BookLookupResult> {
   return getJson<BookLookupResult>(`/api/lookup/book/${encodeURIComponent(bookId)}?includeLibrary=true`, signal);
+}
+
+export function gameLookup(gameId: string, signal?: AbortSignal): Promise<GameLookupResult> {
+  return getJson<GameLookupResult>(`/api/lookup/game/${encodeURIComponent(gameId)}?includeLibrary=true`, signal);
 }

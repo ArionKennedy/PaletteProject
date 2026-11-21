@@ -114,7 +114,7 @@ public class MediaSubtypeDatabaseTests
                 Assert.Equal(mediaId, saved.Game.MediaId);
                 Assert.Equal(
                     externalId,
-                    saved.Game.RawgGameId);
+                    saved.Game.IgdbGameId);
 
                 Assert.Null(saved.Movie);
                 Assert.Null(saved.TvShow);
@@ -176,7 +176,7 @@ public class MediaSubtypeDatabaseTests
         "IX_BOOKS_GoogleBooksId")]
     [InlineData(
         MediaType.Game,
-        "IX_GAMES_RawgGameId")]
+        "IX_GAMES_IgdbGameId")]
     public async Task CannotSaveDuplicateExternalId(
         MediaType mediaType,
         string expectedConstraint)
@@ -501,7 +501,7 @@ public class MediaSubtypeDatabaseTests
                 db.Set<Game>().Add(new Game
                 {
                     MediaId = mediaId,
-                    RawgGameId = externalId,
+                    IgdbGameId = externalId,
                     Media = media!,
                 });
                 break;

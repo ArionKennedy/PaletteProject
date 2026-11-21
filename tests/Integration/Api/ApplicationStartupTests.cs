@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Backend.Providers.Tmdb;
 using Backend.Providers.GoogleBooks;
+using Backend.Providers.Igdb;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -358,7 +359,7 @@ public class ApplicationStartupTests : IAsyncLifetime
 
 // PaletteDbContext identifies the application assembly.
 // WebApplicationFactory executes that assembly's real Program.cs.
-public sealed class PaletteApplicationFactory(string connectionString, Func<HttpMessageHandler>? transport = null, Func<HttpMessageHandler>? googleBooksTransport = null)
+public sealed class PaletteApplicationFactory(string connectionString, Func<HttpMessageHandler>? transport = null, Func<HttpMessageHandler>? googleBooksTransport = null, Func<HttpMessageHandler>? igdbTransport = null)
     : WebApplicationFactory<PaletteDbContext>
 {
     protected override void ConfigureWebHost(
@@ -390,6 +391,11 @@ public sealed class PaletteApplicationFactory(string connectionString, Func<Http
                         ["Tmdb:TimeoutSeconds"] = "10",
 
                         ["GoogleBooks:BaseUrl"] = "https://books.example/books/v1/",
+                        ["Igdb:BaseUrl"] = "https://igdb.example/v4/",
+                        ["Igdb:ImageBaseUrl"] = "https://images.igdb.example/upload/",
+                        ["Igdb:ClientId"] = "startup-test-client-id",
+                        ["Igdb:AccessToken"] = "startup-test-access-token",
+
                     });
             });
 
@@ -410,9 +416,25 @@ public sealed class PaletteApplicationFactory(string connectionString, Func<Http
                 .AddHttpClient<GoogleBooksClient>()
                 .ConfigurePrimaryHttpMessageHandler(
                     () => googleBooksTransport?.Invoke() ?? new UnexpectedGoogleBooksHandler());
+            services
+                .AddHttpClient<IgdbClient>()
+                .ConfigurePrimaryHttpMessageHandler(
+                    () => igdbTransport?.Invoke() ?? new UnexpectedIgdbHandler());
+
 
         });
     }
+
+    // Tests that do not exercise games must never reach IGDB.
+    private sealed class UnexpectedIgdbHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            throw new InvalidOperationException(
+                $"Unexpected IGDB request: {request.RequestUri}");
+    }
+
 
     // Tests that do not exercise books must never reach Google Books.
     private sealed class UnexpectedGoogleBooksHandler : HttpMessageHandler

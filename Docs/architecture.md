@@ -20,6 +20,7 @@ flowchart LR
     F[External Media APIs]
     G[TMDB API]
     H[Google Books API]
+    I[IGDB API]
 
     A -->|HTTP / API| B
     B -->|Read / Write| C
@@ -29,6 +30,7 @@ flowchart LR
     B -->|Media Requests| F
     F -->G
     F -->H
+    F -->I
 ```
 
 ## 2. Components
@@ -58,6 +60,7 @@ flowchart LR
 - TMDB provides movie and TV show information, including
   searchable metadata and media details.
 - Google Books provides book metadata and details.
+- IGDB provides game metadata and details.
 
 ### Authentication
 
@@ -76,7 +79,6 @@ The ASP.NET Core Web API is containerized using Docker and hosted on Render usin
 The backend runs in the `Production` environment. Its database connection string and API credentials are configured as Render environment variables. The backend connects to the Supabase PostgreSQL database using that connection string. EF Core migrations are not applied automatically in production; schema changes are applied separately to Supabase.
 
 During local development, PostgreSQL may run in a Docker container while the ASP.NET Core backend and Expo frontend run as local development processes. The application can be started using the unified development command described in the Local Setup Guide.
-
 
 ## 4. Future Updates
 

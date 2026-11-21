@@ -14,12 +14,12 @@ This document provides an overview of the API contracts between the Palette fron
 
 The backend provides two endpoints for searching media and retrieving item details.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/search/{type}` | Search for media by title. |
-| GET | `/api/lookup/{type}/{id}` | Retrieve details of a specific media item. |
+| Method | Endpoint                  | Description                                |
+| ------ | ------------------------- | ------------------------------------------ |
+| GET    | `/api/search/{type}`      | Search for media by title.                 |
+| GET    | `/api/lookup/{type}/{id}` | Retrieve details of a specific media item. |
 
-Movies and TV shows use TMDB. Books use Google Books.
+Movies and TV shows use TMDB. Books use Google Books. Games use IGDB.
 
 For request parameters, response formats, error handling, and examples, see [Search & Lookup API Contract](search-api.md).
 
