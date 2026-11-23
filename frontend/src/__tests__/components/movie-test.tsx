@@ -13,7 +13,7 @@ jest.mock('@/hooks/use-theme', () => ({
   }),
 }));
 
-// --- Fixtures ---
+// Fixtures
 
 const baseMovie: MediaSearchResult = {
   externalId: '1',
@@ -23,7 +23,7 @@ const baseMovie: MediaSearchResult = {
   posterUrl: 'https://example.com/inception.jpg',
 };
 
-// --- Tests ---
+// Tests
 
 describe('<Movie />', () => {
 

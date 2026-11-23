@@ -4,7 +4,7 @@ import { movieLookup } from '@/services/lookup';
 import MovieDetailsPage from '@/app/(app)/(tabs)/movies/[id]';
 import type { MovieLookupResult } from '@/types/movieLookupResult';
 
-// --- Mocks ---
+// Mocks
 
 jest.mock('@/services/lookup', () => ({
   movieLookup: jest.fn(),
@@ -32,7 +32,7 @@ jest.mock('@/hooks/use-theme', () => ({
   }),
 }));
 
-// --- Fixtures ---
+// Fixtures
 
 const mockMovie: MovieLookupResult = {
   externalId: '27205',
@@ -44,7 +44,7 @@ const mockMovie: MovieLookupResult = {
   runtime: 148,
 };
 
-// --- Tests ---
+// Tests
 
 describe('<MovieDetailsPage />', () => {
 

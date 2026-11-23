@@ -4,7 +4,7 @@ import { tvLookup } from '@/services/lookup';
 import TvDetailsPage from '@/app/(app)/(tabs)/tv/[id]';
 import type { TvLookupResult } from '@/types/tvLookupResult';
 
-// --- Mocks ---
+// Mocks
 
 jest.mock('@/services/lookup', () => ({
   movieLookup: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock('@/hooks/use-theme', () => ({
   }),
 }));
 
-// --- Fixtures ---
+// Fixtures
 
 const mockTv: TvLookupResult = {
   externalId: '1396',
@@ -43,7 +43,7 @@ const mockTv: TvLookupResult = {
   numberOfSeasons: 5,
 };
 
-// --- Tests ---
+// Tests
 
 describe('<TvDetailsPage />', () => {
 

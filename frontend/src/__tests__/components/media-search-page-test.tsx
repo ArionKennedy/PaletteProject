@@ -4,7 +4,7 @@ import { mediaSearch } from '@/services/search';
 import MediaSearchPage from '@/components/media-search-page';
 import type { MediaSearchResult } from '@/types/mediaSearchResult';
 
-// --- Mocks ---
+// Mocks
 
 // Replace the real API call so tests never hit the network
 jest.mock('@/services/search', () => ({
@@ -61,7 +61,7 @@ async function renderPage() {
   return screen.getByPlaceholderText('Search...');
 }
 
-// --- Tests ---
+// Tests
 
 describe('<MediaSearchPage />', () => {
   test('renders the search bar', async () => {

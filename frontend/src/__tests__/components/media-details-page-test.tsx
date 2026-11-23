@@ -23,7 +23,7 @@ jest.mock('@/hooks/use-theme', () => ({
   }),
 }));
 
-// --- Fixtures ---
+// Fixtures
 
 const mockMedia: MediaDetail = {
   externalId: '27205',
@@ -33,7 +33,7 @@ const mockMedia: MediaDetail = {
   description: 'A thief who steals corporate secrets.',
 };
 
-// --- Tests ---
+// Tests
 
 describe('<MediaDetailsPage />', () => {
 

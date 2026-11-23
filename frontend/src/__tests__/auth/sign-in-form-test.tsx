@@ -4,7 +4,7 @@ import { useAuth, useSignIn } from '@clerk/expo';
 import { SignInForm } from '@/components/sign-in-form';
 import { router } from 'expo-router';
 
-// --- Mocks ---
+// Mocks
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn() },
@@ -15,7 +15,7 @@ jest.mock('@clerk/expo', () => ({
   useSignIn: jest.fn(),
 }));
 
-// --- Helpers ---
+// Helpers
 
 // Default mock for a ready, idle Clerk sign-in session
 function mockSignInReady() {
@@ -31,14 +31,14 @@ function mockSignInReady() {
   });
 }
 
-// --- Tests ---
+// Tests
 
 describe('<SignInForm />', () => {
   beforeEach(() => {
     mockSignInReady();
   });
 
-  
+
   test('renders the form title, inputs, and Continue button', async () => {
     await render(<SignInForm />);
 
@@ -54,10 +54,8 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    // The form itself should not appear
     expect(screen.queryByText('Palette Sign In')).toBeNull();
   });
-
 
 
   test('Continue button is disabled when fields are empty', async () => {

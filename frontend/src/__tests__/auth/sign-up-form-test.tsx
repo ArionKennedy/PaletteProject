@@ -4,7 +4,7 @@ import { useAuth, useSignUp } from '@clerk/expo';
 import { SignUpForm } from '@/components/sign-up-form';
 import { router } from 'expo-router';
 
-// --- Mocks ---
+// Mocks
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn() },
@@ -15,7 +15,7 @@ jest.mock('@clerk/expo', () => ({
   useSignUp: jest.fn(),
 }));
 
-// --- Helpers ---
+// Helpers
 
 function mockSignUpReady() {
   (useAuth as jest.Mock).mockReturnValue({ isLoaded: true });
@@ -30,7 +30,7 @@ function mockSignUpReady() {
   });
 }
 
-// --- Tests ---
+// Tests
 
 describe('<SignUpForm />', () => {
   beforeEach(() => {
