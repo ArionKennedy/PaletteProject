@@ -8,11 +8,12 @@ import { router } from 'expo-router';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn() },
+  useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [])
 }));
 
 jest.mock('@clerk/expo', () => ({
   useAuth: jest.fn(),
-  useSignIn: jest.fn(),
+  useSignIn: jest.fn()
 }));
 
 // Helpers
@@ -27,7 +28,7 @@ function mockSignInReady() {
       status: 'complete',
     },
     errors: {},
-    fetchStatus: 'idle',
+    fetchStatus: 'idle'
   });
 }
 

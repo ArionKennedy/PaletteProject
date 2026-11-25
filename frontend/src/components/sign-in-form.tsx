@@ -236,6 +236,7 @@ export function SignInForm() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  testID='email-input'
                   placeholder="m@example.com"
                   keyboardType="email-address"
                   autoComplete="email"
@@ -268,6 +269,7 @@ export function SignInForm() {
                 <Input
                   ref={passwordInputRef}
                   id="password"
+                  testID='password-input'
                   secureTextEntry
                   returnKeyType="send"
                   onSubmitEditing={onSubmit}
@@ -298,80 +300,6 @@ export function SignInForm() {
             </View>
           </CardContent>
         )}
-        <CardContent className="gap-6">
-          <View className="gap-6">
-            <View className="gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                testID="email-input"
-                placeholder="m@example.com"
-                keyboardType="email-address"
-                autoComplete="email"
-                autoCapitalize="none"
-                onSubmitEditing={onEmailSubmitEditing}
-                returnKeyType="next"
-                submitBehavior="submit"
-                onChangeText={setEmailAddress}
-              />
-
-              {pageErrors?.identifier && 
-                <Alert variant="destructive" icon={AlertCircleIcon}>
-                  <AlertTitle>Unable to Sign In</AlertTitle>
-                  <AlertDescription>
-                    {pageErrors?.identifier}
-                  </AlertDescription>
-                </Alert>
-              }
-            </View>
-            <View className="gap-1.5">
-              <View className="flex-row items-center">
-                <Label htmlFor="password">Password</Label>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="web:h-fit ml-auto h-4 px-1 py-0 sm:h-4"
-                  onPress={() => {
-                    // TODO: Navigate to forgot password screen
-                  }}>
-                  <Text className="font-normal leading-4">Forgot your password?</Text>
-                </Button>
-              </View>
-              <Input
-                ref={passwordInputRef}
-                id="password"
-                testID="password-input"
-                placeholder="Password"
-                secureTextEntry
-                returnKeyType="send"
-                onSubmitEditing={onSubmit}
-                onChangeText={setPassword}
-              />
-
-              {pageErrors?.password && 
-                <Alert variant="destructive" icon={AlertCircleIcon}>
-                  <AlertTitle>Unable to Sign In</AlertTitle>
-                  <AlertDescription>
-                    {pageErrors?.password}
-                  </AlertDescription>
-                </Alert>
-              }
-            </View>
-            <Button className="w-full" onPress={onSubmit} disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
-              <Text>Continue</Text>
-            </Button>
-          </View>
-          <View className="flex-row items-center justify-center">
-            <Text className="text-sm">Don&apos;t have an account? </Text>
-            <Pressable
-              testID = "Sign up button"
-              onPress={() => {
-                router.replace('/signup');
-              }}>
-              <Text className="text-sm underline underline-offset-4">Sign up</Text>
-            </Pressable>
-          </View>
-        </CardContent>
       </Card>
     </View>
   );

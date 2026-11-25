@@ -42,9 +42,7 @@ describe('clerkErrorsToPageErrors()', () => {
 
   test('maps a global error to pageErrors.global', () => {
     const errors = {
-      fields: {
         global: [{ longMessage: 'Invalid credentials' }],
-      },
     };
 
     expect(clerkErrorsToPageErrors(errors)).toEqual({
