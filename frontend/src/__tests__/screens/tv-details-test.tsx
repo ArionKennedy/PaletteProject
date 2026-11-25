@@ -7,8 +7,7 @@ import type { TvLookupResult } from '@/types/tvLookupResult';
 // Mocks
 
 jest.mock('@/services/lookup', () => ({
-  movieLookup: jest.fn(),
-  tvLookup: jest.fn(),
+  tvLookup: jest.fn()
 }));
 
 jest.mock('expo-router', () => ({
@@ -58,26 +57,15 @@ describe('<TvDetailsPage />', () => {
 
 
 
-  test('renders the TV show title and description after the data loads', async () => {
-    (tvLookup as jest.Mock).mockResolvedValue(mockTv);
-
-    await render(<TvDetailsPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Breaking Bad')).toBeTruthy();
-      expect(screen.getByText('A high school chemistry teacher turned drug kingpin.')).toBeTruthy();
-    });
-  });
-
-
-
-  test('renders the first air year and season count in the meta line', async () => {
+  test('renders the TV show title, first air year, season count and description after the data loads', async () => {
     (tvLookup as jest.Mock).mockResolvedValue(mockTv);
 
     await render(<TvDetailsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('First Air: 2008 · 5 Seasons')).toBeTruthy();
+      expect(screen.getByText('Breaking Bad')).toBeTruthy();
+      expect(screen.getByText('A high school chemistry teacher turned drug kingpin.')).toBeTruthy();
     });
   });
 

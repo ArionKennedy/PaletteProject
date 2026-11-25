@@ -7,8 +7,7 @@ import type { MovieLookupResult } from '@/types/movieLookupResult';
 // Mocks
 
 jest.mock('@/services/lookup', () => ({
-  movieLookup: jest.fn(),
-  tvLookup: jest.fn(),
+  movieLookup: jest.fn()
 }));
 
 // useLocalSearchParams provides the route param (:id) to the component
@@ -58,7 +57,7 @@ describe('<MovieDetailsPage />', () => {
 
 
 
-  test('renders the movie title and description after the data loads', async () => {
+  test('renders the movie title, release year, runtime and description after the data loads', async () => {
     (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
 
     await render(<MovieDetailsPage />);
@@ -66,18 +65,6 @@ describe('<MovieDetailsPage />', () => {
     await waitFor(() => {
       expect(screen.getByText('Inception')).toBeTruthy();
       expect(screen.getByText('A thief who steals corporate secrets.')).toBeTruthy();
-    });
-  });
-
-
-
-  test('renders the release year and runtime in the meta line', async () => {
-    (movieLookup as jest.Mock).mockResolvedValue(mockMovie);
-
-    await render(<MovieDetailsPage />);
-
-    await waitFor(() => {
-      // formatRuntime(148) = "2h 28m"
       expect(screen.getByText('2010 · 2h 28m')).toBeTruthy();
     });
   });

@@ -34,6 +34,7 @@ function mockSignUpReady() {
 
 describe('<SignUpForm />', () => {
   beforeEach(() => {
+    jest.clearAllMocks()
     mockSignUpReady();
   });
 
@@ -44,7 +45,7 @@ describe('<SignUpForm />', () => {
     await render(<SignUpForm />);
 
     expect(screen.getByText('Create Your Palette Account')).toBeTruthy();
-    expect(screen.getByPlaceholderText('m@example.com')).toBeTruthy();
+    expect(screen.getByTestId('email-input')).toBeTruthy();
     expect(screen.getByText('Continue')).toBeTruthy();
   });
 
@@ -63,7 +64,8 @@ describe('<SignUpForm />', () => {
   test('Continue button is disabled when fields are empty', async () => {
     await render(<SignUpForm />);
 
-    expect(screen.getByText('Continue')).toBeDisabled();
+    const button = screen.getByRole('button', { name: 'Continue' });
+    expect(button).toBeDisabled();
   });
 
 

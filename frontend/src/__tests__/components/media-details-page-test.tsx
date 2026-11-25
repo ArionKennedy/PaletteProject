@@ -5,8 +5,7 @@ import type { MediaDetail } from '@/types/mediaDetail';
 
 // Stack.Screen renders nothing meaningful in tests
 jest.mock('expo-router', () => ({
-  Stack: { Screen: () => null },
-  useFocusEffect: jest.fn(),
+  Stack: { Screen: () => null }
 }));
 
 // LibraryAction brings in the Clerk/API dependency chain — not under test here

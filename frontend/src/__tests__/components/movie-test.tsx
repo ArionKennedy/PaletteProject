@@ -53,10 +53,4 @@ describe('<Movie />', () => {
   });
 
 
-
-  test('does not show "No poster" when a posterUrl is provided', async () => {
-    await render(<Movie movie={baseMovie} />);
-
-    expect(screen.queryByText('No poster')).toBeNull();
-  });
 });

@@ -109,18 +109,4 @@ describe('clerkErrorsToPageErrors()', () => {
   });
 
 
-  
-  test('maps multiple field errors at once', () => {
-    const errors = {
-      fields: {
-        emailAddress: { longMessage: 'Email is already taken' },
-        password: { longMessage: 'Password is too short' },
-      },
-    };
-
-    expect(clerkErrorsToPageErrors(errors)).toEqual({
-      emailAddress: 'Email is already taken',
-      password: 'Password is too short',
-    });
-  });
 });

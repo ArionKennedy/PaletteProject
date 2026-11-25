@@ -106,6 +106,7 @@ export function SignInForm() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                testID="email-input"
                 placeholder="m@example.com"
                 keyboardType="email-address"
                 autoComplete="email"
@@ -141,6 +142,7 @@ export function SignInForm() {
               <Input
                 ref={passwordInputRef}
                 id="password"
+                testID="password-input"
                 placeholder="Password"
                 secureTextEntry
                 returnKeyType="send"

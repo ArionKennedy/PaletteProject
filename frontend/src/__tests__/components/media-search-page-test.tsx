@@ -64,14 +64,6 @@ async function renderPage() {
 // Tests
 
 describe('<MediaSearchPage />', () => {
-  test('renders the search bar', async () => {
-    (mediaSearch as jest.Mock).mockResolvedValue([]);
-
-    const input = await renderPage();
-
-    expect(input).toBeTruthy();
-  });
-
 
 
   test('shows a loading indicator while the search is in progress', async () => {

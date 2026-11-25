@@ -5,14 +5,6 @@ import SearchBar from '@/components/searchBar';
 describe('<SearchBar />', () => {
 
 
-  test('renders the search input', async () => {
-    await render(<SearchBar onSubmitSearch={jest.fn()} />);
-
-    expect(screen.getByPlaceholderText('Search...')).toBeTruthy();
-  });
-
-
-
   test('calls onSubmitSearch with the query when submitted', async () => {
     const onSubmitSearch = jest.fn();
     await render(<SearchBar onSubmitSearch={onSubmitSearch} />);

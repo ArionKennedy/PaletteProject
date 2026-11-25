@@ -35,6 +35,7 @@ function mockSignInReady() {
 
 describe('<SignInForm />', () => {
   beforeEach(() => {
+    jest.clearAllMocks()
     mockSignInReady();
   });
 
@@ -43,7 +44,7 @@ describe('<SignInForm />', () => {
     await render(<SignInForm />);
 
     expect(screen.getByText('Palette Sign In')).toBeTruthy();
-    expect(screen.getByPlaceholderText('m@example.com')).toBeTruthy();
+    expect(screen.getByTestId('email-input')).toBeTruthy();
     expect(screen.getByText('Continue')).toBeTruthy();
   });
 
@@ -61,7 +62,7 @@ describe('<SignInForm />', () => {
   test('Continue button is disabled when fields are empty', async () => {
     await render(<SignInForm />);
 
-    const button = screen.getByText('Continue');
+    const button = screen.getByRole('button', { name: 'Continue' });
     expect(button).toBeDisabled();
   });
 
@@ -70,8 +71,8 @@ describe('<SignInForm />', () => {
   test('shows an email validation error when the email is invalid', async () => {
     await render(<SignInForm />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'notanemail');
-    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'notanemail');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
 
     await fireEvent.press(screen.getByText('Continue'));
 
@@ -93,8 +94,8 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
-    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'user@example.com');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
     await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
@@ -121,8 +122,8 @@ describe('<SignInForm />', () => {
 
     await render(<SignInForm />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText('m@example.com'), 'user@example.com');
-    await fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    await fireEvent.changeText(screen.getByTestId('email-input'), 'user@example.com');
+    await fireEvent.changeText(screen.getByTestId('password-input'), 'password123');
     await fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => {
