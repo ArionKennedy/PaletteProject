@@ -10,7 +10,7 @@ Palette brings these activities together in one place and helps users build a pi
 
 ### Download and Install
 
-1. On your Android phone, [download the Palette 1.0.0 APK](https://expo.dev/artifacts/eas/pwuwWv81UuA270OJbb-MF3PsfgfJQt6KHE1WmTI6kr0.apk) (approximately 105 MiB).
+1. On your Android phone, open [GitHub Releases](https://github.com/ArionKennedy/PaletteProject/releases) and download the `.apk` from the latest release’s **Assets** section.
 2. Open the downloaded file. If Android prompts you, allow your browser or file manager to install apps from this source, then install Palette.
 3. Open **Palette** and create an account or sign in.
 4. Open **Movies**, enter a movie title, and select a result to view its details.
@@ -29,39 +29,39 @@ Logging watched movies, collections, reviews, recommendations, social features, 
 
 Compatible updates to screens, application logic, styles, and resources are downloaded automatically when the app is opened online. Fully close and reopen Palette after the update downloads to apply it.
 
-**Changes to native dependencies, Expo/React Native, or native app configuration require a new APK.** In that case, the team will share a new download link and ask testers to install the updated APK. The download link above identifies this specific build and will be updated when a new APK is distributed.
+**Changes to native dependencies, Expo/React Native, or native app configuration require a new APK.** In that case, the team will publish an updated APK on GitHub Releases and ask testers to install it.
 
-For developer build and publishing instructions, see [Android APK and OTA Updates](frontend/EAS.md).
+For developer build and publishing instructions, see [Android APK and OTA Updates](Docs/EAS.md).
 
 ## Core Features
 
 Palette is designed around six core features. The current source includes authentication, media search and discovery, and My Library.
 
-- **[Authentication](https://github.com/ArionKennedy/COMP4350Project/issues/25)**
+- **[Authentication](https://github.com/ArionKennedy/PaletteProject/issues/25)**
   - User account creation, sign-in, and sign-out using Clerk
   - User information stored in PostgreSQL
   - Signed-in access to personal library data
 
-- **[Search & Discovery](https://github.com/ArionKennedy/COMP4350Project/issues/26)**
+- **[Search & Discovery](https://github.com/ArionKennedy/PaletteProject/issues/26)**
   - Search and view details for movies and TV shows from TMDB and books from Google Books
   - Modular search structure designed to support additional media types and external APIs
 
-- **[Logging & Archiving](https://github.com/ArionKennedy/COMP4350Project/issues/27)**
+- **[Logging & Archiving](https://github.com/ArionKennedy/PaletteProject/issues/27)**
   - Add or remove movies, TV shows, and books from their detail pages
   - Browse saved media in My Library by category, swipe through cover previews, and open details from a cover
   - See [My Library documentation](Docs/logging-and-archiving.md) for the API and verification steps
 
-- **[Recommendations](https://github.com/ArionKennedy/COMP4350Project/issues/28)** *(Planned)*
+- **[Recommendations](https://github.com/ArionKennedy/PaletteProject/issues/28)** *(Planned)*
   - Recommend what users may want to watch, read, play, or listen to next
   - Use user activity, community data, and relationships between media to support recommendations
   - Support specialized recommendations such as canonical or release-order viewing
 
-- **[Sharing & Social Features](https://github.com/ArionKennedy/COMP4350Project/issues/29)** *(Planned)*
+- **[Sharing & Social Features](https://github.com/ArionKennedy/PaletteProject/issues/29)** *(Planned)*
   - Rate and review media
   - Participate in discussions
   - Share media activity, opinions, and recommendations with other users
 
-- **[Analytics & Visualizations](https://github.com/ArionKennedy/COMP4350Project/issues/30)** *(Planned)*
+- **[Analytics & Visualizations](https://github.com/ArionKennedy/PaletteProject/issues/30)** *(Planned)*
   - View statistics about personal media consumption
   - Track information such as total activity time and unique directors, authors, or game studios
   - Generate graphical summaries and visualizations similar to Spotify Wrapped or Receiptify
@@ -117,6 +117,7 @@ Important project documentation:
 - [Team Working Agreement](Docs/Team%20Working%20Agreement.pdf)
 - [Sprint 0](Docs/sprint0.md)
 - [Sprint 1](Docs/sprint1.md)
+- [Sprint 2](Docs/sprint2.md)
 - [System Architecture](Docs/architecture.md)
 - [Database Design](Docs/database.md)
 - [API Documentation](Docs/api.md)
@@ -124,7 +125,7 @@ Important project documentation:
 - [Testing Documentation](Docs/testing.md)
 - [Process and Protocols](Docs/Process%20and%20Protocols.md)
 - [Local Setup](Docs/Local%20Setup.md)
-- [Android APK and OTA Updates](frontend/EAS.md)
+- [Android APK and OTA Updates](Docs/EAS.md)
 - [Database Migrations](Docs/db_migration.md)
 
 ## Team
@@ -147,8 +148,8 @@ The status below describes the source in this checkout. The Android tester secti
 - PostgreSQL database structure and EF Core migrations
 - Frontend and backend integration
 - Unified development startup command
-- Backend unit and integration tests, plus local frontend tests for My Library
-- GitHub Actions CI for running backend tests on pull requests
+- Backend unit and integration tests, plus frontend regression tests for My Library and password reset
+- GitHub Actions CI for both test suites on pull requests and pushes to `develop` and `master`
 
 **Current Limitations:**
 - Search, lookup, and My Library currently support movies, TV shows, and books.
@@ -241,9 +242,12 @@ From the project root:
 dotnet test tests/Palette.Tests.csproj
 ```
 
-GitHub Actions automatically runs the backend test project on pull requests.
+With Node.js 24, install the frontend dependencies and run the frontend tests from the project root:
 
-Integration tests and automated frontend tests are not included in Sprint 1.
+```bash
+npm ci --prefix frontend
+node --test 'tests/frontend/**/*.test.cjs'
+```
 
 For testing details and coverage information, see [Testing Documentation](Docs/testing.md).
 
@@ -253,7 +257,7 @@ For testing details and coverage information, see [Testing Documentation](Docs/t
 COMP4350Project/
 ├── backend/             # ASP.NET Core API
 ├── frontend/            # React Native / Expo application
-├── tests/               # Backend tests
+├── tests/               # Backend and frontend tests
 ├── Docs/                # Project documentation
 ├── .github/workflows/   # CI configuration
 ├── package.json         # Development startup scripts
