@@ -9,7 +9,7 @@ const sourceRoot = path.join(__dirname, '../../frontend/src');
 const compiledModules = new Map();
 const email = 'reader@example.com';
 
-function createHarness(signIn) {
+function createHarness(signIn, signUpState) {
   const loadedModules = new Map();
   const routes = [];
   let screen;
@@ -25,8 +25,9 @@ function createHarness(signIn) {
           owner.slots[slot] = typeof initial === 'function' ? initial() : initial;
         }
         return [owner.slots[slot], value => {
-          owner.dirty ||= !Object.is(owner.slots[slot], value);
-          owner.slots[slot] = value;
+          const nextValue = typeof value === 'function' ? value(owner.slots[slot]) : value;
+          owner.dirty ||= !Object.is(owner.slots[slot], nextValue);
+          owner.slots[slot] = nextValue;
         }];
       },
       useRef(initial) {
@@ -42,10 +43,18 @@ function createHarness(signIn) {
         screen.slots[slot] = { callback, dependencies };
         return callback;
       },
+      useEffect(callback, dependencies) {
+        const slot = screen.index++;
+        const previous = screen.slots[slot];
+        if (previous && dependencies.every((value, index) => Object.is(value, previous[index]))) return;
+        screen.slots[slot] = dependencies;
+        screen.pendingEffects.push([slot, callback]);
+      },
     },
     '@clerk/expo': {
       useAuth: () => ({ isLoaded: true }),
       useSignIn: () => ({ signIn, fetchStatus: 'idle' }),
+      useSignUp: () => signUpState,
       isClerkAPIResponseError: error => Array.isArray(error.errors),
     },
     'expo-router': {
@@ -64,9 +73,11 @@ function createHarness(signIn) {
       CardHeader: 'CardHeader', CardTitle: 'CardTitle',
     },
     '@/components/ui/input': { Input: 'Input' },
+    '@/components/ui/icon': { Icon: 'Icon' },
     '@/components/ui/label': { Label: 'Label' },
     '@/components/ui/text': { Text: 'Text' },
     '@/components/ui/alert': { Alert: 'Alert', AlertDescription: 'AlertDescription', AlertTitle: 'AlertTitle' },
+    '@/lib/utils': { cn: (...classes) => classes.filter(Boolean).join(' ') },
   };
 
   function loadModule(name) {
@@ -92,19 +103,19 @@ function createHarness(signIn) {
 
   return {
     routes,
-    mount(name = 'reset-password') {
-      const [Form] = Object.values(loadModule(`@/components/${name}-form`));
+    mount(name = 'reset-password-form', props) {
+      const [Component] = Object.values(loadModule(`@/components/${name}`));
       const instance = { slots: [], effects: new Map(), focused: true };
       return {
         render() {
           screen = instance;
           let tree;
-          // Flush focus effects and their state updates as React would after each render.
+          // Flush effects and their state updates after each render.
           for (let pass = 0; pass < 10; pass++) {
             instance.index = 0;
             instance.dirty = false;
             instance.pendingEffects = [];
-            tree = Form();
+            tree = Component(props);
             if (instance.focused) {
               for (const [slot, callback] of instance.pendingEffects) {
                 instance.effects.get(slot)?.cleanup?.();
@@ -137,12 +148,104 @@ function button(tree, label) {
 }
 
 function input(tree, id) {
-  return find(tree, node => node.type === 'Input' && node.props.id === id)?.props;
+  return find(tree, node => node.props.id === id
+    && (node.type === 'Input' || node.type?.name === 'NewPasswordField'))?.props;
 }
 
-test('correcting a rejected password reuses the accepted verification code', async t => {
+test('new password field forwards keyboard props and updates visibility and length feedback', () => {
+  const ref = { current: null };
+  const onSubmitEditing = () => {};
+  const props = {
+    id: 'password',
+    label: 'New password',
+    value: '1234567890123🔑',
+    ref,
+    returnKeyType: 'next',
+    submitBehavior: 'submit',
+    onSubmitEditing,
+  };
+  const field = createHarness().mount('new-password-field', props);
+  const initial = field.render();
+  const initialInput = input(initial, 'password');
+  assert.equal(initialInput.ref, ref);
+  assert.equal(initialInput.returnKeyType, 'next');
+  assert.equal(initialInput.submitBehavior, 'submit');
+  assert.equal(initialInput.onSubmitEditing, onSubmitEditing);
+  assert.equal(initialInput.secureTextEntry, true);
+  assert.ok(find(initial, node => node.props.accessibilityLabel === 'At least 15 characters, not met'));
+
+  find(initial, node => node.props.accessibilityLabel === 'Show password').props.onPress();
+  props.value = '12345678901234🔑';
+  const visible = field.render();
+  assert.equal(input(visible, 'password').secureTextEntry, false);
+  assert.equal(input(visible, 'password').value, props.value);
+  assert.ok(find(visible, node => node.props.accessibilityLabel === 'At least 15 characters, met'));
+
+  find(visible, node => node.props.accessibilityLabel === 'Hide password').props.onPress();
+  assert.equal(input(field.render(), 'password').secureTextEntry, true);
+});
+
+test('sign up explains invalid email on blur and guards both submit paths', async () => {
+  const requests = [];
+  const passwordError = 'Meet the password requirements above to continue.';
+  const signUpState = {
+    errors: {},
+    fetchStatus: 'idle',
+    signUp: {
+      async password(params) {
+        requests.push(params);
+        signUpState.errors = { fields: { emailAddress: { longMessage: 'Email already registered' } } };
+        return { error: {} };
+      },
+    },
+  };
+  const form = createHarness(undefined, signUpState).mount('sign-up-form');
+  const initial = form.render();
+  assert.equal(input(initial, 'email')['aria-invalid'], false);
+  assert.equal(button(initial, 'Continue').disabled, true);
+  input(initial, 'email').onChangeText('name@');
+  input(initial, 'password').onChangeText('long-test-password');
+  const invalid = form.render();
+  assert.equal(input(invalid, 'email')['aria-invalid'], false);
+  input(invalid, 'email').onBlur();
+  const blurred = form.render();
+  assert.equal(input(blurred, 'email')['aria-invalid'], true);
+  assert.equal(button(blurred, 'Continue').disabled, true);
+  await input(blurred, 'password').onSubmitEditing();
+  assert.equal(requests.length, 0);
+
+  input(blurred, 'email').onChangeText('name+tag@example.museum');
+  input(blurred, 'password').onChangeText('too-short');
+  const short = form.render();
+  assert.equal(input(short, 'email')['aria-invalid'], false);
+  assert.equal(input(short, 'password')['aria-invalid'], false);
+  assert.equal(button(short, 'Continue').disabled, true);
+  await input(short, 'password').onSubmitEditing();
+  assert.equal(requests.length, 0);
+
+  const rejectedPassword = form.render();
+  assert.equal(input(rejectedPassword, 'password')['aria-invalid'], true);
+  assert.ok(find(rejectedPassword, node => node.type === 'Text' && node.props.children === passwordError));
+
+  input(rejectedPassword, 'password').onChangeText('long-test-password');
+  const ready = form.render();
+  assert.equal(input(ready, 'password')['aria-invalid'], false);
+  assert.equal(find(ready, node => node.type === 'Text' && node.props.children === passwordError), undefined);
+  assert.equal(button(ready, 'Continue').disabled, false);
+  await button(ready, 'Continue').onPress();
+  assert.equal(requests[0].emailAddress, 'name+tag@example.museum');
+  const rejected = form.render();
+  assert.ok(find(rejected, node => node.type === 'AlertDescription'
+    && node.props.children === 'Email already registered'));
+  input(rejected, 'email').onChangeText('another@example.com');
+  assert.equal(input(form.render(), 'email')['aria-invalid'], false);
+});
+
+test('reset shows password feedback on blur and reuses an accepted verification code', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const passwords = [];
+  const passwordError = 'Meet the password requirements above to continue.';
+  const isPasswordError = node => node.type === 'Text' && node.props.children === passwordError;
   let verificationCalls = 0;
   const signIn = {
     id: 'reset-attempt',
@@ -169,15 +272,41 @@ test('correcting a rejected password reuses the accepted verification code', asy
   const app = createHarness(signIn);
   const form = app.mount();
   const initial = form.render();
-  input(initial, 'password').onChangeText('rejected-test-password');
+  let codeFocused = false;
+  input(initial, 'code').ref.current = { focus: () => { codeFocused = true; } };
+  assert.equal(input(initial, 'password').returnKeyType, 'next');
+  input(initial, 'password').onSubmitEditing();
+  assert.equal(codeFocused, true);
+  input(initial, 'password').onChangeText('too-short');
   input(initial, 'code').onChangeText('123456');
-  await button(form.render(), 'Reset Password').onPress();
+  const short = form.render();
+  assert.equal(button(short, 'Reset Password').disabled, true);
+  assert.equal(find(short, isPasswordError), undefined);
+  input(short, 'password').onBlur();
+  const blurred = form.render();
+  assert.ok(find(blurred, isPasswordError));
+  assert.equal(input(blurred, 'password')['aria-invalid'], true);
+  await input(blurred, 'code').onSubmitEditing();
+  assert.equal(verificationCalls, 0);
+
+  input(blurred, 'password').onChangeText('rejected-test-password');
+  const ready = form.render();
+  assert.equal(find(ready, isPasswordError), undefined);
+  assert.equal(input(ready, 'password')['aria-invalid'], false);
+  await button(ready, 'Reset Password').onPress();
 
   const verified = form.render();
   assert.equal(input(verified, 'code'), undefined);
   assert.equal(button(verified, 'Reset Password').disabled, false);
-  input(verified, 'password').onChangeText('replacement-test-password');
-  await button(form.render(), 'Reset Password').onPress();
+  assert.equal(input(verified, 'password').returnKeyType, 'send');
+  input(verified, 'password').onChangeText('too-short');
+  const shortAfterVerification = form.render();
+  assert.equal(button(shortAfterVerification, 'Reset Password').disabled, true);
+  await input(shortAfterVerification, 'password').onSubmitEditing();
+  assert.equal(passwords.length, 1);
+
+  input(shortAfterVerification, 'password').onChangeText('replacement-test-password');
+  await input(form.render(), 'password').onSubmitEditing();
 
   assert.equal(verificationCalls, 1);
   assert.deepEqual(passwords, ['rejected-test-password', 'replacement-test-password']);
@@ -253,7 +382,7 @@ test('going back and re-entering the same email resumes the active attempt', asy
   button(reset.render(), 'Back to Sign in').onPress();
   reset.blur();
 
-  const forgot = app.mount('forgot-password');
+  const forgot = app.mount('forgot-password-form');
   input(forgot.render(), 'email').onChangeText(' Reader@Example.com ');
   await button(forgot.render(), 'Reset your password').onPress();
 
@@ -286,7 +415,7 @@ test('the first code starts the resend countdown and a resend starts it again', 
     },
   };
   const app = createHarness(signIn);
-  const forgot = app.mount('forgot-password');
+  const forgot = app.mount('forgot-password-form');
   input(forgot.render(), 'email').onChangeText(email);
   await button(forgot.render(), 'Reset your password').onPress();
   assert.deepEqual(app.routes, ['/reset-password']);
@@ -334,7 +463,7 @@ test('a code request error clears after five seconds and when leaving the page',
       },
     },
   });
-  const forgot = app.mount('forgot-password');
+  const forgot = app.mount('forgot-password-form');
   const readError = form => find(form.render(), node => node.type === 'AlertTitle')?.props.children;
   input(forgot.render(), 'email').onChangeText(email);
   await button(forgot.render(), 'Reset your password').onPress();
@@ -355,7 +484,7 @@ test('a code request error clears after five seconds and when leaving the page',
 
   assert.deepEqual(app.routes, ['/login']);
   assert.equal(readError(forgot), undefined);
-  const login = app.mount('sign-in');
+  const login = app.mount('sign-in-form');
   assert.equal(readError(login), undefined);
   login.blur();
 });
