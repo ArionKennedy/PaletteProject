@@ -7,6 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NewPasswordField } from '@/components/new-password-field';
+import { meetsPasswordRequirements } from '@/lib/password-rules';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -33,12 +35,26 @@ export function SignUpForm() {
   const [emailAddress, setEmailAddress] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [hasValidatedEmail, setHasValidatedEmail] = useState(false);
+  const [hasSubmittedInvalidPassword, setHasSubmittedInvalidPassword] = useState(false);
   const [pageErrors, setPageErrors] = useState<Record<string, string>>({});
 
   const usernameInputRef = useRef<TextInputInstance>(null);
   const passwordInputRef = useRef<TextInputInstance>(null);
 
+  const emailError = validateEmail(emailAddress);
+  const visibleEmailError = hasValidatedEmail ? emailError : null;
+  const passwordMeetsRequirements = meetsPasswordRequirements(password);
+  const showPasswordRequirementsError = hasSubmittedInvalidPassword && !passwordMeetsRequirements;
+  const canSubmit = !emailError && passwordMeetsRequirements && fetchStatus !== 'fetching';
+
+  function onEmailChange(nextEmail: string) {
+    setEmailAddress(nextEmail);
+    setPageErrors(previous => previous.emailAddress ? { ...previous, emailAddress: '' } : previous);
+  }
+
   function onEmailSubmitEditing() {
+    setHasValidatedEmail(true);
     usernameInputRef.current?.focus();
   }
 
@@ -51,14 +67,15 @@ export function SignUpForm() {
   }, [errors]);
 
   async function onSubmit() {
-    setPageErrors({});
-
-    const emailError = validateEmail(emailAddress);
-    if (emailError) {
-      setPageErrors({ emailAddress: emailError });
+    if (!canSubmit) {
+      setHasValidatedEmail(true);
+      if (!passwordMeetsRequirements) {
+        setHasSubmittedInvalidPassword(true);
+      }
       return;
     }
 
+    setPageErrors({});
     const { error } = await signUp.password({ emailAddress, password, username });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
@@ -119,17 +136,23 @@ export function SignUpForm() {
                 onSubmitEditing={onEmailSubmitEditing}
                 returnKeyType="next"
                 submitBehavior="submit"
-                onChangeText={setEmailAddress}
+                onBlur={() => setHasValidatedEmail(true)}
+                onChangeText={onEmailChange}
+                aria-invalid={Boolean(visibleEmailError || pageErrors.emailAddress)}
               />
 
-              {pageErrors?.emailAddress && 
+              {visibleEmailError ? (
+                <Text className="text-sm text-destructive" accessibilityLiveRegion="polite">
+                  {visibleEmailError}
+                </Text>
+              ) : pageErrors.emailAddress ? (
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
-                    {pageErrors?.emailAddress}
+                    {pageErrors.emailAddress}
                   </AlertDescription>
                 </Alert>
-              }
+              ) : null}
             </View>
 
             <View className="gap-1.5">
@@ -158,28 +181,31 @@ export function SignUpForm() {
             </View>
 
             <View className="gap-1.5">
-              <View className="flex-row items-center">
-                <Label htmlFor="password">Password</Label>
-              </View>
-              <Input
+              <NewPasswordField
                 ref={passwordInputRef}
                 id="password"
-                secureTextEntry
+                label="Password"
+                value={password}
                 returnKeyType="send"
                 onSubmitEditing={onSubmit}
                 onChangeText={setPassword}
+                aria-invalid={showPasswordRequirementsError || Boolean(pageErrors.password)}
               />
 
-              {pageErrors?.password && 
+              {showPasswordRequirementsError ? (
+                <Text className="text-sm text-destructive" accessibilityLiveRegion="polite">
+                  Meet the password requirements above to continue.
+                </Text>
+              ) : pageErrors.password ? (
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Sign Up</AlertTitle>
                   <AlertDescription>
-                    {pageErrors?.password}
+                    {pageErrors.password}
                   </AlertDescription>
                 </Alert>
-              }
+              ) : null}
             </View>
-            <Button className="w-full" onPress={onSubmit} disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
+            <Button className="w-full" onPress={onSubmit} disabled={!canSubmit}>
               <Text>Continue</Text>
             </Button>
           </View>

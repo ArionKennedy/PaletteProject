@@ -7,6 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NewPasswordField } from '@/components/new-password-field';
+import { meetsPasswordRequirements } from '@/lib/password-rules';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,6 +29,7 @@ import {
 export function ResetPasswordForm() {
   const { signIn, fetchStatus } = useSignIn();
   const [password, setPassword] = useState('');
+  const [hasBlurredPassword, setHasBlurredPassword] = useState(false);
   const [code, setCode] = useState('');
   const codeInputRef = useRef<TextInputInstance>(null);
   const requestInProgress = useRef(false);
@@ -34,6 +37,10 @@ export function ResetPasswordForm() {
   const { secondsLeft, startCooldown } = useVerificationCodeCooldown(signIn.identifier);
   const [isReSendingCode, setIsReSendingCode] = useState(false);
   const codeVerified = signIn.status === 'needs_new_password';
+  const passwordMeetsRequirements = meetsPasswordRequirements(password);
+  const showPasswordRequirementsError = hasBlurredPassword && !passwordMeetsRequirements;
+  const canSubmit = passwordMeetsRequirements && (codeVerified || Boolean(code))
+    && fetchStatus !== 'fetching' && !isReSendingCode;
 
   function showResetError(error: ClerkSignInRequestError, fallback: string, globalTitle?: string) {
     if (!isFocused()) return;
@@ -59,7 +66,7 @@ export function ResetPasswordForm() {
   }
   
   async function onSubmit() {
-    if (!password || (!code && !codeVerified) || requestInProgress.current) {
+    if (!canSubmit || requestInProgress.current) {
       return;
     }
     if (!signIn.id) {
@@ -167,26 +174,30 @@ export function ResetPasswordForm() {
         <CardContent className="gap-6">
           <View className="gap-6">
             <View className="gap-1.5">
-              <View className="flex-row items-center">
-                <Label htmlFor="password">New password</Label>
-              </View>
-              <Input
+              <NewPasswordField
                 id="password"
-                secureTextEntry
+                label="New password"
+                value={password}
                 onChangeText={setPassword}
+                onBlur={() => setHasBlurredPassword(true)}
                 returnKeyType={codeVerified ? 'send' : 'next'}
                 submitBehavior="submit"
                 onSubmitEditing={codeVerified ? onSubmit : onPasswordSubmitEditing}
+                aria-invalid={showPasswordRequirementsError || Boolean(pageErrors.password)}
               />
               
-              {pageErrors?.password && 
+              {showPasswordRequirementsError ? (
+                <Text className="text-sm text-destructive" accessibilityLiveRegion="polite">
+                  Meet the password requirements above to continue.
+                </Text>
+              ) : pageErrors.password ? (
                 <Alert variant="destructive" icon={AlertCircleIcon}>
                   <AlertTitle>Unable to Reset Password</AlertTitle>
                   <AlertDescription>
-                    {pageErrors?.password}
+                    {pageErrors.password}
                   </AlertDescription>
                 </Alert>
-              }
+              ) : null}
             </View>
 
             {!codeVerified && (
@@ -244,7 +255,7 @@ export function ResetPasswordForm() {
             <Button
               className="w-full"
               onPress={onSubmit}
-              disabled={!password || (!codeVerified && !code) || fetchStatus === 'fetching' || isReSendingCode}>
+              disabled={!canSubmit}>
               <Text>Reset Password</Text>
             </Button>
             <Button
